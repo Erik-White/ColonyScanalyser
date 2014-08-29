@@ -364,7 +364,7 @@ if __name__ == '__main__':
                 ts = times[-1: -1 - len(areas): -1]
                 ax.plot(ts, areas, lw=2,
                         c=cm.jet(1.0 * ia / len(areas_plates)))
-            ax.set_xlabel('Time [s]')
+            ax.set_xlabel('Time [min]')
             ax.set_ylabel('Area [px^2]')
             ax.set_yscale('log')
 
