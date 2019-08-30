@@ -1,10 +1,4 @@
-# vim: fdm=indent
-'''
-author:     Fabio Zanini
-date:       03/08/14
-content:    Test for scanner.
-'''
-# Modules
+﻿# Modules
 import os
 import sys
 import glob
@@ -14,6 +8,8 @@ from operator import attrgetter
 from itertools import izip
 from skimage.io import imread, imsave
 from skimage.color import rgb2grey
+import matplotlib
+matplotlib.use('TkAgg')
 from matplotlib import cm
 import matplotlib.pyplot as plt
 
@@ -40,7 +36,7 @@ def find_plate_center_rough(im, lattice):
     '''Find the rough middle of the plate'''
     centers_y = np.linspace(0, 1, 2 * lattice[0] + 1)[1::2] * im.shape[0]
     centers_x = np.linspace(0, 1, 2 * lattice[1] + 1)[1::2] * im.shape[1]
-    centers = [(cx, cy) for cy in centers_y for cx in centers_x]
+    centers = [(int(cx), int(cy)) for cy in centers_y for cx in centers_x]
     return centers
 
 
@@ -51,6 +47,11 @@ def find_plate_borders(img, centers, refine=True):
 
     borders = []
     for c in centers:
+
+        print c[0]
+        print type(c[0])
+        print c[1]
+        print type(c[1])
         roi_c = img[c[0] - 50: c[0] + 50,
                     c[1] - 50: c[1] + 50]
 
@@ -109,8 +110,9 @@ def split_image_into_plates(img, borders, edge_cut=100):
     '''Split image into lattice subimages and delete background'''
     plates = []
     for border in borders:
-        (cx, cy) = map(lambda x: np.mean(x), border)
-        radius = 0.25 * (border[0][1] - border[0][0] + border[1][1] - border[1][0]) - edge_cut
+        (cx, cy) = map(lambda x: int(np.mean(x)), border)
+        radius = int(0.25 * (border[0][1] - border[0][0] + border[1][1] - border[1][0]) - edge_cut)
+        print radius
         roi = img[cy - radius: cy + radius + 1,
                   cx - radius: cx + radius + 1].copy()
         (cy, cx) = map(lambda x: x / 2.0, roi.shape)
@@ -127,10 +129,10 @@ def split_image_into_plates(img, borders, edge_cut=100):
 def segment_image(plate, plate_mask, area_min=30, area_max=500):
     '''Segment the image based on simple thresholding'''
     from skimage.measure import regionprops, label
-    from skimage.filter import gaussian_filter
+    from skimage.filters import gaussian
 
     bg = plate[plate_mask & (plate > 0.05)].mean()
-    plate_gau = gaussian_filter(plate, 0.5)
+    plate_gau = gaussian(plate, 0.5)
     ind = plate_gau > bg + 0.03
     pl_th = plate_mask & ind
 
@@ -143,7 +145,7 @@ def segment_image(plate, plate_mask, area_min=30, area_max=500):
     from skimage.morphology import watershed
     from skimage.feature import peak_local_max
     distance = ndimage.distance_transform_edt(pl_th)
-    distance = gaussian_filter(distance, 0.5)
+    distance = gaussian(distance, 0.5)
     local_maxi = peak_local_max(distance, indices=False, footprint=np.ones((3, 3)),
                                 labels=pl_th)
     markers = label(local_maxi)
@@ -181,10 +183,14 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     VERBOSE = args.verbose
-    pos = map(lambda x: x - 1, args.pos)
+    if args.pos != None:
+        pos = map(lambda x: x - 1, args.pos)
+    else:
+        pos = None
 
     # Data locations
-    data_folder = './data/klas2/'
+    data_folder = '~/Downloads/Scanlag/3112_1/'
+    data_folder = os.path.expanduser(data_folder)
     fns = glob.glob(data_folder+'img*.tif')
     fns.sort()
 
@@ -272,11 +278,11 @@ if __name__ == '__main__':
                         if VERBOSE >= 2:
                             print 'row:', row, 'col:', col
                         fn_split = get_subfoldername(data_folder, row, col)+str(t)+'.npy'
-                        plates.append(np.load(fn_split))
+                        plates.append(np.load(fn_split, allow_pickle=True))
             else:
                 (row, col) = pos
                 fn_split = get_subfoldername(data_folder, row, col)+str(t)+'.npy'
-                plates.append(np.load(fn_split))
+                plates.append(np.load(fn_split, allow_pickle=True))
 
         plates_list.append(plates)
 
@@ -336,7 +342,9 @@ if __name__ == '__main__':
                 overlap = 0
                 for j in xrange(1, colonies.max() + 1):
                     colony = colonies == j
-                    overlap_new = (colony & colony_final).sum()
+                    #Intersect the two colony sets
+                    #Then sum results to an integer
+                    overlap_new = sum(np.in1d(colony, colony_final))
                     if overlap_new > overlap:
                         ind = j
                         if overlap_new >= 0.5 * area:
@@ -352,6 +360,7 @@ if __name__ == '__main__':
             if VERBOSE >= 3:
                 ll = len(lineage)
                 fig, axs = plt.subplots(1, ll, figsize=(2 + 4 * ll, 6))
+                #Getting error: axs has no length
                 for iax in xrange(len(axs)):
                     axs[iax].imshow(lineage[-1 -iax])
                     axs[iax].set_title(times[iax])
