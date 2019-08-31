@@ -48,10 +48,6 @@ def find_plate_borders(img, centers, refine=True):
     borders = []
     for c in centers:
 
-        print c[0]
-        print type(c[0])
-        print c[1]
-        print type(c[1])
         roi_c = img[c[0] - 50: c[0] + 50,
                     c[1] - 50: c[1] + 50]
 
@@ -96,6 +92,8 @@ def find_plate_borders(img, centers, refine=True):
             roi = img[c[0], min_y - roi_side // 2: min_y + roi_side // 2]
             iavg = roi.mean()
 
+        #Each plate has two points on each axis to mark the borders
+        #The points are measured from the image edges
         borders.append([[min_x, max_x],
                         [min_y, max_y]])
 
@@ -110,11 +108,13 @@ def split_image_into_plates(img, borders, edge_cut=100):
     '''Split image into lattice subimages and delete background'''
     plates = []
     for border in borders:
+        #Find x and y centers, measured from image edges
         (cx, cy) = map(lambda x: int(np.mean(x)), border)
         radius = int(0.25 * (border[0][1] - border[0][0] + border[1][1] - border[1][0]) - edge_cut)
-        print radius
+        #Copy the image in a radius around the center point
         roi = img[cy - radius: cy + radius + 1,
                   cx - radius: cx + radius + 1].copy()
+
         (cy, cx) = map(lambda x: x / 2.0, roi.shape)
         dist_x = np.vstack([(np.arange(roi.shape[1]) - cx)] * (roi.shape[0]))
         dist_y = np.vstack([(np.arange(roi.shape[0]) - cy)] * (roi.shape[1])).T
@@ -176,10 +176,10 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Analyze the ScanLag data.')
     parser.add_argument('--verbose', type=int, default=0,
-                       help='Verbosity level')
+                       help='Output information level (0 to 4')
     parser.add_argument('--pos', type=int, nargs=2, default=None,
                         metavar=('ROW', 'COL'),
-                        help='ROW COL of plate to study (default: all)')
+                        help='The row and column co-ordinates of the plate to study (default: all)')
 
     args = parser.parse_args()
     VERBOSE = args.verbose
@@ -206,7 +206,7 @@ if __name__ == '__main__':
         t = times[ifn]
 
         if VERBOSE >= 1:
-            print 'Time:', t
+            print 'Imaging time:', t
             print 'Check for split file(s)'
         has_all_split = True
         if pos is None:
@@ -321,30 +321,71 @@ if __name__ == '__main__':
     # Track
     # Start from last time point and proceed backwards by overlap (colonies do not move)
     if VERBOSE >= 1:
-        print 'Track'
+        print 'Tracking new colonies'
     
-    for colonies_plates in colonies_list:
+    #Loop through all the plates
+    #Enumerate allows access to the index and to set the start index
+    for index, colonies_plates in enumerate(colonies_list, start=1):
+        if VERBOSE >= 1:
+            print 'Plate', index, 'of', len(colonies_list)
+
         lineages = []
+
+        #Loop through all colonies
         for i in xrange(1, colonies_plates[-1].max() + 1):
+            #What is happening here?? Why is there a limit of 20 and FIXME?
+            #The limit could be because this loop is too slow
+            #Or does a higher number of colonies cause problems with excessive memory usage?
+            '''
             # FIXME
             if i > 20:
                 break
+            '''
+            #Limit to first n colonies for testing purposes
+            if i > 10:
+                break
 
             if VERBOSE >= 2:
-                print 'Colony', i
+                print 'Colony', i, 'of', colonies_plates[-1].max() + 1
 
             colony_final = colonies_plates[-1] == i
             area = colony_final.sum()
+            print 'area=', area
             lineage = [colony_final]
+
+            #Loop through all time points
+            if VERBOSE >= 1:
+                print 'Looping through', len(times), 'time points'
+
             for it in xrange(len(times) - 1):
+
+                if VERBOSE >= 2:
+                    print 'Time point', it, 'of', len(times)
+
                 colonies = colonies_plates[-2 - it]
                 ind = None
                 overlap = 0
+                
+                if VERBOSE >= 3:
+                    print 'Checking', colonies.max, 'colonies at this time point for new appearances'
+
                 for j in xrange(1, colonies.max() + 1):
+
+                    if VERBOSE >= 4:
+                        print 'Checking if colony', j, 'of', colonies.max, 'is new'
+
+                    #Copy colony j in colonies collection
                     colony = colonies == j
+
                     #Intersect the two colony sets
                     #Then sum results to an integer
                     overlap_new = sum(np.in1d(colony, colony_final))
+                    #Bitwise comparison might be faster
+                    #But currently results in errors
+                    #overlap_new = sum(colony&colony_final)
+                    #overlap_new = sum(overlap_new)
+
+                    #If they interset (overlap) then new colonies have appeared
                     if overlap_new > overlap:
                         ind = j
                         if overlap_new >= 0.5 * area:
@@ -366,6 +407,10 @@ if __name__ == '__main__':
                     axs[iax].set_title(times[iax])
                 fig.suptitle('Colony '+str(i))
 
+        #numpy.savetxt("data", numpy.array([x, y]).T, header="x y")
+        print 'lineages length', len(lineages)
+        #np.savetxt("lineages.txt", lineages, header="x y")
+
         areas_plates = [map(np.sum, lineage) for lineage in lineages]
         if VERBOSE >= 1:
             fig, ax = plt.subplots()
@@ -376,6 +421,8 @@ if __name__ == '__main__':
             ax.set_xlabel('Time [min]')
             ax.set_ylabel('Area [px^2]')
             ax.set_yscale('log')
+
+    plt.savefig('testplot.jpg')
 
     plt.ion()
     plt.show()
