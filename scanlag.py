@@ -3,7 +3,11 @@ import os
 import sys
 import glob
 import argparse
+# lzma is not included in Python2
+# It is a standard module in Python3
+# import lzma
 import bz2
+
 import numpy as np
 from datetime import datetime
 from operator import attrgetter
@@ -19,9 +23,6 @@ import matplotlib.pyplot as plt
 
 # Local modules
 from sci_utilities import is_outlier
-
-
-
 
 # Globals
 # plate_lattice is the shape of the plate arrangement in rows*columns
@@ -285,13 +286,15 @@ def load_plate_timeline(plate_list, load_filename, plate_lat, plate_pos = None):
     if plate_pos is not None:
         load_filepath = get_subfoldername(data_folder, plate_pos[0], plate_pos[1]) + os.path.sep + load_filename
         if file_exists(load_filepath):
-            plate_list[0] = np.load(load_filepath, allow_pickle=True)
+            #plate_list[0] = np.load(load_filepath, allow_pickle=True)
+            plate_list[0] = np.load(bz2.BZ2File(load_filepath, mode = "r"), allow_pickle = True)
     else:
         for row in xrange(plate_lattice[0]):
             for col in xrange(plate_lattice[1]):
                 load_filepath = get_subfoldername(data_folder, row + 1, col + 1) + os.path.sep + load_filename
                 if file_exists(load_filepath):
-                    plate_list[row * plate_lattice[1] + col] = np.load(load_filepath, allow_pickle=True)
+                    plate_list[row * plate_lattice[1] + col] = np.load(bz2.BZ2File(load_filepath, mode = "r"), allow_pickle = True)
+                    #plate_list[row * plate_lattice[1] + col] = np.load(load_filepath, allow_pickle=True)
                 else:
                     print "Unable to load stored image data for plate on row", row + 1, "col", col + 1
                     plate_list = None
@@ -353,7 +356,7 @@ if __name__ == '__main__':
     segmented_images = init_plate_image_list(segmented_images, n_lattice)
 
     # Check if split and segmented image data is already stored and can be loaded
-    segmented_image_data_filename = "split_image_data_segmented.pkl"
+    segmented_image_data_filename = "split_image_data_segmented.pbz2"
     segmented_images = load_plate_timeline(segmented_images, segmented_image_data_filename, plate_lattice, PLATE_POSITION)
     # Check that segmented image data has been loaded for all plates
     if len(segmented_images[0]) == len(time_points):
@@ -362,7 +365,7 @@ if __name__ == '__main__':
     else:
 
         # Check if split image data is already stored and can be loaded
-        split_image_data_filename = "split_image_data.pkl"
+        split_image_data_filename = "split_image_data.pbz2"
         plates_list = load_plate_timeline(plates_list, split_image_data_filename, plate_lattice, PLATE_POSITION)
         # Check that image data has been loaded for all plates
         if len(plates_list[0]) == len(time_points):
@@ -423,12 +426,24 @@ if __name__ == '__main__':
                         
             # Save plates_list to disk for re-use if needed
             # Have to save each plate's data separately as it cannot be saved combined
+            '''
             for i, plate in enumerate(plates_list):
                 (row, col) = plate_number_to_coordinates(i + 1, plate_lattice)
                 split_image_data_filepath = get_subfoldername(data_folder, row, col) + os.path.sep + split_image_data_filename
                 if VERBOSE >= 2:
                     print "Saving image data for plate #", i + 1, "at position row", row, "column", col
                 with open(split_image_data_filepath, 'w') as outfile:
+                    pickle.dump(plate, outfile, pickle.HIGHEST_PROTOCOL)
+                if VERBOSE >= 3:
+                    print "Saved processed image timeline data to:", split_image_data_filepath
+            '''
+            for i, plate in enumerate(plates_list):
+                (row, col) = plate_number_to_coordinates(i + 1, plate_lattice)
+                split_image_data_filepath = get_subfoldername(data_folder, row, col) + os.path.sep + split_image_data_filename
+                if VERBOSE >= 2:
+                    print "Saving image data for plate #", i + 1, "at position row", row, "column", col
+                with bz2.BZ2File(split_image_data_filepath, 'w') as outfile:
+                #with lzma.LZMAFile(split_image_data_filepath, 'w') as outfile:
                     pickle.dump(plate, outfile, pickle.HIGHEST_PROTOCOL)
                 if VERBOSE >= 3:
                     print "Saved processed image timeline data to:", split_image_data_filepath
@@ -466,12 +481,24 @@ if __name__ == '__main__':
 
         # Save segmented_images to disk for re-use if needed
         # Have to save each plate's data separately as it cannot be saved combined
+        '''
         for i, plate in enumerate(segmented_images):
             (row, col) = plate_number_to_coordinates(i + 1, plate_lattice)
             segmented_image_data_filepath = get_subfoldername(data_folder, row, col) + os.path.sep + segmented_image_data_filename
             if VERBOSE >= 2:
                 print "Saving segmented image data for plate #", i + 1, "at position row", row, "column", col
             with open(segmented_image_data_filepath, 'w') as outfile:
+                pickle.dump(plate, outfile, pickle.HIGHEST_PROTOCOL)
+            if VERBOSE >= 3:
+                print "Saved processed and segmented image timeline data to:", segmented_image_data_filepath
+        '''
+        for i, plate in enumerate(segmented_images):
+            (row, col) = plate_number_to_coordinates(i + 1, plate_lattice)
+            segmented_image_data_filepath = get_subfoldername(data_folder, row, col) + os.path.sep + segmented_image_data_filename
+            if VERBOSE >= 2:
+                print "Saving segmented image data for plate #", i + 1, "at position row", row, "column", col
+            with bz2.BZ2File(segmented_image_data_filepath, 'w') as outfile:
+            #with lzma.LZMAFile(segmented_image_data_filepath, 'w') as outfile:
                 pickle.dump(plate, outfile, pickle.HIGHEST_PROTOCOL)
             if VERBOSE >= 3:
                 print "Saved processed and segmented image timeline data to:", segmented_image_data_filepath
