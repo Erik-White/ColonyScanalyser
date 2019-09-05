@@ -10,7 +10,8 @@ import argparse
 import bz2
 
 import numpy as np
-from datetime import datetime
+from datetime import datetime, timedelta
+from dateutil.relativedelta import relativedelta
 from operator import attrgetter
 import cPickle as pickle #Import is different on Python3
 from itertools import izip
@@ -23,11 +24,24 @@ from matplotlib.dates import DateFormatter
 import matplotlib.pyplot as plt
 
 # Local modules
-from sci_utilities import is_outlier
+import sci_utilities
+import plot_utilities
 
 # Globals
 # plate_lattice is the shape of the plate arrangement in rows*columns
 plate_lattice = (3, 2)
+
+
+# Convert an argument to a valid boolean value
+def str2bool(v):
+    if isinstance(v, bool):
+       return v
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
 
 
 # Functions
@@ -217,10 +231,6 @@ def segment_image(plate, plate_mask, area_min=30, area_max=500):
     # Return an ordered array, relabelled sequentially
     from skimage.segmentation import relabel_sequential
     (colonies, fwdmap, revmap) = relabel_sequential(colonies)
-
-    # Instead of this randomizing section, could maybe use lab2rgb to paint random colours over?
-    #https://scikit-image.org/docs/dev/api/skimage.color.html#skimage.color.label2rgb
-
     
     # Randomize colors for clarity
     ind = np.arange(colonies.max()) + 1
@@ -234,7 +244,8 @@ def segment_image(plate, plate_mask, area_min=30, area_max=500):
     # Result is a 2D co-ordinate array
     # Each co-ordinate contains either zero or a unique colony number
     # The colonies are numbered from one to the total number of colonies on the plate
-    return colonies_random
+    #return colonies_random
+    return colonies
 
     
 # Build an array of segmented image data for all available time points
@@ -264,7 +275,16 @@ def segment_plate_timepoints(plate_images_list, date_times):
 def save_plate_segmented_image(plate_image, segmented_image, plate_row, plate_column, date_time):
     fig, axs = plt.subplots(1, 2, figsize=(12, 6))
     axs[0].imshow(plate_image)
-    axs[1].imshow(segmented_image)
+    # Set colour range so all colonies are clearly visible and the same colour
+    axs[1].imshow(segmented_image, vmax = 1)
+    #plt.clim(vmin = 0, vmax = 1)
+    '''
+    # Can maybe apply labels by getting uniques from segmented_image
+    colony_ids = np.uniques(segmented_image)
+    for id in colony_ids:
+        ax.text(x = key, y = value + 0.2, s = str(key // 60) + " hours", color='blue', fontweight='bold')
+    # Then place label on x,y
+    '''
     fig_title = ' '.join(["Plate at row", str(plate_row), ": column", str(plate_column), "at time point", date_time.strftime("%Y/%m/%d %H:%M")])
     fig.suptitle(fig_title)
     folder_path = get_subfoldername(data_folder, plate_row, plate_column) + "segmented_image_plots" + os.path.sep
@@ -301,7 +321,7 @@ def load_plate_timeline(plate_list, load_filename, plate_lat, plate_pos = None):
                     # Do not return the list unless all elements were loaded sucessfully
                     temp_list = None
                     break
-    return plate_list
+    return copy.copy(temp_list)
 
 
 # Script
@@ -317,9 +337,8 @@ if __name__ == '__main__':
                         help='Which data files to store on disk')
     parser.add_argument('--save_plots', type=int, default=1,
                         help='The level of plot images to store on disk')
-    parser.add_argument('--use_saved', type=bool, default=True,
+    parser.add_argument('--use_saved', type=str2bool, default=True,
                         help='Allow or prevent use of previously calculated data')
-    # Add a new argument to specify if stored data/images should be recalculated and overwritten
 
     args = parser.parse_args()
     VERBOSE = args.verbose
@@ -330,8 +349,6 @@ if __name__ == '__main__':
     SAVE_DATA = args.save_data
     SAVE_PLOTS = args.save_plots
     USE_SAVED = args.use_saved
-
-    print USE_SAVED
 
     # Data locations
     data_folder = '~/Downloads/Scanlag/3112_1/'
@@ -352,8 +369,12 @@ if __name__ == '__main__':
     times = [str(image_filename[:-4].split('_')[-1]) for image_filename in image_filenames]
     # Convert string timestamps to Python datetime objects
     time_points = []
+    time_points_elapsed = []
     for i, date in enumerate(dates):
         time_points.append(datetime.combine(datetime.strptime(dates[i], '%Y%m%d'),datetime.strptime(times[i], '%H%M').time()))
+    # Also store time points as elapsed minutes since start
+    for time_point in time_points:
+        time_points_elapsed.append(int((time_point - time_points[0]).total_seconds() / 60))
 
     # Initialise plates_list with empty lists to the total number of plates
     plates_list = []
@@ -398,7 +419,7 @@ if __name__ == '__main__':
         else:
             if VERBOSE >= 1:
                 print "Unable to load processed image data for all plates"
-
+                
             # Divide plates and copy to separate files
             if VERBOSE >= 1:
                 print 'Create plate subfolders'
@@ -512,209 +533,165 @@ if __name__ == '__main__':
     # Track
     # Start from last time point and proceed backwards by overlap (colonies do not move)
     if VERBOSE >= 1:
-        print 'Tracking new colonies'
-    
-    # Loop through all the plates
-    for index, colonies_plates in enumerate(segmented_images, start=1):
+        print 'Tracking colonies'
+
+    # Loop through plates
+    plate_colony_lineages = []
+    from collections import defaultdict
+    plate_colony_areas = defaultdict(list)
+    for i, plate_images in enumerate(segmented_images):
         if VERBOSE >= 1:
-            print 'Plate', index, 'of', len(segmented_images)
+            print 'Tacking colonies on plate', i + 1, 'of', len(segmented_images)
 
-        lineages = []
-        colonies_total = colonies_plates[-1].max() + 1
-
-        # Loop to the maximum unique colony id number
-        for i in xrange(1, colonies_total):
-            #What is happening here?? Why is there a limit of 20 and FIXME?
-            #The limit could be because this loop is too slow
-            #Or does a higher number of colonies cause problems with excessive memory usage?
-            '''
-            # FIXME
-            if i > 20:
-                break
-            '''
-            #Limit to first n co-ordinate points for testing purposes
-            if i > 1:
-                break
-
+        # Loop backwards through plate timepoints
+        segmented_image_final = plate_images[-1]
+        for j, segmented_image in enumerate(reversed(plate_images)):
             if VERBOSE >= 2:
-                print 'Colony', i, 'of', colonies_total
+                print 'Tacking colonies at time point', j + 1, 'of', len(plate_images)
+            np.savetxt('segmented_plate.txt', segmented_image[:-1, :80], delimiter=',',fmt='%1d')
+            overlap = segmented_image&segmented_image_final
+            np.savetxt('segmented_overlap.txt', overlap[:-1, :80], delimiter=',',fmt='%1d')
+            overlap_sum = sum(segmented_image&segmented_image_final)
+            np.savetxt('segmented_overlap_sum.txt', overlap[:-1, :80], delimiter=',',fmt='%1d')
 
-            # Store the data for the final time point
-            # Perform an elemntwise comparison with the current colony id number
-            # Produces a boolean array
-            colony_final = colonies_plates[-1] == i
-            # Sum the number of True co-ordinate points to give an area approximation
-            colony_area_final = colony_final.sum()
-            print 'colony area final=', colony_area_final
-            # Store the boolean co-ordinate array
-            lineage = [colony_final]
+            (uniques, counts) = np.unique(overlap, return_counts = True)
+            # Store area values using colony ids as dictionary keys
+            # Do not include 'colony 0', ie areas with no colonies
+            for k, colony_id in enumerate(uniques):
+                # Elimate noise
+                if colony_id > 0 and counts[k] > 20:
+                    plate_colony_areas[colony_id].append((list(reversed(time_points_elapsed))[j], counts[k]))
 
-            if VERBOSE >= 1:
-                print 'Looping through', len(times), 'time points'
+        # Time of appearance
+        time_of_appearance = dict()
+        for colony_id, values in plate_colony_areas.items():
+            timepoints, areas = zip(*values)
+            time_of_appearance[colony_id] = min(timepoints)
 
-            # Loop through all time points
-            for it in xrange(len(times) - 1):
+        # Number of colonies appearing at each time point
+        if SAVE_PLOTS >= 1:
+            # Initialize a dictionary that contains all time points
+            # Bar plot fails if values aren't initialised to zero and left as None
+            #time_points_dict = dict.fromkeys(time_points_elapsed, 0)
+            time_points_dict = dict()
 
-                if VERBOSE >= 2:
-                    print 'Time point', it, 'of', len(times)
-
-                print "colonies_plates first dim (timepoints)=", len(colonies_plates)
-                print "colonies_plates second dim (y? axis)=", len(colonies_plates[-1][-1])
-                print "colonies_plates third dim (x? axis)=", len(colonies_plates[-1][-1][-1])
-                print colonies_plates[-1]
-                print colonies_plates[-1][-1]
-                print colonies_plates[-1][-1][-1]
-                # Store the co-ordinate data at the preceeding time point
-                #colonies = colonies_plates[-2 - it]
-                colonies = list(reversed(colonies_plates[it]))
-                print "colonies first dim=", len(colonies)
-                print "colonies second dim=", len(colonies[-1])
-                print colonies[-1]
-                print colonies[-1][-1]
-                sys.exit()
-                ind = None
-                overlap = 0
-                
-                '''
-                if VERBOSE >= 3:
-                    print 'Checking', len(colonies), 'co-ordinate rows(? maybe columns) at this time point for new appearances'
-
-                # Loop through image co-ordinate data
-                for j in xrange(1, colonies.max() + 1):
-
-                    if VERBOSE >= 4:
-                        print 'Checking co-ordinate point', j, 'of', len(colonies)
-
-                    # Perform an elementwise comparision with j
-                    colony = colonies == j
-
-                    # Intersect the two colony sets, then sum results to an integer
-                    # This compares if a colony at the current time point is present at the final time point
-                    overlap_new = sum(np.in1d(colony, colony_final))
-                    print 'overlap_new=', overlap_new
-
-                    #Bitwise comparison might be faster
-                    #But currently results in errors
-                    #overlap_new = sum(colony&colony_final)
-                    #overlap_new = sum(overlap_new)
-
-                    #If they interset (overlap) then new colonies have appeared
-                    if overlap_new > overlap:
-                        ind = j
-                        if overlap_new >= 0.5 * area:
-                            break
-
-
-            lineages.append(lineage)
-                '''
-                # Perform an elemntwise comparison with the current colony id number
-                colony = colonies == i
-                print 'colony == i ', colony
-                # Intersect the two colony sets, then sum results to an integer
-                # This compares if a colony at the current time point is present at the final time point
-                overlap_new = sum(np.in1d(colony, colony_final))
-                print 'overlap_new=', overlap_new
-
-                #If they interset (overlap) then new colonies have appeared
-                if overlap_new > overlap:
-                    ind = True
-                    if overlap_new >= 0.5 * colony_area_final:
-                        break
-
-                if ind is not None:
-                    lineages.append(colony)
-                else:
-                    break
-            print lineages
-
-            # Plot colonies appearance??? against time point
-            #This is probably colony max size at the end of the run!!
-            if VERBOSE >= 3:
-                ll = len(lineage)
-                print 'lineage length=', len(lineage)
-                # Check that some lineages have been recorded
-                if ll > 0:
-                    fig, axs = plt.subplots(1, ll, figsize=(2 + 4 * ll, 6))
-                    for iax in xrange(len(axs)):
-                        axs[iax].imshow(lineage[-1 -iax])#-1 =last element of the array
-                        axs[iax].set_title(times[iax])
-                    fig.suptitle('Colony '+str(i))
-                    fig.show()
-                    fig.savefig('testplot2.jpg')
-
-                    # This should be colony first appearance
-                    fig, axs = plt.subplots(1, ll, figsize=(2 + 4 * ll, 6))
-                    for iax in xrange(len(axs)):
-                        for enumer in lineage:
-                            axs[iax].imshow(enumer)#0 = first element of the array
-                        axs[iax].set_title(times[iax])
-                    fig.suptitle('Colony '+str(i))
-                    fig.show()
-                    fig.savefig('testplot3.jpg')
-
-
-        #Dump lineages to check data
-        for lint, linea in enumerate(lineages):
-            filepath = "lineages/lineage_"+str(lint)+".txt"
-            create_folderpath(separate_filepath(filepath, True))
-            with open(filepath, 'w') as outfile:
-                outfile.write(str(linea)+'\n')
-
-        #numpy.savetxt("data", numpy.array([x, y]).T, header="x y")
-        print 'lineages length', len(lineages)
-        #np.savetxt("lineages.txt", lineages, header="x y")
-
-        '''
-        # Write the array to disk
-        with open('lineages.txt', 'w') as outfile:
-            # I'm writing a header here just for the sake of readability
-            # Any line starting with "#" will be ignored by numpy.loadtxt
-            outfile.write('# Array shape: {0}\n')
-
-            # Iterating through a ndimensional array produces slices along
-            # the last axis. This is equivalent to data[i,:,:] in this case
-            for data_slice in lineages:
-
-                # Writing out a break to indicate different slices...
-                outfile.write('# New slice\n')
-
-                for data_slice2 in data_slice:
-                    # The formatting string indicates that I'm writing out
-                    # the values in left-justified columns 7 characters in width
-                    # with 2 decimal places.  
-                    #np.savetxt(outfile, data_slice2, fmt='%-7.2f')
-                    np.savetxt(outfile, data_slice2)
-
-                    # Writing out a break to indicate different slices...
-                    outfile.write('# New slice2\n')
-        '''
-
-        areas_plates = [map(np.sum, lineage) for lineage in lineages]
-        if VERBOSE >= 1:
-            # Filter outliers from area data
-            # "~" operates as a logical not operator on boolean numpy arrays
-            #areas_plates = areas_plates[~is_outlier(areas_plates)]
             fig, ax = plt.subplots()
-            for ia, areas in enumerate(areas_plates):
-                # Reverse the order of the list
-                ds = dates[-1: -1 - len(areas): -1]
-                ts = times[-1: -1 - len(areas): -1]
-                # Convert integer dates and times to Python datetimes
-                from matplotlib.dates import  DateFormatter
-                timez = []
-                for timerator, time in enumerate(ts, start=0):
-                    timez.append(datetime.combine(datetime.strptime(str(ds[timerator]), "%Y%m%d") ,datetime.strptime(str(time),"%H%M").time()))
-                #ax.plot(ts, areas, lw=2, c=cm.jet(1.0 * ia / len(areas_plates)))
-                ax.xaxis.set_major_formatter(DateFormatter("%b-%d %H:%M"))
-                ax.plot_date(timez, areas, lw=2, c=cm.jet(1.0 * ia / len(areas_plates)))
-            
-            ax.set_xlabel('Date-Time')
-            ax.set_ylabel('Area [px^2]')
-            ax.set_yscale('log')
-            fig.suptitle("Colony #"+str(i)+"total area")#Need to find actual colony id number
-            fig.autofmt_xdate()
-            
-    plt.savefig('testplot.jpg')
+            #fig, ax = plt.subplots(figsize=(10,8))
+            colors = iter(cm.rainbow(np.linspace(0, 1, len(time_of_appearance))))
 
-    plt.ion()
-    plt.show()
+            # Plot areas for each colony
+            for colony_id, timepoint in time_of_appearance.items():
+                # Map areas to a full dictionary of timepoints
+                if timepoint not in time_points_dict:
+                    time_points_dict[timepoint] = 1
+                else:
+                    time_points_dict[timepoint] += 1
+                    
+            for key, value in time_points_dict.items():
+                if value <= 2 or key > 1600:
+                    time_points_dict.pop(key)
+
+            # Use zip to return a sorted list of tuples (key, value) from the dictionary
+            bars = ax.bar(*zip(*sorted(time_points_dict.items())),
+                width = 10
+                #color = next(colors),
+                #marker = "o",
+                #label = str(colony_id)
+                )
+            for key, value in time_points_dict.items():
+                print key, '-', value
+                ax.text(x = key, y = value + 0.2, s = str(key // 60) + " hours", color='blue', fontweight='bold')
+            #ax.set_xlim([min(time_points_dict.keys()), max(time_points_dict.keys())])
+            ax.set_xlabel('Elapsed time (minutes)')
+            ax.set_ylabel('Number of colonies')
+            fig.suptitle('Colony appearances over time')
+            fig.show()
+            fig.savefig('testplot_appearance_frequency.jpg')
+
+        # Plot change in colony area for this plate
+        if SAVE_PLOTS >= 3:
+            # Initialize a dictionary that contains all time points
+            time_points_dict = dict.fromkeys(time_points_elapsed)
+
+            fig, ax = plt.subplots()
+            #fig, ax = plt.subplots(figsize=(10,8))
+            colors = iter(cm.rainbow(np.linspace(0, 1, len(time_points_dict))))
+
+            # Plot areas for each colony
+            for colony_id in plate_colony_areas.keys():
+                # Map areas to a full dictionary of timepoints
+                for (timepoint, area) in plate_colony_areas[colony_id]:
+                    time_points_dict[timepoint] = area
+                    
+                # Use zip to return a sorted list of tuples (key, value) from the dictionary
+                ax.scatter(*zip(*sorted(time_points_dict.items())),
+                    #color = next(colors),
+                    marker = "o",
+                    label = str(colony_id)
+                    )
+            ax.set_yscale('log')
+            ax.set_xlabel('Elapsed time (minutes)')
+            ax.set_ylabel('Area [px^2]')
+            fig.suptitle('Colony areas over time')
+            fig.show()
+            fig.savefig('testplot_areas.jpg')
+
+        '''
+        # Remove outliers. ~ operates as a logical not operator on boolean numpy arrays
+        plate_colony_areas_filtered = dict()
+        for key, values in plate_colony_areas.items():
+            timepoints, areas = zip(*values)
+            # is_outlier expects 1D numpy array
+            timepoints = np.asarray(timepoints)
+            areas = np.asarray(areas)
+            # "~" operates as a logical not operator on boolean numpy arrays
+            filtered_timepoints = timepoints[~is_outlier(areas)]
+            filtered_areas = areas[~is_outlier(areas)]
+            plate_colony_areas_filtered[key] = zip(filtered_timepoints, filtered_areas)
+        '''
+
+        # Smooth data
+        plate_colony_areas_filtered = dict()
+        for key, values in plate_colony_areas.items():
+            timepoints, areas = zip(*values)
+            # is_outlier expects 1D numpy array
+            timepoints = np.asarray(timepoints)
+            areas = np.asarray(areas)
+            filtered_timepoints = timepoints
+            # Window size must be an odd positive integer
+            window_size = max(areas) / 2
+            if window_size % 2 == 0:
+                window_size += 1
+            filtered_areas = sci_utilities.savitzky_golay(areas, window_size, 2)
+            plate_colony_areas_filtered[key] = zip(filtered_timepoints, filtered_areas)
+
+        # Plot change in colony area for this plate
+        if SAVE_PLOTS >= 3:
+            # Initialize a dictionary that contains all time points
+            time_points_dict = dict.fromkeys(time_points_elapsed)
+
+            fig, ax = plt.subplots()
+            #fig, ax = plt.subplots(figsize=(10,8))
+            colors = iter(cm.rainbow(np.linspace(0, 1, len(time_points_dict))))
+
+            # Plot areas for each colony
+            for colony_id in plate_colony_areas_filtered.keys():
+                # Map areas to a full dictionary of timepoints
+                for (timepoint, area) in plate_colony_areas_filtered[colony_id]:
+                    time_points_dict[timepoint] = area
+                    
+                # Use zip to return a sorted list of tuples (key, value) from the dictionary
+                ax.scatter(*zip(*sorted(time_points_dict.items())),
+                    #color = next(colors),
+                    marker = "o",
+                    label = str(colony_id)
+                    )
+            ax.set_yscale('log')
+            ax.set_xlabel('Elapsed time (minutes)')
+            ax.set_ylabel('Area [px^2]')
+            fig.suptitle('Colony areas over time')
+            fig.show()
+            fig.savefig('testplot_areas_filtered.jpg')
+
+
+    sys.exit()
