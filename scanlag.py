@@ -25,7 +25,8 @@ from matplotlib.dates import DateFormatter
 import matplotlib.pyplot as plt
 
 # Local modules
-import sci_utilities
+import utilities
+import file_access
 import imaging
 import plotting
 
@@ -34,50 +35,7 @@ import plotting
 plate_lattice = (3, 2)
 
 
-# Convert an argument to a valid boolean value
-def str2bool(v):
-    if isinstance(v, bool):
-       return v
-    if v.lower() in ('yes', 'true', 't', 'y', '1'):
-        return True
-    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
-        return False
-    else:
-        raise argparse.ArgumentTypeError('Boolean value expected.')
-
-
 # Functions
-# Create any folder that is needed in a filepath
-def create_folderpath(filepath):
-    # Exception handling is required in Python2 to protect against race conditions
-    try: 
-        os.makedirs(filepath)
-    except OSError:
-        if not os.path.isdir(filepath):
-            raise
-    # In Python3 this can be reduced to
-    # os.makedirs(path, exist_ok=True)
-
-
-#Separates the folderpath and filename from a filepath
-#Return the filename by default
-def separate_filepath(filepath, return_folderpath = False):
-    (folderpath, filename) = os.path.split(os.path.abspath(filepath))
-    if return_folderpath:
-        return folderpath
-    else:
-        return filename
-
-
-def get_subfoldername(data_folder, row, col):
-    return data_folder+'_'.join(['row', str(row), 'col', str(col)])+os.path.sep
-
-
-# Checks whether a file exists and contains data
-def file_exists(filepath):
-    if os.path.isfile(filepath) and os.path.getsize(filepath) > 0:
-        return True
-
 
 # Return a row and column index for a plate
 # Plate and lattice co-ordinate numbers are 1-based
@@ -85,16 +43,6 @@ def plate_number_to_coordinates(plate_number, lattice):
     row = ((plate_number - 1) // lattice[1]) + 1
     col = ((plate_number - 1) % lattice[1]) + 1
     return (row, col)
-
-
-def mkdir_plates(data_folder):
-    '''Make subfolders for single plates'''
-    for row in xrange(plate_lattice[0]):
-        for col in xrange(plate_lattice[1]):
-            subfn = get_subfoldername(data_folder, row + 1, col + 1)
-            if not os.path.isdir(subfn):
-                os.mkdir(subfn)
-
 
 # Creates an empty list of lists with the shape required for the number of plates
 def init_plate_image_list(init_list, lattice):
@@ -273,15 +221,15 @@ def load_plate_timeline(plate_list, load_filename, plate_lat, plate_pos = None):
     temp_list = list(plate_list)
     # Only load data for a single plate if it is specified
     if plate_pos is not None:
-        load_filepath = get_subfoldername(data_folder, plate_pos[0], plate_pos[1]) + os.path.sep + load_filename
-        if file_exists(load_filepath):
+        load_filepath = file_access.get_subfoldername(data_folder, plate_pos[0], plate_pos[1]) + os.path.sep + load_filename
+        if file_access.file_exists(load_filepath):
             temp_list[0] = np.load(bz2.BZ2File(load_filepath, mode = "r"), allow_pickle = True)
     # Otherwise, load data for all plates
     else:
         for row in xrange(plate_lattice[0]):
             for col in xrange(plate_lattice[1]):
-                load_filepath = get_subfoldername(data_folder, row + 1, col + 1) + os.path.sep + load_filename
-                if file_exists(load_filepath):
+                load_filepath = file_access.get_subfoldername(data_folder, row + 1, col + 1) + os.path.sep + load_filename
+                if file_access.file_exists(load_filepath):
                     temp_list[row * plate_lattice[1] + col] = np.load(bz2.BZ2File(load_filepath, mode = "r"), allow_pickle = True)
                 else:
                     # Do not return the list unless all elements were loaded sucessfully
@@ -321,9 +269,9 @@ def save_plate_segmented_image(plate_image, segmented_image, plate_row, plate_co
 
     fig_title = ' '.join(["Plate at row", str(plate_row), ": column", str(plate_column), "at time point", date_time.strftime("%Y/%m/%d %H:%M")])
     fig.suptitle(fig_title)
-    folder_path = get_subfoldername(data_folder, plate_row, plate_column) + "segmented_image_plots" + os.path.sep
+    folder_path = file_access.get_subfoldername(data_folder, plate_row, plate_column) + "segmented_image_plots" + os.path.sep
     image_path = ''.join([folder_path, "time_point_", str(date_time.strftime("%Y%m%d")), '_' + str(date_time.strftime("%H%M")), ".jpg"])
-    create_folderpath(folder_path)
+    file_access.create_folderpath(folder_path)
     with open(image_path, 'w') as outfile:
         plt.savefig(outfile)
     plt.close()
@@ -348,7 +296,7 @@ if __name__ == '__main__':
                         help='Which data files to store on disk')
     parser.add_argument('--save_plots', type=int, default=1,
                         help='The level of plot images to store on disk')
-    parser.add_argument('--use_saved', type=str2bool, default=True,
+    parser.add_argument('--use_saved', type=utilities.str2bool, default=True,
                         help='Allow or prevent use of previously calculated data')
 
     args = parser.parse_args()
@@ -434,7 +382,7 @@ if __name__ == '__main__':
             # Divide plates and copy to separate files
             if VERBOSE >= 1:
                 print 'Create plate subfolders'
-            mkdir_plates(data_folder)
+            file_access.mkdir_plates(data_folder, plate_lattice)
 
             centers = None
             borders = None
@@ -487,7 +435,7 @@ if __name__ == '__main__':
                 # Have to save each plate's data separately as it cannot be saved combined
                 for i, plate in enumerate(plates_list):
                     (row, col) = plate_number_to_coordinates(i + 1, plate_lattice)
-                    split_image_data_filepath = get_subfoldername(data_folder, row, col) + split_image_data_filename
+                    split_image_data_filepath = file_access.get_subfoldername(data_folder, row, col) + split_image_data_filename
                     if VERBOSE >= 2:
                         print "Saving image data for plate #", i + 1, "at position row", row, "column", col
                     with bz2.BZ2File(split_image_data_filepath, 'w') as outfile:
@@ -535,7 +483,7 @@ if __name__ == '__main__':
         if SAVE_DATA >= 1:
             for i, plate in enumerate(plates_list_segmented):
                 (row, col) = plate_number_to_coordinates(i + 1, plate_lattice)
-                segmented_image_data_filepath = get_subfoldername(data_folder, row, col) + segmented_image_data_filename
+                segmented_image_data_filepath = file_access.get_subfoldername(data_folder, row, col) + segmented_image_data_filename
                 if VERBOSE >= 2:
                     print "Saving segmented image data for plate #", i + 1, "at position row", row, "column", col
                 with bz2.BZ2File(segmented_image_data_filepath, 'w') as outfile:
@@ -658,7 +606,7 @@ if __name__ == '__main__':
             window_size = max(areas) / 2
             if window_size % 2 == 0:
                 window_size += 1
-            filtered_areas = sci_utilities.savitzky_golay(areas, window_size, 2)
+            filtered_areas = utilities.savitzky_golay(areas, window_size, 2)
             plate_colony_areas_filtered[key] = zip(filtered_timepoints, filtered_areas)
 
     sys.exit()
