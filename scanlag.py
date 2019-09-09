@@ -2,7 +2,9 @@
 import os
 import sys
 import glob
+import math
 import argparse
+
 # lzma is not included in Python2
 # It is a standard module in Python3
 # import lzma
@@ -17,15 +19,14 @@ from itertools import izip
 from skimage.io import imread, imsave
 from skimage.color import rgb2grey
 import matplotlib
-matplotlib.use('TkAgg')#Fix plots not showing on OSX
 from matplotlib import cm
 from matplotlib.dates import DateFormatter
 import matplotlib.pyplot as plt
 
 # Local modules
 import sci_utilities
-import plot_utilities
 import imaging
+import plotting
 
 # Globals
 # plate_lattice is the shape of the plate arrangement in rows*columns
@@ -228,9 +229,6 @@ def segment_image(plate, plate_mask, plate_noise_mask, area_min=30, area_max=500
     for rp in rps:
 
         # Eccentricity of zero is a perfect circle
-        #if rp.eccentricity > 0.6:
-        #   colonies[colonies == rp.label] = 0
-        import math
         # Circularity of 1 is a perfect circle
         circularity = (4 * math.pi * rp.area) / (rp.perimeter * rp.perimeter)
 
@@ -249,7 +247,7 @@ def segment_image(plate, plate_mask, plate_noise_mask, area_min=30, area_max=500
 def segment_plate_timepoints(plate_images_list, date_times):
     # Check that the number of datetimes corresponds with the number of image timepoints
     if len(date_times) != len(plate_images_list):
-        print 'Unable to process image timepoints. The supplied list of dates/times does not match the number of image timepoints'
+        raise ValueError("Unable to process image timepoints. The supplied list of dates/times does not match the number of image timepoints")
         return None
 
     segmented_images = []
@@ -399,25 +397,25 @@ if __name__ == '__main__':
 
     # Initialise plates_list with empty lists to the total number of plates
     plates_list = []
-    segmented_images = []
+    plates_list_segmented = []
     if PLATE_POSITION is not None:
         n_lattice = (1, 1)
     else:
         n_lattice = plate_lattice
         
     plates_list = init_plate_image_list(plates_list, n_lattice)
-    segmented_images = init_plate_image_list(segmented_images, n_lattice)
+    plates_list_segmented = init_plate_image_list(plates_list_segmented, n_lattice)
 
     # Check if split and segmented image data is already stored and can be loaded
     if VERBOSE >= 1:
         print "Attempting to load segmented processed image data for all plates"
     segmented_image_data_filename = "split_image_data_segmented.pbz2"
     if USE_SAVED:
-        segmented_images_temp = load_plate_timeline(segmented_images, segmented_image_data_filename, plate_lattice, PLATE_POSITION)
+        segmented_images_temp = load_plate_timeline(plates_list_segmented, segmented_image_data_filename, plate_lattice, PLATE_POSITION)
         if segmented_images_temp is not None:
-            segmented_images = segmented_images_temp
+            plates_list_segmented = segmented_images_temp
     # Check that segmented image data has been loaded for all plates
-    if len(segmented_images[-1]) == len(time_points):
+    if len(plates_list_segmented[-1]) == len(time_points):
         if VERBOSE >= 1:
             print "Successfully loaded segmented processed image data for all plates"
     else:
@@ -515,7 +513,7 @@ if __name__ == '__main__':
             # Create a mask using the first (i.e. empty) plate in the sequence
             #plate_noise_mask = imaging.create_noise_mask(plate_timepoints[0])
 
-            # segmented_images is an array of size (total plates)*(total timepoints)
+            # plates_list is an array of size (total plates)*(total timepoints)
             # Each time point element of the array contains a co-ordinate array of size (total image columns)*(total image rows)
             segmented_plate_timepoints = segment_plate_timepoints(plate_timepoints, time_points)
             if segmented_plate_timepoints is None:
@@ -526,7 +524,7 @@ if __name__ == '__main__':
             segmented_plate_timepoints = imaging.standardise_labels_timeline(segmented_plate_timepoints)
 
             # Store the images for this plate
-            segmented_images[i] = segmented_plate_timepoints
+            plates_list_segmented[i] = segmented_plate_timepoints
 
             # Save segmented image plot for each timepoint
             if SAVE_PLOTS >= 2:
@@ -539,16 +537,11 @@ if __name__ == '__main__':
                             print "Saved segmented image plot to:", image_path
                     else:
                         print "Error: Unable to save segmented image plot for plate at row", row, "column", col
- 
-        '''''
-        Give segmented_images a name that better reflects that it is all plates and all images
-        '''''
 
-
-        # Save segmented_images to disk for re-use if needed
+        # Save plates_list_segmented to disk for re-use if needed
         # Have to save each plate's data separately as it cannot be saved combined
         if SAVE_DATA >= 1:
-            for i, plate in enumerate(segmented_images):
+            for i, plate in enumerate(plates_list_segmented):
                 (row, col) = plate_number_to_coordinates(i + 1, plate_lattice)
                 segmented_image_data_filepath = get_subfoldername(data_folder, row, col) + segmented_image_data_filename
                 if VERBOSE >= 2:
@@ -568,20 +561,17 @@ if __name__ == '__main__':
     plate_colony_lineages = []
     from collections import defaultdict
     plate_colony_areas = defaultdict(list)
-    for i, plate_images in enumerate(segmented_images):
+    for i, plate_images in enumerate(plates_list_segmented):
         if VERBOSE >= 1:
-            print 'Tacking colonies on plate', i + 1, 'of', len(segmented_images)
+            print 'Tacking colonies on plate', i + 1, 'of', len(plates_list_segmented)
 
         # Loop backwards through plate timepoints
         segmented_image_final = plate_images[-1]
         for j, segmented_image in enumerate(reversed(plate_images)):
             if VERBOSE >= 2:
                 print 'Tacking colonies at time point', j + 1, 'of', len(plate_images)
-            np.savetxt('segmented_plate.txt', segmented_image[:-1, :80], delimiter=',',fmt='%1d')
+                
             overlap = segmented_image&segmented_image_final
-            np.savetxt('segmented_overlap.txt', overlap[:-1, :80], delimiter=',',fmt='%1d')
-            overlap_sum = sum(segmented_image&segmented_image_final)
-            np.savetxt('segmented_overlap_sum.txt', overlap[:-1, :80], delimiter=',',fmt='%1d')
 
             (uniques, counts) = np.unique(overlap, return_counts = True)
             # Store area values using colony ids as dictionary keys
