@@ -14,11 +14,12 @@ import numpy as np
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 from operator import attrgetter
-import cPickle as pickle #Import is different on Python3
+import cPickle as pickle #Import is different in Python3
 from itertools import izip
 from skimage.io import imread, imsave
 from skimage.color import rgb2grey
 import matplotlib
+matplotlib.use('TkAgg') # Required for OSX
 from matplotlib import cm
 from matplotlib.dates import DateFormatter
 import matplotlib.pyplot as plt
@@ -266,60 +267,6 @@ def segment_plate_timepoints(plate_images_list, date_times):
     return segmented_images
 
 
-# Save the processed plate images and corresponding segmented data plots
-# Images are stored in the corresponding plate data folder i.e. /row_2_col_1/segmented_image_plots/
-# A Python datetime is required to save the image with the correct filename
-def save_plate_segmented_image(plate_image, segmented_image, plate_row, plate_column, date_time):
-    from skimage.measure import regionprops
-
-    fig, ax = plt.subplots(1, 2, figsize=(12, 6))
-    ax[0].imshow(plate_image)
-    # Set colour range so all colonies are clearly visible and the same colour
-    ax[1].imshow(segmented_image, vmax = 1)
-    
-    # Place maker labels on colonies
-    rps = regionprops(segmented_image)
-    for i, rp in enumerate(rps, start=1):
-        (r, c) = rp.centroid # Need to convert rc coordinate to xy
-        ax[1].annotate(str(rp.label),
-            (c, r),
-            xytext = (5, -16),
-            xycoords = "data",
-            textcoords = "offset pixels",
-            color = "white",
-            alpha = 0.8,
-            #arrowprops = dict(arrowstyle='<-', color='grey', linewidth=0.8)
-            )
-            
-    # Place maker labels on colonies
-    rps = regionprops(segmented_image)
-    for i, rp in enumerate(rps, start=1):
-        (r, c) = rp.centroid # Need to convert rc coordinate to xy
-        ax[1].annotate("+",
-            (c, r),
-            xycoords = "data",
-            color = "red",
-            horizontalalignment = "center",
-            verticalalignment = "center"
-            #arrowprops = dict(arrowstyle='<-', color='grey', linewidth=0.8)
-            )
-
-    fig_title = ' '.join(["Plate at row", str(plate_row), ": column", str(plate_column), "at time point", date_time.strftime("%Y/%m/%d %H:%M")])
-    fig.suptitle(fig_title)
-    folder_path = get_subfoldername(data_folder, plate_row, plate_column) + "segmented_image_plots" + os.path.sep
-    image_path = ''.join([folder_path, "time_point_", str(date_time.strftime("%Y%m%d")), '_' + str(date_time.strftime("%H%M")), ".jpg"])
-    create_folderpath(folder_path)
-    with open(image_path, 'w') as outfile:
-        plt.savefig(outfile)
-    plt.close()
-
-    # Return the path to the new image if it was saved successfully
-    if os.path.isfile(image_path):
-        return image_path
-    else:
-        return None
-
-
 # Check if split image data is already stored and can be loaded
 def load_plate_timeline(plate_list, load_filename, plate_lat, plate_pos = None):
     # Create a shallow copy of the reference list
@@ -341,6 +288,51 @@ def load_plate_timeline(plate_list, load_filename, plate_lat, plate_pos = None):
                     temp_list = None
                     break
     return temp_list
+
+
+# Save the processed plate images and corresponding segmented data plots
+# Images are stored in the corresponding plate data folder i.e. /row_2_col_1/segmented_image_plots/
+# A Python datetime is required to save the image with the correct filename
+def save_plate_segmented_image(plate_image, segmented_image, plate_row, plate_column, date_time):
+    from skimage.measure import regionprops
+
+    fig, ax = plt.subplots(1, 2, figsize=(12, 6))
+    ax[0].imshow(plate_image)
+    # Set colour range so all colonies are clearly visible and the same colour
+    ax[1].imshow(segmented_image, vmax = 1)
+            
+    # Place maker labels on colonies
+    for rp in regionprops(segmented_image):
+        ax[1].annotate("+",
+            plotting.rc_to_xy(rp.centroid),
+            xycoords = "data",
+            color = "red",
+            horizontalalignment = "center",
+            verticalalignment = "center"
+            )
+        ax[1].annotate(str(rp.label),
+            plotting.rc_to_xy(rp.centroid),
+            xytext = (5, -16),
+            xycoords = "data",
+            textcoords = "offset pixels",
+            color = "white",
+            alpha = 0.8,
+            )
+
+    fig_title = ' '.join(["Plate at row", str(plate_row), ": column", str(plate_column), "at time point", date_time.strftime("%Y/%m/%d %H:%M")])
+    fig.suptitle(fig_title)
+    folder_path = get_subfoldername(data_folder, plate_row, plate_column) + "segmented_image_plots" + os.path.sep
+    image_path = ''.join([folder_path, "time_point_", str(date_time.strftime("%Y%m%d")), '_' + str(date_time.strftime("%H%M")), ".jpg"])
+    create_folderpath(folder_path)
+    with open(image_path, 'w') as outfile:
+        plt.savefig(outfile)
+    plt.close()
+
+    # Return the path to the new image if it was saved successfully
+    if os.path.isfile(image_path):
+        return image_path
+    else:
+        return None
 
 
 # Script

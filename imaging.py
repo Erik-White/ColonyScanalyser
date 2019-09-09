@@ -1,15 +1,3 @@
-﻿# Return an xy from a rc coordinate
-def rc_to_xy(coordinate):
-    (x, y) = coordinate
-    return (y, x)
-
-
-# Return an rc from a xy coordinate
-def rc_to_xy(coordinate):
-    (x, y) = coordinate
-    return (y, x)
-
-
 # Return the circular area of an image
 # A center and radius can be specified to return a smaller part of the image
 def cut_image_circle(image, **kwargs):
@@ -99,7 +87,7 @@ def standardise_labels_timeline(images_list, label_prepend = 99, start_at_end = 
     for i, image in enumerate(images):
         if i > 0:
             label_prepend = None
-            
+
         # Store the labels for the current image
         labels = get_labelled_centers(image, label_prepend = label_prepend)
         
