@@ -2,7 +2,6 @@
 import os
 import sys
 import glob
-import copy
 import argparse
 # lzma is not included in Python2
 # It is a standard module in Python3
@@ -18,7 +17,7 @@ from itertools import izip
 from skimage.io import imread, imsave
 from skimage.color import rgb2grey
 import matplotlib
-matplotlib.use('TkAgg')
+matplotlib.use('TkAgg')#Fix plots not showing on OSX
 from matplotlib import cm
 from matplotlib.dates import DateFormatter
 import matplotlib.pyplot as plt
@@ -26,6 +25,7 @@ import matplotlib.pyplot as plt
 # Local modules
 import sci_utilities
 import plot_utilities
+import imaging
 
 # Globals
 # plate_lattice is the shape of the plate arrangement in rows*columns
@@ -179,72 +179,67 @@ def split_image_into_plates(img, borders, edge_cut=100):
         #Find x and y centers, measured from image edges
         (cx, cy) = map(lambda x: int(np.mean(x)), border)
         radius = int(0.25 * (border[0][1] - border[0][0] + border[1][1] - border[1][0]) - edge_cut)
-        #Copy the image in a radius around the center point
-        roi = img[cy - radius: cy + radius + 1,
+
+        # Copy a plate bounding box from the image
+        plate_area = img[cy - radius: cy + radius + 1,
                   cx - radius: cx + radius + 1].copy()
 
-        (cy, cx) = map(lambda x: x / 2.0, roi.shape)
-        dist_x = np.vstack([(np.arange(roi.shape[1]) - cx)] * (roi.shape[0]))
-        dist_y = np.vstack([(np.arange(roi.shape[0]) - cy)] * (roi.shape[1])).T
-        dist = np.sqrt(dist_x**2 + dist_y**2)
-        roi[dist > radius] = 0
+        # Get a circular image
+        plate_area = imaging.cut_image_circle(plate_area)          
         
-        plates.append(roi)
+        plates.append(plate_area)
     
     return plates
 
 # Finds all colonies on a plate and returns an array of co-ordinates
-# If a co-ordinate is occupied by a colony, it contains that colonies unique ID number
-def segment_image(plate, plate_mask, area_min=30, area_max=500):
+# If a co-ordinate is occupied by a colony, it contains that colonies labelled number
+def segment_image(plate, plate_mask, plate_noise_mask, area_min=30, area_max=500):
     '''Segment the image based on simple thresholding'''
-    from skimage.measure import regionprops, label
-    from skimage.filters import gaussian
-
-    bg = plate[plate_mask & (plate > 0.05)].mean()
-    plate_gau = gaussian(plate, 0.5)
-    ind = plate_gau > bg + 0.03
-    pl_th = plate_mask & ind
-
-    ## Naive segmentation
-    #colonies = label(pl_th)
-
-    # Watershed on smoothed distance from bg to segment merged colonies
-    # (they are round)
     from scipy import ndimage
-    from skimage.morphology import watershed
+    from skimage.morphology import watershed, square, remove_small_objects
     from skimage.feature import peak_local_max
-    distance = ndimage.distance_transform_edt(pl_th)
-    distance = gaussian(distance, 0.5)
-    # Find image peaks and return a boolean array (indices-False)
-    # Peaks are represented by True values
-    local_maxi = peak_local_max(distance, indices=False, footprint=np.ones((3, 3)), labels=pl_th)
-    markers = label(local_maxi)
-    # Find the borders around the peaks
-    colonies = watershed(-distance, markers, mask=pl_th)
+    from skimage.measure import regionprops, label
+    from skimage.filters import gaussian, median
+    from skimage.segmentation import relabel_sequential, clear_border
+    from skimage.transform import hough_circle, hough_circle_peaks
+
+    plate = imaging.remove_background_mask(plate, plate_mask)
+    plate_noise_mask = imaging.remove_background_mask(plate_noise_mask, plate_mask)
+
+    # Subtract an image of the first (i.e. empty) plate to remove static noise
+    plate[plate_noise_mask] = 0
+
+    # Fill any small gaps
+    plate = ndimage.morphology.binary_fill_holes(plate)
+
+    # Remove background noise
+    plate = remove_small_objects(plate, min_size = 10)
+
+    # Return an ordered array, relabelled sequentially
+    #(colonies, fwdmap, revmap) = relabel_sequential(colonies)
+
+    #versions <0.16 do not allow for a mask
+    #colonies = clear_border(pl_th, buffer_size = 1, mask = pl_th)
+
+    colonies = label(plate)
 
     # Exclude objects that are too eccentric
-    from skimage.measure import regionprops
     rps = regionprops(colonies)
-    for i, rp in enumerate(rps, start=1):
-        if rp.eccentricity > 0.6:
-            colonies[colonies == i] = 0
-    # Return an ordered array, relabelled sequentially
-    from skimage.segmentation import relabel_sequential
-    (colonies, fwdmap, revmap) = relabel_sequential(colonies)
-    
-    # Randomize colors for clarity
-    ind = np.arange(colonies.max()) + 1
-    np.random.shuffle(ind)
-    #Return an array of zeros with the same shape as the input array
-    colonies_random = np.zeros_like(colonies)
-    #Replace zero values with actual values
-    for i, ii in enumerate(ind, start=1):
-        colonies_random[colonies == i] = ii
-        
+    for rp in rps:
+
+        # Eccentricity of zero is a perfect circle
+        #if rp.eccentricity > 0.6:
+        #   colonies[colonies == rp.label] = 0
+        import math
+        # Circularity of 1 is a perfect circle
+        circularity = (4 * math.pi * rp.area) / (rp.perimeter * rp.perimeter)
+
+        if rp.eccentricity > 0.6 or circularity < 0.80:
+            colonies[colonies == rp.label] = 0
+
     # Result is a 2D co-ordinate array
     # Each co-ordinate contains either zero or a unique colony number
     # The colonies are numbered from one to the total number of colonies on the plate
-    #return colonies_random
     return colonies
 
     
@@ -258,11 +253,15 @@ def segment_plate_timepoints(plate_images_list, date_times):
         return None
 
     segmented_images = []
+    plate_noise_mask = []
     # Loop through time points for the plate
     for i, plate_image in enumerate(plate_images_list, start=1):
         plate_mask = plate_image > 0
+        # Create a noise mask from the first plate
+        if i == 1:
+            plate_noise_mask = plate_image
         # Build a 2D array of colony co-ordinate data for the plate image
-        segmented_image = segment_image(plate_image, plate_mask)
+        segmented_image = segment_image(plate_image, plate_mask, plate_noise_mask)
         # segmented_images is an array of size (total plates)*(total timepoints)
         # Each time point element of the array contains a co-ordinate array of size (total image columns)*(total image rows)
         segmented_images.append(segmented_image)
@@ -273,18 +272,40 @@ def segment_plate_timepoints(plate_images_list, date_times):
 # Images are stored in the corresponding plate data folder i.e. /row_2_col_1/segmented_image_plots/
 # A Python datetime is required to save the image with the correct filename
 def save_plate_segmented_image(plate_image, segmented_image, plate_row, plate_column, date_time):
-    fig, axs = plt.subplots(1, 2, figsize=(12, 6))
-    axs[0].imshow(plate_image)
+    from skimage.measure import regionprops
+
+    fig, ax = plt.subplots(1, 2, figsize=(12, 6))
+    ax[0].imshow(plate_image)
     # Set colour range so all colonies are clearly visible and the same colour
-    axs[1].imshow(segmented_image, vmax = 1)
-    #plt.clim(vmin = 0, vmax = 1)
-    '''
-    # Can maybe apply labels by getting uniques from segmented_image
-    colony_ids = np.uniques(segmented_image)
-    for id in colony_ids:
-        ax.text(x = key, y = value + 0.2, s = str(key // 60) + " hours", color='blue', fontweight='bold')
-    # Then place label on x,y
-    '''
+    ax[1].imshow(segmented_image, vmax = 1)
+    
+    # Place maker labels on colonies
+    rps = regionprops(segmented_image)
+    for i, rp in enumerate(rps, start=1):
+        (r, c) = rp.centroid # Need to convert rc coordinate to xy
+        ax[1].annotate(str(rp.label),
+            (c, r),
+            xytext = (5, -16),
+            xycoords = "data",
+            textcoords = "offset pixels",
+            color = "white",
+            alpha = 0.8,
+            #arrowprops = dict(arrowstyle='<-', color='grey', linewidth=0.8)
+            )
+            
+    # Place maker labels on colonies
+    rps = regionprops(segmented_image)
+    for i, rp in enumerate(rps, start=1):
+        (r, c) = rp.centroid # Need to convert rc coordinate to xy
+        ax[1].annotate("+",
+            (c, r),
+            xycoords = "data",
+            color = "red",
+            horizontalalignment = "center",
+            verticalalignment = "center"
+            #arrowprops = dict(arrowstyle='<-', color='grey', linewidth=0.8)
+            )
+
     fig_title = ' '.join(["Plate at row", str(plate_row), ": column", str(plate_column), "at time point", date_time.strftime("%Y/%m/%d %H:%M")])
     fig.suptitle(fig_title)
     folder_path = get_subfoldername(data_folder, plate_row, plate_column) + "segmented_image_plots" + os.path.sep
@@ -304,7 +325,7 @@ def save_plate_segmented_image(plate_image, segmented_image, plate_row, plate_co
 # Check if split image data is already stored and can be loaded
 def load_plate_timeline(plate_list, load_filename, plate_lat, plate_pos = None):
     # Create a shallow copy of the reference list
-    temp_list = copy.copy(plate_list)
+    temp_list = list(plate_list)
     # Only load data for a single plate if it is specified
     if plate_pos is not None:
         load_filepath = get_subfoldername(data_folder, plate_pos[0], plate_pos[1]) + os.path.sep + load_filename
@@ -321,7 +342,7 @@ def load_plate_timeline(plate_list, load_filename, plate_lat, plate_pos = None):
                     # Do not return the list unless all elements were loaded sucessfully
                     temp_list = None
                     break
-    return copy.copy(temp_list)
+    return temp_list
 
 
 # Script
@@ -491,12 +512,20 @@ if __name__ == '__main__':
             if VERBOSE >= 2:
                 print 'Segmenting images from plate #', i + 1, "at position row", row, "column", col
 
+            # Create a mask using the first (i.e. empty) plate in the sequence
+            #plate_noise_mask = imaging.create_noise_mask(plate_timepoints[0])
+
             # segmented_images is an array of size (total plates)*(total timepoints)
             # Each time point element of the array contains a co-ordinate array of size (total image columns)*(total image rows)
             segmented_plate_timepoints = segment_plate_timepoints(plate_timepoints, time_points)
             if segmented_plate_timepoints is None:
                 print "Error: Unable to segment image data for plate"
                 sys.exit()
+            
+            # Ensure labels remain constant
+            segmented_plate_timepoints = imaging.standardise_labels_timeline(segmented_plate_timepoints)
+
+            # Store the images for this plate
             segmented_images[i] = segmented_plate_timepoints
 
             # Save segmented image plot for each timepoint
@@ -559,7 +588,7 @@ if __name__ == '__main__':
             # Do not include 'colony 0', ie areas with no colonies
             for k, colony_id in enumerate(uniques):
                 # Elimate noise
-                if colony_id > 0 and counts[k] > 20:
+                if colony_id > 0 and counts[k] > 10:
                     plate_colony_areas[colony_id].append((list(reversed(time_points_elapsed))[j], counts[k]))
 
         # Time of appearance
@@ -583,13 +612,13 @@ if __name__ == '__main__':
             for colony_id, timepoint in time_of_appearance.items():
                 # Map areas to a full dictionary of timepoints
                 if timepoint not in time_points_dict:
-                    time_points_dict[timepoint] = 1
-                else:
-                    time_points_dict[timepoint] += 1
-                    
+                    time_points_dict[timepoint] = 0
+                time_points_dict[timepoint] += 1
+            '''   
             for key, value in time_points_dict.items():
                 if value <= 2 or key > 1600:
                     time_points_dict.pop(key)
+            '''
 
             # Use zip to return a sorted list of tuples (key, value) from the dictionary
             bars = ax.bar(*zip(*sorted(time_points_dict.items())),
@@ -599,8 +628,7 @@ if __name__ == '__main__':
                 #label = str(colony_id)
                 )
             for key, value in time_points_dict.items():
-                print key, '-', value
-                ax.text(x = key, y = value + 0.2, s = str(key // 60) + " hours", color='blue', fontweight='bold')
+                ax.text(x = key, y = value + 0.2, s = str(key // 60) + " hours", color='blue')
             #ax.set_xlim([min(time_points_dict.keys()), max(time_points_dict.keys())])
             ax.set_xlabel('Elapsed time (minutes)')
             ax.set_ylabel('Number of colonies')
@@ -636,20 +664,6 @@ if __name__ == '__main__':
             fig.show()
             fig.savefig('testplot_areas.jpg')
 
-        '''
-        # Remove outliers. ~ operates as a logical not operator on boolean numpy arrays
-        plate_colony_areas_filtered = dict()
-        for key, values in plate_colony_areas.items():
-            timepoints, areas = zip(*values)
-            # is_outlier expects 1D numpy array
-            timepoints = np.asarray(timepoints)
-            areas = np.asarray(areas)
-            # "~" operates as a logical not operator on boolean numpy arrays
-            filtered_timepoints = timepoints[~is_outlier(areas)]
-            filtered_areas = areas[~is_outlier(areas)]
-            plate_colony_areas_filtered[key] = zip(filtered_timepoints, filtered_areas)
-        '''
-
         # Smooth data
         plate_colony_areas_filtered = dict()
         for key, values in plate_colony_areas.items():
@@ -664,34 +678,5 @@ if __name__ == '__main__':
                 window_size += 1
             filtered_areas = sci_utilities.savitzky_golay(areas, window_size, 2)
             plate_colony_areas_filtered[key] = zip(filtered_timepoints, filtered_areas)
-
-        # Plot change in colony area for this plate
-        if SAVE_PLOTS >= 3:
-            # Initialize a dictionary that contains all time points
-            time_points_dict = dict.fromkeys(time_points_elapsed)
-
-            fig, ax = plt.subplots()
-            #fig, ax = plt.subplots(figsize=(10,8))
-            colors = iter(cm.rainbow(np.linspace(0, 1, len(time_points_dict))))
-
-            # Plot areas for each colony
-            for colony_id in plate_colony_areas_filtered.keys():
-                # Map areas to a full dictionary of timepoints
-                for (timepoint, area) in plate_colony_areas_filtered[colony_id]:
-                    time_points_dict[timepoint] = area
-                    
-                # Use zip to return a sorted list of tuples (key, value) from the dictionary
-                ax.scatter(*zip(*sorted(time_points_dict.items())),
-                    #color = next(colors),
-                    marker = "o",
-                    label = str(colony_id)
-                    )
-            ax.set_yscale('log')
-            ax.set_xlabel('Elapsed time (minutes)')
-            ax.set_ylabel('Area [px^2]')
-            fig.suptitle('Colony areas over time')
-            fig.show()
-            fig.savefig('testplot_areas_filtered.jpg')
-
 
     sys.exit()
