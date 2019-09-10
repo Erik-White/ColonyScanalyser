@@ -2,6 +2,8 @@
     """
     Convert an argument to a valid boolean value
     """
+    from argparse import ArgumentTypeError
+    
     if isinstance(v, bool):
        return v
     if v.lower() in ('yes', 'true', 't', 'y', '1'):
@@ -9,7 +11,7 @@
     elif v.lower() in ('no', 'false', 'f', 'n', '0'):
         return False
     else:
-        raise argparse.ArgumentTypeError('Boolean value expected.')
+        raise ArgumentTypeError('Boolean value expected.')
 
 
 def is_outlier(points, thresh=3.5):
@@ -103,7 +105,7 @@ def savitzky_golay(y, window_size, order, deriv=0, rate=1):
     try:
         window_size = np.abs(np.int(window_size))
         order = np.abs(np.int(order))
-    except ValueError, msg:
+    except ValueError:
         raise ValueError("window_size and order have to be of type int")
     if window_size % 2 != 1 or window_size < 1:
         raise TypeError("window_size size must be a positive odd number")

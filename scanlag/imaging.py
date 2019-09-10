@@ -119,7 +119,7 @@ def standardise_labels_timeline(images_list, label_prepend = 99, start_at_end = 
         labels = get_labelled_centers(image, label_prepend = label_prepend)
         
         # Apply labels to all subsequent images
-        for j in xrange(i, len(images)):
+        for j in range(i, len(images)):
             images[j] = replace_image_point_labels(images[j], labels)
 
     if start_at_end:

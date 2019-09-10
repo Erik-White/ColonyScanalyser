@@ -3,14 +3,7 @@
     Create any folder that is needed in a filepath
     """
     import os
-    # Exception handling is required in Python2 to protect against race conditions
-    try: 
-        os.makedirs(filepath)
-    except OSError:
-        if not os.path.isdir(filepath):
-            raise
-    # In Python3 this can be reduced to
-    # os.makedirs(path, exist_ok=True)
+    os.makedirs(filepath, exist_ok=True)
 
 
 def separate_filepath(filepath, return_folderpath = False):
@@ -44,8 +37,8 @@ def file_exists(filepath):
 def mkdir_plates(data_folder, lattice):
     import os
     '''Make subfolders for single plates'''
-    for row in xrange(lattice[0]):
-        for col in xrange(lattice[1]):
+    for row in range(lattice[0]):
+        for col in range(lattice[1]):
             subfn = get_subfoldername(data_folder, row + 1, col + 1)
             if not os.path.isdir(subfn):
                 os.mkdir(subfn)
