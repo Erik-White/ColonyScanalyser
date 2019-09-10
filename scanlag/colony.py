@@ -2,10 +2,12 @@
 An object to hold information on a single colony over time
 """
 import datetime
-from dataclasses import dataclass#only in python >3.7
+import operator
+from operator import attrgetter
+from math import pi, log
+from dataclasses import dataclass
 
-class Colony(object):# Must derive from object to be new-style class in Python 2
-
+class Colony():
     @dataclass
     class Timepoint:
         date_time: datetime.datetime
@@ -14,14 +16,17 @@ class Colony(object):# Must derive from object to be new-style class in Python 2
         diameter: float
         perimeter: float
 
-    def __init__(self, id, timepoints = dict()):
+    def __init__(self, id, timepoints = None):
         self.id = id
+        # Can't set argument default otherwise it is shared across all class instances
+        if timepoints is None:
+            timepoints = dict()
         self.timepoints = timepoints
 
     @property
     def timepoints(self):
-        if len(self.__timepoints) >0:
-            return sorted(self.__timepoints, key=attrgetter('date_time'))
+        if len(self.__timepoints) > 0:
+            return self.__timepoints
         else:
             raise ValueError("No time points are stored for this colony")
 
@@ -31,51 +36,51 @@ class Colony(object):# Must derive from object to be new-style class in Python 2
 
     @property
     def timepoint(self, time_point):
-        if self.__timepoints.haskey(time_point):
+        if time_point in self.__timepoints:
             return self.timepoints[time_point]
         else:
             raise ValueError("The requested time point does not exist")
 
-    def append_timepoint(time_point, timepointdata):
-        if not self.__timepoints.haskey(timepointdata):
-            self.timepoints[time_point] = timepointdata
+    def append_timepoint(self, time_point, timepointdata):
+        if time_point not in self.__timepoints:
+            self.__timepoints[time_point] = timepointdata
         else:
             raise ValueError("This time point already exists")
         
-    def update_timepoint(time_point, timepointdata):
+    def update_timepoint(self, time_point, timepointdata):
         self.timepoint[time_point] = timepointdata
 
-    def doubling_time():
+    def doubling_time(self):
         x_pts = list(self.timepoints, key=attrgetter('date_time'))
         y_pts = list(self.timepoints, key=attrgetter('area'))
         window = 10
-        return [self.__doubling_time(i, x_pts, y_pts, window) for i in xrange(len(x_pts) - window)]
+        return [self.__local_doubling_time(i, x_pts, y_pts, window) for i in range(len(x_pts) - window)]
 
-    def remove_timepoint(time_point):
+    def remove_timepoint(self, time_point):
         del self.timepoint[time_point]
 
-    def area_at_timepoint(time_point):
+    def area_at_timepoint(self, time_point):
         return self.timepoint[time_point].area
 
-    def center():
+    def center(self):
         return sum(self.timepoints, key=attrgetter('center')) / len(self.timepoints)
 
-    def center_at_timepoint(time_point):
+    def center_at_timepoint(self, time_point):
         return self.timepoint[time_point].center
 
-    def circularity_at_timepoint(time_point):
-        return __circularity(self.timepoint[time_point].area, self.timepoint[time_point].perimiter)
+    def circularity_at_timepoint(self, time_point):
+        return self.__circularity(self.timepoint[time_point].area, self.timepoint[time_point].perimiter)
             
-    def get_areas():
+    def get_areas(self):
         return list(self.timepoints, key=attrgetter('area'))
 
-    def time_of_appearance():
+    def time_of_appearance(self):
         return min(self.timepoints, key=attrgetter('date_time'))
 
-    def __circularity(area, perimiter):
-        return (4 * math.pi * area) / (perimeter * perimeter)
+    def __circularity(self, area, perimeter):
+        return (4 * pi * area) / (perimeter * perimeter)
     
-    def __local_doubling_time(index, x_pts, y_pts, window = 10):
+    def __local_doubling_time(self, index, x_pts, y_pts, window = 10):
 
         x1 = x_pts[index]
         y1 = y_pts[index]
@@ -94,18 +99,22 @@ def timepoints_from_image(colonies_dict, image, time_point):
     :param time_point: a datetime object corresponding to the image
     :returns: a dictionary of colony objects
     """
+    from skimage.measure import regionprops
     colonies = colonies_dict.copy()
 
     for rp in regionprops(image):
         # Create a new time point object to store colony data
-            timepoint = colony.Colony.Timepoint(
-                date_time = time_point,
-                area = rp.area,
-                center = rp.centroid,
-                diameter = rp.equivalent_diameter,
-                perimeter = rp.perimeter
-            )
+        timepoint_data = Colony.Timepoint(
+            date_time = time_point,
+            area = rp.area,
+            center = rp.centroid,
+            diameter = rp.equivalent_diameter,
+            perimeter = rp.perimeter
+        )
         # Append the data at the time point for each colony
-        colonies[rp.label].append_timepoint(timepoint)
+        if rp.label not in colonies:
+            colonies[rp.label] = Colony(rp.label)
+            
+        colonies[rp.label].append_timepoint(timepoint_data.date_time, timepoint_data)
     
     return colonies
