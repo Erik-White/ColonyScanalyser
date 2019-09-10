@@ -30,6 +30,7 @@ import utilities
 import file_access
 import imaging
 import plotting
+import colony
 
 # Globals
 # plate_lattice is the shape of the plate arrangement in rows*columns
@@ -196,7 +197,6 @@ def segment_image(plate, plate_mask, plate_noise_mask, area_min=30, area_max=500
     # Exclude objects that are too eccentric
     rps = regionprops(colonies)
     for rp in rps:
-
         # Eccentricity of zero is a perfect circle
         # Circularity of 1 is a perfect circle
         circularity = (4 * math.pi * rp.area) / (rp.perimeter * rp.perimeter)
@@ -356,7 +356,7 @@ if __name__ == '__main__':
 
     #Check if images have been loaded
     if len(image_filenames) is None:
-        print "No images found in the specified filepath: "
+        print "No images found in the specified filepath:"
         print data_folder
         sys.exit()
     elif VERBOSE >= 1:
@@ -536,13 +536,23 @@ if __name__ == '__main__':
         print 'Tracking colonies'
 
     # Loop through plates
-    plate_colony_lineages = []
     from collections import defaultdict
-    plate_colony_areas = defaultdict(list)
+    from skimage.measure import regionprops
+    plate_colonies = defaultdict(dict)
     for i, plate_images in enumerate(plates_list_segmented):
+        if VERBOSE >= 1:
+            print 'Tacking colonies on plate', i + 1, 'of', len(plates_list_segmented)
 
+        # Process image at each time point
+        for j, plate_image in enumerate(plate_images):
+            if VERBOSE >= 2:
+                print 'Tacking colonies at time point', j + 1, 'of', len(plate_images)
 
+                plate_colonies[i] = colony.timepoints_from_image(plate_colonies[i], plate_image, time_points[j])
 
+        print "number of plates = ", len(plate_colonies)
+        print "number of colonies for plate 1", len(plate_colonies[0])
+        print "number of timepoints for plate 1, colony 50", len(plate_colonies[0][50].timepoints)
 
 
 
