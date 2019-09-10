@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(
-    python_requires = ">3.7"
+    python_requires = ">3.7",
     name = "scanlag",
     version = "0.1",
     description = "Runs ScanLag analysis on image files",
