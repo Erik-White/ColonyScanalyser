@@ -1,5 +1,7 @@
-﻿# Convert an argument to a valid boolean value
-def str2bool(v):
+﻿def str2bool(v):
+    """
+    Convert an argument to a valid boolean value
+    """
     if isinstance(v, bool):
        return v
     if v.lower() in ('yes', 'true', 't', 'y', '1'):

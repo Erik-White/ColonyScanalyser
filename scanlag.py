@@ -1,4 +1,4 @@
-﻿# Modules
+﻿# System modules
 import os
 import sys
 import glob
@@ -10,6 +10,7 @@ import argparse
 # import lzma
 import bz2
 
+# Third party modules
 import numpy as np
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
@@ -34,18 +35,29 @@ import plotting
 # plate_lattice is the shape of the plate arrangement in rows*columns
 plate_lattice = (3, 2)
 
+def index_number_to_coordinate(index, lattice):
+    """
+    Calculate row and column numbers for an item index
 
-# Functions
+    Lattice co-ordinate and item index numbers are 1-based
 
-# Return a row and column index for a plate
-# Plate and lattice co-ordinate numbers are 1-based
-def plate_number_to_coordinates(plate_number, lattice):
-    row = ((plate_number - 1) // lattice[1]) + 1
-    col = ((plate_number - 1) % lattice[1]) + 1
+    :param index: item index integer
+    :param lattice: row and column tuple boundaries
+    :returns: row and column co-ordinate tuple
+    :raises IndexError: if the returned index number would exceed the lattice size
+    """
+    (lattice_row, lattice_col) = lattice
+    row = ((index - 1) // lattice[1]) + 1
+    col = ((index - 1) % lattice[1]) + 1
+    if row > lattice_row or col > lattice_col:
+        raise IndexError('Index number is greater than the supplied lattice size')
     return (row, col)
+    
 
-# Creates an empty list of lists with the shape required for the number of plates
 def init_plate_image_list(init_list, lattice):
+    """
+    Creates an empty list of lists with the shape required for the number of plates
+    """
     for i in xrange(np.prod(lattice)):
         init_list.append(list())
     return init_list
@@ -141,10 +153,18 @@ def split_image_into_plates(img, borders, edge_cut=100):
     
     return plates
 
-# Finds all colonies on a plate and returns an array of co-ordinates
-# If a co-ordinate is occupied by a colony, it contains that colonies labelled number
+
 def segment_image(plate, plate_mask, plate_noise_mask, area_min=30, area_max=500):
-    '''Segment the image based on simple thresholding'''
+    """
+    Finds all colonies on a plate and returns an array of co-ordinates
+
+    If a co-ordinate is occupied by a colony, it contains that colonies labelled number
+
+    :param plate: a black and white image as a numpy array
+    :param mask: a black and white image as a numpy array
+    :param plate_noise_mask: a black and white image as a numpy array
+    :returns: a segmented and labelled image as a numpy array
+    """
     from scipy import ndimage
     from skimage.morphology import watershed, square, remove_small_objects
     from skimage.feature import peak_local_max
@@ -189,11 +209,18 @@ def segment_image(plate, plate_mask, plate_noise_mask, area_min=30, area_max=500
     # The colonies are numbered from one to the total number of colonies on the plate
     return colonies
 
-    
-# Build an array of segmented image data for all available time points
-# Takes list of pre-processed plate images of size (total timepoints)
-# Also requires a list of Python datetimes corresponding to the image timepoints
+
 def segment_plate_timepoints(plate_images_list, date_times):
+    """
+    Build an array of segmented image data for all available time points
+
+    Takes list of pre-processed plate images of size (total timepoints)
+
+    :param plate_images_list: a list of black and white images as numpy arrays
+    :param date_times: an ordered list of datetime objects
+    :returns: a segmented and labelled list of images as numpy arrays
+    :raises ValueError: if the size of plate_images_list and date_times do not match
+    """
     # Check that the number of datetimes corresponds with the number of image timepoints
     if len(date_times) != len(plate_images_list):
         raise ValueError("Unable to process image timepoints. The supplied list of dates/times does not match the number of image timepoints")
@@ -215,8 +242,10 @@ def segment_plate_timepoints(plate_images_list, date_times):
     return segmented_images
 
 
-# Check if split image data is already stored and can be loaded
 def load_plate_timeline(plate_list, load_filename, plate_lat, plate_pos = None):
+    """
+    Check if split image data is already stored and can be loaded
+    """
     # Create a shallow copy of the reference list
     temp_list = list(plate_list)
     # Only load data for a single plate if it is specified
@@ -241,8 +270,18 @@ def load_plate_timeline(plate_list, load_filename, plate_lat, plate_pos = None):
 # Save the processed plate images and corresponding segmented data plots
 # Images are stored in the corresponding plate data folder i.e. /row_2_col_1/segmented_image_plots/
 # A Python datetime is required to save the image with the correct filename
-def save_plate_segmented_image(plate_image, segmented_image, plate_row, plate_column, date_time):
+def save_plate_segmented_image(plate_image, segmented_image, plate_coordinate, date_time):
+    """
+    Saves processed plate images and corresponding segmented data plots
+
+    :param plate_image: a black and white image as a numpy array
+    :param segmented_image: a segmented and labelled image as a numpy array
+    :param plate_coordinate: a row, column tuple representing the plate position
+    :param date_time: a datetime object
+    :returns: the filepath string if the plot is sucessfully saved
+    """
     from skimage.measure import regionprops
+    (plate_row, plate_column) = plate_coordinate
 
     fig, ax = plt.subplots(1, 2, figsize=(12, 6))
     ax[0].imshow(plate_image)
@@ -434,7 +473,7 @@ if __name__ == '__main__':
                 # Save plates_list to disk for re-use if needed
                 # Have to save each plate's data separately as it cannot be saved combined
                 for i, plate in enumerate(plates_list):
-                    (row, col) = plate_number_to_coordinates(i + 1, plate_lattice)
+                    (row, col) = index_number_to_coordinate(i + 1, plate_lattice)
                     split_image_data_filepath = file_access.get_subfoldername(data_folder, row, col) + split_image_data_filename
                     if VERBOSE >= 2:
                         print "Saving image data for plate #", i + 1, "at position row", row, "column", col
@@ -446,7 +485,7 @@ if __name__ == '__main__':
 
         # Loop through plates and segment images at all timepoints
         for i, plate_timepoints in enumerate(plates_list):
-            (row, col) = plate_number_to_coordinates(i + 1, plate_lattice)
+            (row, col) = index_number_to_coordinate(i + 1, plate_lattice)
             if VERBOSE >= 2:
                 print 'Segmenting images from plate #', i + 1, "at position row", row, "column", col
 
@@ -471,7 +510,7 @@ if __name__ == '__main__':
                 for j, segmented_plate_timepoint in enumerate(segmented_plate_timepoints):
                     if VERBOSE >= 3:
                         print "Saving segmented image plot for time point ", j + 1, "of", len(segmented_plate_timepoints)
-                    image_path = save_plate_segmented_image(plate_timepoints[j], segmented_plate_timepoint, row, col, time_points[j])
+                    image_path = save_plate_segmented_image(plate_timepoints[j], segmented_plate_timepoint, (row, col), time_points[j])
                     if image_path is not None:
                         if VERBOSE >= 3:
                             print "Saved segmented image plot to:", image_path
@@ -482,7 +521,7 @@ if __name__ == '__main__':
         # Have to save each plate's data separately as it cannot be saved combined
         if SAVE_DATA >= 1:
             for i, plate in enumerate(plates_list_segmented):
-                (row, col) = plate_number_to_coordinates(i + 1, plate_lattice)
+                (row, col) = index_number_to_coordinate(i + 1, plate_lattice)
                 segmented_image_data_filepath = file_access.get_subfoldername(data_folder, row, col) + segmented_image_data_filename
                 if VERBOSE >= 2:
                     print "Saving segmented image data for plate #", i + 1, "at position row", row, "column", col
@@ -491,6 +530,24 @@ if __name__ == '__main__':
                     pickle.dump(plate, outfile, pickle.HIGHEST_PROTOCOL)
                 if VERBOSE >= 3:
                     print "Saved processed and segmented image timeline data to:", segmented_image_data_filepath
+
+    # Record individual colony information
+    if VERBOSE >= 1:
+        print 'Tracking colonies'
+
+    # Loop through plates
+    plate_colony_lineages = []
+    from collections import defaultdict
+    plate_colony_areas = defaultdict(list)
+    for i, plate_images in enumerate(plates_list_segmented):
+
+
+
+
+
+
+
+
 
     # Track
     # Start from last time point and proceed backwards by overlap (colonies do not move)
@@ -593,20 +650,5 @@ if __name__ == '__main__':
             fig.suptitle('Colony areas over time')
             fig.show()
             fig.savefig('testplot_areas.jpg')
-
-        # Smooth data
-        plate_colony_areas_filtered = dict()
-        for key, values in plate_colony_areas.items():
-            timepoints, areas = zip(*values)
-            # is_outlier expects 1D numpy array
-            timepoints = np.asarray(timepoints)
-            areas = np.asarray(areas)
-            filtered_timepoints = timepoints
-            # Window size must be an odd positive integer
-            window_size = max(areas) / 2
-            if window_size % 2 == 0:
-                window_size += 1
-            filtered_areas = utilities.savitzky_golay(areas, window_size, 2)
-            plate_colony_areas_filtered[key] = zip(filtered_timepoints, filtered_areas)
 
     sys.exit()

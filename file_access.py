@@ -1,5 +1,7 @@
-﻿# Create any folder that is needed in a filepath
-def create_folderpath(filepath):
+﻿def create_folderpath(filepath):
+    """
+    Create any folder that is needed in a filepath
+    """
     import os
     # Exception handling is required in Python2 to protect against race conditions
     try: 
@@ -11,9 +13,12 @@ def create_folderpath(filepath):
     # os.makedirs(path, exist_ok=True)
 
 
-#Separates the folderpath and filename from a filepath
-#Return the filename by default
 def separate_filepath(filepath, return_folderpath = False):
+    """
+    Separates the folderpath and filename from a filepath
+
+    :returns: either a filename (default) or folderpath
+    """
     import os
     (folderpath, filename) = os.path.split(os.path.abspath(filepath))
     if return_folderpath:
@@ -27,8 +32,10 @@ def get_subfoldername(data_folder, row, col):
     return data_folder+'_'.join(['row', str(row), 'col', str(col)])+os.path.sep
 
 
-# Checks whether a file exists and contains data
 def file_exists(filepath):
+    """
+    Checks whether a file exists and contains data
+    """
     import os
     if os.path.isfile(filepath) and os.path.getsize(filepath) > 0:
         return True
