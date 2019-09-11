@@ -1,18 +1,21 @@
-﻿def str2bool(v):
+﻿def index_number_to_coordinate(index, lattice):
     """
-    Convert an argument to a valid boolean value
-    """
-    from argparse import ArgumentTypeError
-    
-    if isinstance(v, bool):
-       return v
-    if v.lower() in ('yes', 'true', 't', 'y', '1'):
-        return True
-    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
-        return False
-    else:
-        raise ArgumentTypeError('Boolean value expected.')
+    Calculate row and column numbers for an item index
 
+    Lattice co-ordinate and item index numbers are 1-based
+
+    :param index: item index integer
+    :param lattice: row and column tuple boundaries
+    :returns: row and column co-ordinate tuple
+    :raises IndexError: if the returned index number would exceed the lattice size
+    """
+    (lattice_row, lattice_col) = lattice
+    row = ((index - 1) // lattice[1]) + 1
+    col = ((index - 1) % lattice[1]) + 1
+    if row > lattice_row or col > lattice_col:
+        raise IndexError("Index number is greater than the supplied lattice size")
+    return (row, col)
+    
 
 def is_outlier(points, thresh=3.5):
     """
