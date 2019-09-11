@@ -349,7 +349,7 @@ if __name__ == "__main__":
     USE_SAVED = args.use_saved
 
     # Data locations
-    data_folder = "~/Downloads/Scanlag/3112_1/data/"
+    data_folder = "~/dev/scanlag/data/"
     #
     #   Need to add an argument to allow project folder to be set
     #
@@ -366,8 +366,9 @@ if __name__ == "__main__":
         print(len(image_filenames), "images found")
 
     # Get date and time information from filenames
-    dates = [str(image_filename[:-8].split("_")[4]) for image_filename in image_filenames]
+    dates = [str(image_filename[:-8].split("_")[-2]) for image_filename in image_filenames]
     times = [str(image_filename[:-4].split("_")[-1]) for image_filename in image_filenames]
+   
     # Convert string timestamps to Python datetime objects
     time_points = []
     time_points_elapsed = []
