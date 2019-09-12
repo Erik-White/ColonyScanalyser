@@ -8,13 +8,23 @@
         return True
 
 
-def get_files_by_type(path, filetype = "*"):
+def get_files_by_type(path, file_extensions = "*"):
     """
-    Get a list of path objects of a given filetype
+    Get a list of path objects of a given filetype(s)
+
+    :param path: a path object directory to search
+    :param filetypes: a comma separated list of file extensions
+    :returns: a list of matching path objects, sorted by filename
     """
     from pathlib import Path
+    
+    path_list = []
+    file_extensions = file_extensions.split(",")
 
-    return sorted(path.glob("*." + filetype))
+    for file_extension in file_extensions:
+        path_list.extend(path.glob("*." + file_extension))
+
+    return sorted(path_list)
 
 
 def create_subdirectory(parent_path, subdirectory):
