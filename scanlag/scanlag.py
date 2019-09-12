@@ -32,11 +32,6 @@ import imaging
 import plotting
 import colony
 
-# Globals
-# PLATE_LATTICE is the shape of the plate arrangement in rows*columns
-PLATE_LATTICE = (3, 2)
-IMAGE_PATH = "source_images"
-
 
 def get_plate_directory(parent_path, row, col, create_dir = False):
     """
@@ -321,12 +316,15 @@ def save_plate_segmented_image(plate_image, segmented_image, plate_coordinate, d
 # Script
 if __name__ == "__main__":
 
-    parser = argparse.ArgumentParser(description="Analyze the ScanLag images and generate statistical data.")
+    parser = argparse.ArgumentParser(description="Analyze ScanLag images to track colonies and generate statistical data.")
     parser.add_argument("--path", type=str, default=None,
                        help="Image files location")
     parser.add_argument("--verbose", type=int, default=0,
                        help="Output information level")
-    parser.add_argument("--pos", type=int, nargs=2, default=None,
+    parser.add_argument("--plate_lattice", type=int, nargs=2, default=(3, 2),
+                        metavar=("ROW", "COL"),
+                        help="The row and column co-ordinate layout of plates")
+    parser.add_argument("--plate_position", type=int, nargs=2, default=None,
                         metavar=("ROW", "COL"),
                         help="The row and column co-ordinates of the plate to study (default: all)")
     parser.add_argument("--save_data", type=int, default=1,
@@ -338,11 +336,16 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     BASE_PATH = args.path
+    IMAGE_PATH = "source_images"
     VERBOSE = args.verbose
-    PLATE_POSITION = args.pos
+    PLATE_LATTICE = args.plate_lattice
+    PLATE_POSITION = args.plate_position
     SAVE_DATA = args.save_data
     SAVE_PLOTS = args.save_plots
     USE_SAVED = args.use_saved
+
+    print(PLATE_LATTICE)
+    sys.exit()
 
     # Resolve working directory
     if BASE_PATH is None:
