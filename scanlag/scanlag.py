@@ -344,9 +344,6 @@ if __name__ == "__main__":
     SAVE_PLOTS = args.save_plots
     USE_SAVED = args.use_saved
 
-    print(PLATE_LATTICE)
-    sys.exit()
-
     # Resolve working directory
     if BASE_PATH is None:
         # Default to user home directory if none supplied
@@ -359,10 +356,10 @@ if __name__ == "__main__":
         print("Working directory:", BASE_PATH)
 
     # Find images in working directory
-    image_files = file_access.get_images(BASE_PATH)
+    image_files = file_access.get_files_by_type(BASE_PATH, "tif, png")
     # Try images directory if none found
     if not len(image_files) > 0:
-        image_files = file_access.get_images(BASE_PATH.joinpath(IMAGE_PATH))
+        image_files = file_access.get_files_by_type(BASE_PATH.joinpath(IMAGE_PATH), "tif, png")
 
     #Check if images have been loaded
     if not len(image_files) > 0:
