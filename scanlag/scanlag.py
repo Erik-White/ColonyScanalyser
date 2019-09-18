@@ -10,11 +10,6 @@ from datetime import datetime, timedelta
 from operator import attrgetter
 from distutils.util import strtobool
 
-# lzma is not included in Python2
-# It is a standard module in Python3
-# import lzma
-import bz2
-
 # Third party modules
 import numpy as np
 from skimage.io import imread, imsave
@@ -49,7 +44,7 @@ def get_plate_directory(parent_path, row, col, create_dir = False):
 
     child_path = '_'.join(['row', str(row), 'col', str(col)])
     if create_dir:
-        return create_subdirectory(parent_path, child_path)
+        return file_access.create_subdirectory(parent_path, child_path)
     else:
         return parent_path.joinpath(child_path)
 
@@ -233,29 +228,32 @@ def segment_plate_timepoints(plate_images_list, date_times):
     return segmented_images
 
 
-def load_plate_timeline(plate_list, load_filename, plate_lat, plate_pos = None):
+def load_plate_timeline(load_filename, plate_lat, plate_pos = None):
     """
     Check if split image data is already stored and can be loaded
     """
-    # Create a shallow copy of the reference list
-    temp_list = list(plate_list)
+    plate_list = dict()
+
     # Only load data for a single plate if it is specified
     if plate_pos is not None:
-        load_filepath = file_access.get_subfoldername(BASE_PATH, plate_pos[0], plate_pos[1]) + Path.sep + load_filename
+        row, column = plate_pos
+        load_filepath = get_plate_directory(BASE_PATH, row, column).joinpath(load_filename)
         if file_access.file_exists(load_filepath):
-            temp_list[0] = np.load(bz2.BZ2File(load_filepath, mode = "r"), allow_pickle = True)
+            plate_list[0] = file_access.load_file(load_filepath, file_access.CompressionMethod.BZ2, pickle = True)
+
     # Otherwise, load data for all plates
     else:
         for row in range(PLATE_LATTICE[0]):
             for col in range(PLATE_LATTICE[1]):
-                load_filepath = file_access.get_subfoldername(BASE_PATH, row + 1, col + 1) + Path.sep + load_filename
+                load_filepath = get_plate_directory(BASE_PATH, row + 1, col + 1).joinpath(load_filename)
                 if file_access.file_exists(load_filepath):
-                    temp_list[row * PLATE_LATTICE[1] + col] = np.load(bz2.BZ2File(load_filepath, mode = "r"), allow_pickle = True)
+                    plate_list[row * PLATE_LATTICE[1] + col] = file_access.load_file(load_filepath, file_access.CompressionMethod.BZ2, pickle = True)
                 else:
                     # Do not return the list unless all elements were loaded sucessfully
-                    temp_list = None
+                    plate_list = None
                     break
-    return temp_list
+                
+    return plate_list
 
 
 # Save the processed plate images and corresponding segmented data plots
@@ -299,15 +297,15 @@ def save_plate_segmented_image(plate_image, segmented_image, plate_coordinate, d
 
     fig_title = " ".join(["Plate at row", str(plate_row), ": column", str(plate_column), "at time point", date_time.strftime("%Y/%m/%d %H:%M")])
     fig.suptitle(fig_title)
-    folder_path = file_access.get_subfoldername(BASE_PATH, plate_row, plate_column) + "segmented_image_plots" + Path.sep
-    image_path = "".join([folder_path, "time_point_", str(date_time.strftime("%Y%m%d")), "_" + str(date_time.strftime("%H%M")), ".jpg"])
+    folder_path = get_plate_directory(BASE_PATH, plate_row, plate_column).joinpath("segmented_image_plots")
+    image_path = "".join(["time_point_", str(date_time.strftime("%Y%m%d")), "_" + str(date_time.strftime("%H%M")), ".jpg"])
     folder_path.mkdir(parents = True, exist_ok = True)
-    with open(image_path, "wb") as outfile:
+    with open(folder_path.joinpath(image_path), "wb") as outfile:
         plt.savefig(outfile)
     plt.close()
 
     # Return the path to the new image if it was saved successfully
-    if Path.isfile(image_path):
+    if Path.is_file(folder_path.joinpath(image_path)):
         return image_path
     else:
         return None
@@ -339,7 +337,7 @@ if __name__ == "__main__":
     IMAGE_PATH = "source_images"
     VERBOSE = args.verbose
     PLATE_LATTICE = args.plate_lattice
-    PLATE_POSITION = args.plate_position
+    PLATE_POSITION = tuple(args.plate_position)
     SAVE_DATA = args.save_data
     SAVE_PLOTS = args.save_plots
     USE_SAVED = args.use_saved
@@ -392,13 +390,14 @@ if __name__ == "__main__":
         print("Attempting to load segmented processed image data for all plates")
     segmented_image_data_filename = "split_image_data_segmented.pbz2"
     if USE_SAVED:
-        segmented_images_temp = load_plate_timeline(plates_list_segmented, segmented_image_data_filename, PLATE_LATTICE, PLATE_POSITION)
+        segmented_images_temp = load_plate_timeline(segmented_image_data_filename, PLATE_LATTICE, PLATE_POSITION)
         if segmented_images_temp is not None:
             plates_list_segmented = segmented_images_temp
     # Check that segmented image data has been loaded for all plates
-    if len(plates_list_segmented[-1]) == len(time_points):
-        if VERBOSE >= 1:
-            print("Successfully loaded segmented processed image data for all plates")
+    if len(plates_list_segmented) > 0:
+        if len(plates_list_segmented[0]) == len(time_points):
+            if VERBOSE >= 1:
+                print("Successfully loaded segmented processed image data for all plates")
     else:
         if VERBOSE >= 1:
             print("Unable to load and uncompress segmented processed image data for all plates")
@@ -408,14 +407,15 @@ if __name__ == "__main__":
             print("Attempting to load and uncompress processed image data for all plates")
         split_image_data_filename = "split_image_data.pbz2"
         if USE_SAVED:
-            plates_list_temp = load_plate_timeline(plates_list, split_image_data_filename, PLATE_LATTICE, PLATE_POSITION)
+            plates_list_temp = load_plate_timeline(split_image_data_filename, PLATE_LATTICE, PLATE_POSITION)
             if plates_list_temp is not None:
                 plates_list = plates_list_temp
         
         # Check that image data has been loaded for all plates
-        if len(plates_list[-1]) == len(time_points):
-            if VERBOSE >= 1:
-                print("Successfully loaded processed image data for all plates")
+        if len(plates_list) > 0:
+            if len(plates_list[0]) == len(time_points):
+                if VERBOSE >= 1:
+                    print("Successfully loaded processed image data for all plates")
         else:
             if VERBOSE >= 1:
                 print("Unable to load processed image data for all plates")
@@ -427,7 +427,7 @@ if __name__ == "__main__":
             centers = None
             borders = None
             # Loop through image files
-            for ifn, image_files in enumerate(image_files):
+            for ifn, image_file in enumerate(image_files):
 
                 if VERBOSE >= 1:
                     print("Image number", ifn + 1, "of", len(image_files))
@@ -436,18 +436,14 @@ if __name__ == "__main__":
                     print("Imaging date-time:", time_points[ifn].strftime("%Y%m%d %H%M"))
 
                 if VERBOSE >= 1:
-                    print("Read image:", image_files)
-                im = imread(image_files)
-
-                if VERBOSE >= 1:
-                    print("Convert to grey")
-                img = rgb2grey(im)
-
+                    print("Read image:", image_file)
+                img = imread(str(image_file), as_gray = True)
+                
                 if VERBOSE >= 1:
                     print("Find plate center rough")
                 # Only find centers using first image. Assume plates do not move
                 if centers is None:
-                    centers = find_plate_center_rough(im, PLATE_LATTICE)
+                    centers = find_plate_center_rough(img, PLATE_LATTICE)
 
                 if VERBOSE >= 1:
                     print("Find plate borders")
@@ -463,35 +459,34 @@ if __name__ == "__main__":
                     print("Store split plate image data for this time point")
                 if PLATE_POSITION is not None:
                     # Save image for only a single plate
+                    if 0 not in plates_list:
+                        plates_list[0] = list()
                     plates_list[0].append(plates[np.prod(PLATE_POSITION)-1])
                 else:
                     # Save images for all plates
                     for i, plate in enumerate(plates):
                         # Store the image data from the current plate timepoint
+                        if i not in plates_list:
+                            plates_list[i] = list()
                         plates_list[i].append(plate)
                         
             if SAVE_DATA >= 2:
                 # Save plates_list to disk for re-use if needed
                 # Have to save each plate"s data separately as it cannot be saved combined
                 for i, plate in enumerate(plates_list):
-                    (row, col) = index_number_to_coordinate(i + 1, PLATE_LATTICE)
-                    split_image_data_filepath = file_access.get_subfoldername(BASE_PATH, row, col) + split_image_data_filename
+                    (row, col) = utilities.index_number_to_coordinate(i + 1, PLATE_LATTICE)
+                    split_image_data_filepath = get_plate_directory(BASE_PATH, row, col, create_dir = True).joinpath(split_image_data_filename)
                     if VERBOSE >= 2:
                         print("Saving image data for plate #", i + 1, "at position row", row, "column", col)
-                    with bz2.BZ2File(split_image_data_filepath, "wb") as outfile:
-                    #with lzma.LZMAFile(split_image_data_filepath, "w") as outfile:
-                        pickle.dump(plate, outfile, pickle.HIGHEST_PROTOCOL)
+                    file_access.save_file(split_image_data_filepath, plate, file_access.CompressionMethod.BZ2)
                     if VERBOSE >= 3:
                         print("Saved processed image timeline data to:", split_image_data_filepath)
 
         # Loop through plates and segment images at all timepoints
-        for i, plate_timepoints in enumerate(plates_list):
-            (row, col) = index_number_to_coordinate(i + 1, PLATE_LATTICE)
+        for i, plate_timepoints in enumerate(plates_list.values()):
+            (row, col) = utilities.index_number_to_coordinate(i + 1, PLATE_LATTICE)
             if VERBOSE >= 2:
                 print("Segmenting images from plate #", i + 1, "at position row", row, "column", col)
-
-            # Create a mask using the first (i.e. empty) plate in the sequence
-            #plate_noise_mask = imaging.create_noise_mask(plate_timepoints[0])
 
             # plates_list is an array of size (total plates)*(total timepoints)
             # Each time point element of the array contains a co-ordinate array of size (total image columns)*(total image rows)
@@ -522,13 +517,11 @@ if __name__ == "__main__":
         # Have to save each plate"s data separately as it cannot be saved combined
         if SAVE_DATA >= 1:
             for i, plate in enumerate(plates_list_segmented):
-                (row, col) = index_number_to_coordinate(i + 1, PLATE_LATTICE)
-                segmented_image_data_filepath = file_access.get_subfoldername(BASE_PATH, row, col) + segmented_image_data_filename
+                (row, col) = utilities.index_number_to_coordinate(i + 1, PLATE_LATTICE)
+                segmented_image_data_filepath = get_plate_directory(BASE_PATH, row, col).joinpath(segmented_image_data_filename)
                 if VERBOSE >= 2:
                     print("Saving segmented image data for plate #", i + 1, "at position row", row, "column", col)
-                with bz2.BZ2File(segmented_image_data_filepath, "wb") as outfile:
-                #with lzma.LZMAFile(segmented_image_data_filepath, "w") as outfile:
-                    pickle.dump(plate, outfile, pickle.HIGHEST_PROTOCOL)
+                file_access.save_file(segmented_image_data_filepath, plate, file_access.CompressionMethod.BZ2)
                 if VERBOSE >= 3:
                     print("Saved processed and segmented image timeline data to:", segmented_image_data_filepath)
 
@@ -547,7 +540,7 @@ if __name__ == "__main__":
             print("Tacking colonies on plate", i + 1, "of", len(plates_list_segmented))
 
         # Process image at each time point
-        for j, plate_image in enumerate(plate_images):
+        for j, plate_image in enumerate(plate_images.values()):
             if VERBOSE >= 2:
                 print("Tacking colonies at time point", j + 1, "of", len(plate_images))
 
