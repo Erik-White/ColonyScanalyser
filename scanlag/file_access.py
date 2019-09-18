@@ -84,6 +84,7 @@ class CompressionMethod(Enum):
     BZ2 = auto()
     GZIP = auto()
     LZMA = auto()
+    NONE = auto()
 
 
 def file_compression(file_path, compression, access_mode = "r"):
@@ -100,6 +101,8 @@ def file_compression(file_path, compression, access_mode = "r"):
         elif compression == CompressionMethod.LZMA:
             import lzma
             return lzma.LZMAFile(file_path, mode = access_mode)
+        elif compression == CompressionMethod.NONE:
+            return open(file_path, mode = access_mode)
     
     return None
 
