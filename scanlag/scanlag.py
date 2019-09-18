@@ -13,7 +13,6 @@ from distutils.util import strtobool
 # Third party modules
 import numpy as np
 from skimage.io import imread, imsave
-from skimage.color import rgb2grey
 import matplotlib
 matplotlib.use("TkAgg") # Required for OSX
 from matplotlib import cm
@@ -54,6 +53,7 @@ def find_plate_center_rough(image, lattice):
     centers_y = np.linspace(0, 1, 2 * lattice[0] + 1)[1::2] * image.shape[0]
     centers_x = np.linspace(0, 1, 2 * lattice[1] + 1)[1::2] * image.shape[1]
     centers = [(int(cx), int(cy)) for cy in centers_y for cx in centers_x]
+
     return centers
 
 
@@ -125,6 +125,7 @@ def find_plate_borders(img, centers, refine=True):
 def split_image_into_plates(img, borders, edge_cut=100):
     """Split image into lattice subimages and delete background"""
     plates = []
+
     for border in borders:
         #Find x and y centers, measured from image edges
         (cx, cy) = map(lambda x: int(np.mean(x)), border)
@@ -154,12 +155,8 @@ def segment_image(plate, plate_mask, plate_noise_mask, area_min=30, area_max=500
     :returns: a segmented and labelled image as a numpy array
     """
     from scipy import ndimage
-    from skimage.morphology import watershed, square, remove_small_objects
-    from skimage.feature import peak_local_max
+    from skimage.morphology import remove_small_objects
     from skimage.measure import regionprops, label
-    from skimage.filters import gaussian, median
-    from skimage.segmentation import relabel_sequential, clear_border
-    from skimage.transform import hough_circle, hough_circle_peaks
 
     plate = imaging.remove_background_mask(plate, plate_mask)
     plate_noise_mask = imaging.remove_background_mask(plate_noise_mask, plate_mask)
@@ -225,6 +222,7 @@ def segment_plate_timepoints(plate_images_list, date_times):
         # segmented_images is an array of size (total plates)*(total timepoints)
         # Each time point element of the array contains a co-ordinate array of size (total image columns)*(total image rows)
         segmented_images.append(segmented_image)
+
     return segmented_images
 
 
@@ -299,9 +297,11 @@ def save_plate_segmented_image(plate_image, segmented_image, plate_coordinate, d
 
     fig_title = " ".join(["Plate at row", str(plate_row), ": column", str(plate_column), "at time point", date_time.strftime("%Y/%m/%d %H:%M")])
     fig.suptitle(fig_title)
+
     folder_path = get_plate_directory(BASE_PATH, plate_row, plate_column).joinpath("segmented_image_plots")
     image_path = "".join(["time_point_", str(date_time.strftime("%Y%m%d")), "_" + str(date_time.strftime("%H%M")), ".jpg"])
     folder_path.mkdir(parents = True, exist_ok = True)
+
     with open(folder_path.joinpath(image_path), "wb") as outfile:
         plt.savefig(outfile)
     plt.close()
@@ -520,7 +520,8 @@ if __name__ == "__main__":
                         print("Error: Unable to save segmented image plot for plate at row", row, "column", col)
 
         # Save plates_list_segmented to disk for re-use if needed
-        # Have to save each plate"s data separately as it cannot be saved combined
+        # Have to save data for each plate"s data separately
+        # Can't pickle arrays with >3 dimensions
         if SAVE_DATA >= 1:
             for i, plate in enumerate(plates_list_segmented.values()):
                 (row, col) = utilities.index_number_to_coordinate(i + 1, PLATE_LATTICE)
@@ -540,7 +541,6 @@ if __name__ == "__main__":
 
     # Loop through plates
     from collections import defaultdict
-    from skimage.measure import regionprops
     plate_colonies = defaultdict(dict)
     for i, plate_images in enumerate(plates_list_segmented.values()):
         if VERBOSE >= 1:
