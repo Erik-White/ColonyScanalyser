@@ -112,27 +112,27 @@ def load_file(file_path, compression, pickle = True):
     """
     Load compressed data from a file
     """
-    import numpy as np
+    from numpy import load
 
     try:
         file_open = file_compression(file_path, compression, "r")
     except FileNotFoundError:
         return None
 
-    return np.load(file_open, allow_pickle = pickle)
+    return load(file_open, allow_pickle = pickle)
 
 
 def save_file(file_path, data, compression):
     """
     Save data to specified file, returns True if successful
     """
-    import pickle
+    from pickle import dump
 
     completed = False
     
     try:
         with file_compression(file_path, compression, "wb") as outfile:
-            pickle.dump(data, outfile, pickle.HIGHEST_PROTOCOL)
+            dump(data, outfile, pickle.HIGHEST_PROTOCOL)
             completed = True
             
     finally:
