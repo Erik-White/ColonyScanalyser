@@ -339,10 +339,13 @@ if __name__ == "__main__":
     IMAGE_PATH = "source_images"
     VERBOSE = args.verbose
     PLATE_LATTICE = args.plate_lattice
-    PLATE_POSITION = tuple(args.plate_position)
+    PLATE_POSITION = args.plate_position
     SAVE_DATA = args.save_data
     SAVE_PLOTS = args.save_plots
     USE_SAVED = args.use_saved
+
+    if PLATE_POSITION is not None:
+        PLATE_POSITION = tuple(PLATE_POSITION)
 
     # Resolve working directory
     if BASE_PATH is None:
@@ -531,13 +534,10 @@ if __name__ == "__main__":
                     else:
                         print("An error occurred, unable to save processed and segmented image timeline data to:", segmented_image_data_filepath)
 
-
     # Record individual colony information
     if VERBOSE >= 1:
         print("Tracking colonies")
 
-
-    
     # Loop through plates
     from collections import defaultdict
     from skimage.measure import regionprops
