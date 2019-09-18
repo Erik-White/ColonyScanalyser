@@ -239,7 +239,7 @@ def load_plate_timeline(load_filename, plate_lat, plate_pos = None):
         row, column = plate_pos
         load_filepath = get_plate_directory(BASE_PATH, row, column).joinpath(load_filename)
         if file_access.file_exists(load_filepath):
-            plate_list[0] = file_access.load_file(load_filepath, file_access.CompressionMethod.BZ2, pickle = True)
+            plate_list[0] = file_access.load_file(load_filepath, file_access.CompressionMethod.LZMA, pickle = True)
 
     # Otherwise, load data for all plates
     else:
@@ -247,7 +247,7 @@ def load_plate_timeline(load_filename, plate_lat, plate_pos = None):
             for col in range(PLATE_LATTICE[1]):
                 load_filepath = get_plate_directory(BASE_PATH, row + 1, col + 1).joinpath(load_filename)
                 if file_access.file_exists(load_filepath):
-                    plate_list[row * PLATE_LATTICE[1] + col] = file_access.load_file(load_filepath, file_access.CompressionMethod.BZ2, pickle = True)
+                    plate_list[row * PLATE_LATTICE[1] + col] = file_access.load_file(load_filepath, file_access.CompressionMethod.LZMA, pickle = True)
                 else:
                     # Do not return the list unless all elements were loaded sucessfully
                     plate_list = None
@@ -388,7 +388,7 @@ if __name__ == "__main__":
     # Check if split and segmented image data is already stored and can be loaded
     if VERBOSE >= 1:
         print("Attempting to load segmented processed image data for all plates")
-    segmented_image_data_filename = "split_image_data_segmented.pbz2"
+    segmented_image_data_filename = "split_image_data_segmented.xz"
     if USE_SAVED:
         segmented_images_temp = load_plate_timeline(segmented_image_data_filename, PLATE_LATTICE, PLATE_POSITION)
         if segmented_images_temp is not None:
@@ -405,7 +405,7 @@ if __name__ == "__main__":
         # Check if split image data is already stored and can be loaded
         if VERBOSE >= 1:
             print("Attempting to load and uncompress processed image data for all plates")
-        split_image_data_filename = "split_image_data.pbz2"
+        split_image_data_filename = "split_image_data.xz"
         if USE_SAVED:
             plates_list_temp = load_plate_timeline(split_image_data_filename, PLATE_LATTICE, PLATE_POSITION)
             if plates_list_temp is not None:
@@ -478,7 +478,7 @@ if __name__ == "__main__":
                     split_image_data_filepath = get_plate_directory(BASE_PATH, row, col, create_dir = True).joinpath(split_image_data_filename)
                     if VERBOSE >= 2:
                         print("Saving image data for plate #", i + 1, "at position row", row, "column", col)
-                    saved_status = file_access.save_file(split_image_data_filepath, plate, file_access.CompressionMethod.BZ2)
+                    saved_status = file_access.save_file(split_image_data_filepath, plate, file_access.CompressionMethod.LZMA)
                     if VERBOSE >= 3:
                         if saved_status:
                             print("Saved processed image timeline data to:", split_image_data_filepath)
@@ -524,7 +524,7 @@ if __name__ == "__main__":
                 segmented_image_data_filepath = get_plate_directory(BASE_PATH, row, col).joinpath(segmented_image_data_filename)
                 if VERBOSE >= 2:
                     print("Saving segmented image data for plate #", i + 1, "at position row", row, "column", col)
-                saved_status = file_access.save_file(segmented_image_data_filepath, plate, file_access.CompressionMethod.BZ2)
+                saved_status = file_access.save_file(segmented_image_data_filepath, plate, file_access.CompressionMethod.LZMA)
                 if VERBOSE >= 3:
                     if saved_status:
                         print("Saved processed and segmented image timeline data to:", segmented_image_data_filepath)
