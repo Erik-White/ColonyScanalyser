@@ -395,7 +395,7 @@ if __name__ == "__main__":
             plates_list_segmented = segmented_images_temp
     # Check that segmented image data has been loaded for all plates
     if len(plates_list_segmented) > 0:
-        if len(plates_list_segmented[0]) == len(time_points):
+        if len(plates_list_segmented.values()) == len(time_points):
             if VERBOSE >= 1:
                 print("Successfully loaded segmented processed image data for all plates")
     else:
@@ -472,8 +472,8 @@ if __name__ == "__main__":
                         
             if SAVE_DATA >= 2:
                 # Save plates_list to disk for re-use if needed
-                # Have to save each plate"s data separately as it cannot be saved combined
-                for i, plate in enumerate(plates_list):
+                # Have to save each plate's data separately as it cannot be saved combined
+                for i, plate in enumerate(plates_list.values()):
                     (row, col) = utilities.index_number_to_coordinate(i + 1, PLATE_LATTICE)
                     split_image_data_filepath = get_plate_directory(BASE_PATH, row, col, create_dir = True).joinpath(split_image_data_filename)
                     if VERBOSE >= 2:
@@ -519,7 +519,7 @@ if __name__ == "__main__":
         # Save plates_list_segmented to disk for re-use if needed
         # Have to save each plate"s data separately as it cannot be saved combined
         if SAVE_DATA >= 1:
-            for i, plate in enumerate(plates_list_segmented):
+            for i, plate in enumerate(plates_list_segmented.values()):
                 (row, col) = utilities.index_number_to_coordinate(i + 1, PLATE_LATTICE)
                 segmented_image_data_filepath = get_plate_directory(BASE_PATH, row, col).joinpath(segmented_image_data_filename)
                 if VERBOSE >= 2:
@@ -542,12 +542,12 @@ if __name__ == "__main__":
     from collections import defaultdict
     from skimage.measure import regionprops
     plate_colonies = defaultdict(dict)
-    for i, plate_images in enumerate(plates_list_segmented):
+    for i, plate_images in enumerate(plates_list_segmented.values()):
         if VERBOSE >= 1:
             print("Tacking colonies on plate", i + 1, "of", len(plates_list_segmented))
 
         # Process image at each time point
-        for j, plate_image in enumerate(plate_images.values()):
+        for j, plate_image in enumerate(plate_images):
             if VERBOSE >= 2:
                 print("Tacking colonies at time point", j + 1, "of", len(plate_images))
 
