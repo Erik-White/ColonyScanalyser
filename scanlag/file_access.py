@@ -91,18 +91,17 @@ def file_compression(file_path, compression, access_mode = "r"):
     """
     Allows access to a file using the desired compression method
     """
-    if file_exists(file_path):
-        if compression == CompressionMethod.BZ2:
-            import bz2
-            return bz2.BZ2File(file_path, mode = access_mode)
-        elif compression == CompressionMethod.GZIP:
-            import gzip
-            return gzip.GzipFile(file_path, mode = access_mode)
-        elif compression == CompressionMethod.LZMA:
-            import lzma
-            return lzma.LZMAFile(file_path, mode = access_mode)
-        elif compression == CompressionMethod.NONE:
-            return open(file_path, mode = access_mode)
+    if compression == CompressionMethod.BZ2:
+        import bz2
+        return bz2.BZ2File(file_path, mode = access_mode)
+    elif compression == CompressionMethod.GZIP:
+        import gzip
+        return gzip.GzipFile(file_path, mode = access_mode)
+    elif compression == CompressionMethod.LZMA:
+        import lzma
+        return lzma.LZMAFile(file_path, mode = access_mode)
+    elif compression == CompressionMethod.NONE:
+        return open(file_path, mode = access_mode)
     
     return None
 
@@ -126,11 +125,10 @@ def save_file(file_path, data, compression):
     import pickle
 
     completed = False
-
-    if file_exists(file_path):
-        try:
-            with file_compression(file_path, compression, "wb") as outfile:
-                pickle.dump(data, outfile, pickle.HIGHEST_PROTOCOL)
+    
+    try:
+        with file_compression(file_path, compression, "wb") as outfile:
+            pickle.dump(data, outfile, pickle.HIGHEST_PROTOCOL)
             completed = True
-        finally:
-            return completed
+    finally:
+        return completed
