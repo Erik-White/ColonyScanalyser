@@ -360,14 +360,15 @@ if __name__ == "__main__":
         print("Working directory:", BASE_PATH)
 
     # Find images in working directory
-    image_files = file_access.get_files_by_type(BASE_PATH, "tif, png")
+    image_formats = "tif, png"
+    image_files = file_access.get_files_by_type(BASE_PATH, image_formats)
     # Try images directory if none found
     if not len(image_files) > 0:
-        image_files = file_access.get_files_by_type(BASE_PATH.joinpath(IMAGE_PATH), "tif, png")
+        image_files = file_access.get_files_by_type(BASE_PATH.joinpath(IMAGE_PATH), image_formats)
 
     #Check if images have been loaded
     if not len(image_files) > 0:
-        raise ValueError("No images could be found in the supplied folder path. Image are expected in .tif or .png format")
+        raise ValueError("No images could be found in the supplied folder path. Images are expected in these formats:", image_formats)
 
     # Move images to subdirectory if they are not already
     if IMAGE_PATH not in image_files[0].parts:
