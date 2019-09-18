@@ -242,12 +242,13 @@ def load_plate_timeline(load_filename, plate_lat, plate_pos = None):
 
     # Otherwise, load data for all plates
     else:
-        for row in range(PLATE_LATTICE[0]):
-            for col in range(PLATE_LATTICE[1]):
-                load_filepath = get_plate_directory(BASE_PATH, row + 1, col + 1).joinpath(load_filename)
+        for row in range(1, plate_lat[0] + 1):
+            for col in range(1, plate_lat[1] + 1):
+                load_filepath = get_plate_directory(BASE_PATH, row, col).joinpath(load_filename)
                 temp_data = file_access.load_file(load_filepath, file_access.CompressionMethod.LZMA, pickle = True)
+                
                 if temp_data is not None:
-                    plate_list[row * PLATE_LATTICE[1] + col] = temp_data
+                    plate_list[(row - 1) * plate_lat[1] + col] = temp_data
                 else:
                     # Do not return the list unless all elements were loaded sucessfully
                     plate_list = dict()
@@ -394,7 +395,7 @@ if __name__ == "__main__":
     if USE_SAVED:
         if VERBOSE >= 1:
             print("Attempting to load segmented processed image data for all plates")
-        segmented_image_data_filename = "split_image_data_segmented1"
+        segmented_image_data_filename = "split_image_data_segmented"
         plates_list_segmented = load_plate_timeline(segmented_image_data_filename, PLATE_LATTICE, PLATE_POSITION)
     # Check that segmented image data has been loaded for all plates
     if len(plates_list_segmented) > 0:
@@ -422,14 +423,10 @@ if __name__ == "__main__":
         else:
             if VERBOSE >= 1:
                 print("Unable to load processed image data for all plates")
-                
-            # Divide plates and copy to separate files
-            if VERBOSE >= 1:
-                print("Create plate subfolders")
 
             centers = None
             borders = None
-            # Loop through image files
+            # Loop through and preprocess image files
             for ifn, image_file in enumerate(image_files):
 
                 if VERBOSE >= 1:
@@ -462,12 +459,13 @@ if __name__ == "__main__":
                     print("Store split plate image data for this time point")
                 if PLATE_POSITION is not None:
                     # Save image for only a single plate
-                    if 0 not in plates_list:
-                        plates_list[0] = list()
-                    plates_list[0].append(plates[np.prod(PLATE_POSITION)-1])
+                    plate_index = np.prod(PLATE_POSITION)
+                    if plate_index not in plates_list:
+                        plates_list[plate_index] = list()
+                    plates_list[plate_index].append(plates[plate_index])
                 else:
                     # Save images for all plates
-                    for i, plate in enumerate(plates):
+                    for i, plate in enumerate(plates, start = 1):
                         # Store the image data from the current plate timepoint
                         if i not in plates_list:
                             plates_list[i] = list()
@@ -476,11 +474,11 @@ if __name__ == "__main__":
             if SAVE_DATA >= 2:
                 # Save plates_list to disk for re-use if needed
                 # Have to save each plate's data separately as it cannot be saved combined
-                for i, plate in enumerate(plates_list.values()):
-                    (row, col) = utilities.index_number_to_coordinate(i + 1, PLATE_LATTICE)
+                for i, plate in enumerate(plates_list.values(), start = 1):
+                    (row, col) = utilities.index_number_to_coordinate(i, PLATE_LATTICE)
                     split_image_data_filepath = get_plate_directory(BASE_PATH, row, col, create_dir = True).joinpath(split_image_data_filename)
                     if VERBOSE >= 2:
-                        print("Saving image data for plate #", i + 1, "at position row", row, "column", col)
+                        print("Saving image data for plate #", i, "at position row", row, "column", col)
                     saved_status = file_access.save_file(split_image_data_filepath, plate, file_access.CompressionMethod.LZMA)
                     if VERBOSE >= 3:
                         if saved_status:
@@ -489,10 +487,10 @@ if __name__ == "__main__":
                             print("An error occurred, unable to processed image timeline data to:", split_image_data_filepath)
 
         # Loop through plates and segment images at all timepoints
-        for i, plate_timepoints in enumerate(plates_list.values()):
-            (row, col) = utilities.index_number_to_coordinate(i + 1, PLATE_LATTICE)
+        for i, plate_timepoints in enumerate(plates_list.values(), start = 1):
+            (row, col) = utilities.index_number_to_coordinate(i, PLATE_LATTICE)
             if VERBOSE >= 2:
-                print("Segmenting images from plate #", i + 1, "at position row", row, "column", col)
+                print("Segmenting images from plate #", i, "at position row", row, "column", col)
 
             # plates_list is an array of size (total plates)*(total timepoints)
             # Each time point element of the array contains a co-ordinate array of size (total image columns)*(total image rows)
@@ -523,11 +521,11 @@ if __name__ == "__main__":
         # Have to save data for each plate"s data separately
         # Can't pickle arrays with >3 dimensions
         if SAVE_DATA >= 1:
-            for i, plate in enumerate(plates_list_segmented.values()):
-                (row, col) = utilities.index_number_to_coordinate(i + 1, PLATE_LATTICE)
+            for i, plate in enumerate(plates_list_segmented.values(), start = 1):
+                (row, col) = utilities.index_number_to_coordinate(i, PLATE_LATTICE)
                 segmented_image_data_filepath = get_plate_directory(BASE_PATH, row, col).joinpath(segmented_image_data_filename)
                 if VERBOSE >= 2:
-                    print("Saving segmented image data for plate #", i + 1, "at position row", row, "column", col)
+                    print("Saving segmented image data for plate #", i, "at position row", row, "column", col)
                 saved_status = file_access.save_file(segmented_image_data_filepath, plate, file_access.CompressionMethod.LZMA)
                 if VERBOSE >= 3:
                     if saved_status:
@@ -542,20 +540,20 @@ if __name__ == "__main__":
     # Loop through plates
     from collections import defaultdict
     plate_colonies = defaultdict(dict)
-    for i, plate_images in enumerate(plates_list_segmented.values()):
+    for i, plate_images in enumerate(plates_list_segmented.values(), start = 1):
         if VERBOSE >= 1:
-            print("Tacking colonies on plate", i + 1, "of", len(plates_list_segmented))
+            print("Tacking colonies on plate", i, "of", len(plates_list_segmented))
 
         # Process image at each time point
         for j, plate_image in enumerate(plate_images):
             if VERBOSE >= 2:
                 print("Tacking colonies at time point", j + 1, "of", len(plate_images))
 
+            # Store data for each colony at every timepoint it is found
             plate_colonies[i] = colony.timepoints_from_image(plate_colonies[i], plate_image, time_points[j])
 
-        print("number of plates = ", len(plate_colonies))
-        print("number of colonies for plate 1", len(plate_colonies[0].keys()))
-        print("number of timepoints for plate 1, colony 50", len(plate_colonies[0][50].timepoints))
+        if VERBOSE >= 1:
+            print("Data stored for", len(plate_colonies[i].keys()), "colonies found for plate", i)
 
     sys.exit()
 
