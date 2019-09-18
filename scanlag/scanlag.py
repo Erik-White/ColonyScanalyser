@@ -238,19 +238,21 @@ def load_plate_timeline(load_filename, plate_lat, plate_pos = None):
     if plate_pos is not None:
         row, column = plate_pos
         load_filepath = get_plate_directory(BASE_PATH, row, column).joinpath(load_filename)
-        if file_access.file_exists(load_filepath):
-            plate_list[0] = file_access.load_file(load_filepath, file_access.CompressionMethod.LZMA, pickle = True)
+        temp_data = file_access.load_file(load_filepath, file_access.CompressionMethod.LZMA, pickle = True)
+        if temp_data is not None:
+            plate_list[0] = temp_data
 
     # Otherwise, load data for all plates
     else:
         for row in range(PLATE_LATTICE[0]):
             for col in range(PLATE_LATTICE[1]):
                 load_filepath = get_plate_directory(BASE_PATH, row + 1, col + 1).joinpath(load_filename)
-                if file_access.file_exists(load_filepath):
-                    plate_list[row * PLATE_LATTICE[1] + col] = file_access.load_file(load_filepath, file_access.CompressionMethod.LZMA, pickle = True)
+                temp_data = file_access.load_file(load_filepath, file_access.CompressionMethod.LZMA, pickle = True)
+                if temp_data is not None:
+                    plate_list[row * PLATE_LATTICE[1] + col] = temp_data
                 else:
                     # Do not return the list unless all elements were loaded sucessfully
-                    plate_list = None
+                    plate_list = dict()
                     break
                 
     return plate_list
@@ -386,13 +388,11 @@ if __name__ == "__main__":
     plates_list_segmented = dict()
 
     # Check if split and segmented image data is already stored and can be loaded
-    if VERBOSE >= 1:
-        print("Attempting to load segmented processed image data for all plates")
-    segmented_image_data_filename = "split_image_data_segmented.xz"
     if USE_SAVED:
-        segmented_images_temp = load_plate_timeline(segmented_image_data_filename, PLATE_LATTICE, PLATE_POSITION)
-        if segmented_images_temp is not None:
-            plates_list_segmented = segmented_images_temp
+        if VERBOSE >= 1:
+            print("Attempting to load segmented processed image data for all plates")
+        segmented_image_data_filename = "split_image_data_segmented1"
+        plates_list_segmented = load_plate_timeline(segmented_image_data_filename, PLATE_LATTICE, PLATE_POSITION)
     # Check that segmented image data has been loaded for all plates
     if len(plates_list_segmented) > 0:
         if len(plates_list_segmented.values()) == len(time_points):
@@ -403,10 +403,10 @@ if __name__ == "__main__":
             print("Unable to load and uncompress segmented processed image data for all plates")
 
         # Check if split image data is already stored and can be loaded
-        if VERBOSE >= 1:
-            print("Attempting to load and uncompress processed image data for all plates")
-        split_image_data_filename = "split_image_data.xz"
         if USE_SAVED:
+            if VERBOSE >= 1:
+                print("Attempting to load and uncompress processed image data for all plates")
+            split_image_data_filename = "split_image_data"
             plates_list_temp = load_plate_timeline(split_image_data_filename, PLATE_LATTICE, PLATE_POSITION)
             if plates_list_temp is not None:
                 plates_list = plates_list_temp
