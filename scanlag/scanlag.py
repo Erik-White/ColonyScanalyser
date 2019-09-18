@@ -478,9 +478,12 @@ if __name__ == "__main__":
                     split_image_data_filepath = get_plate_directory(BASE_PATH, row, col, create_dir = True).joinpath(split_image_data_filename)
                     if VERBOSE >= 2:
                         print("Saving image data for plate #", i + 1, "at position row", row, "column", col)
-                    file_access.save_file(split_image_data_filepath, plate, file_access.CompressionMethod.BZ2)
+                    saved_status = file_access.save_file(split_image_data_filepath, plate, file_access.CompressionMethod.BZ2)
                     if VERBOSE >= 3:
-                        print("Saved processed image timeline data to:", split_image_data_filepath)
+                        if saved_status:
+                            print("Saved processed image timeline data to:", split_image_data_filepath)
+                        else:
+                            print("An error occurred, unable to processed image timeline data to:", split_image_data_filepath)
 
         # Loop through plates and segment images at all timepoints
         for i, plate_timepoints in enumerate(plates_list.values()):
@@ -521,9 +524,13 @@ if __name__ == "__main__":
                 segmented_image_data_filepath = get_plate_directory(BASE_PATH, row, col).joinpath(segmented_image_data_filename)
                 if VERBOSE >= 2:
                     print("Saving segmented image data for plate #", i + 1, "at position row", row, "column", col)
-                file_access.save_file(segmented_image_data_filepath, plate, file_access.CompressionMethod.BZ2)
+                saved_status = file_access.save_file(segmented_image_data_filepath, plate, file_access.CompressionMethod.BZ2)
                 if VERBOSE >= 3:
-                    print("Saved processed and segmented image timeline data to:", segmented_image_data_filepath)
+                    if saved_status:
+                        print("Saved processed and segmented image timeline data to:", segmented_image_data_filepath)
+                    else:
+                        print("An error occurred, unable to save processed and segmented image timeline data to:", segmented_image_data_filepath)
+
 
     # Record individual colony information
     if VERBOSE >= 1:
