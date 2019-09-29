@@ -11,6 +11,7 @@ class Colony():
     @dataclass
     class Timepoint:
         date_time: datetime.datetime
+        elapsed_minutes: int
         area: int
         center: tuple
         diameter: float
@@ -90,22 +91,24 @@ class Colony():
         return (x2 - x1) * log(2) / log(y2 / y1)
 
         
-def timepoints_from_image(colonies_dict, image, time_point):
+def timepoints_from_image(colonies_dict, image, time_point, elapsed_minutes):
     """
     Store individual colony data in a dict of colonies
 
     :param colonies_dict: a dict of colony objects
     :param image: a segmented and labelled image as a numpy array
     :param time_point: a datetime object corresponding to the image
+    :param elapsed_minutes: an integer representing the number of minutes since starting
     :returns: a dictionary of colony objects
     """
     from skimage.measure import regionprops
     colonies = colonies_dict.copy()
 
-    for rp in regionprops(image):
+    for rp in regionprops(image, coordinates = "rc"):
         # Create a new time point object to store colony data
         timepoint_data = Colony.Timepoint(
             date_time = time_point,
+            elapsed_minutes = elapsed_minutes,
             area = rp.area,
             center = rp.centroid,
             diameter = rp.equivalent_diameter,
