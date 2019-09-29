@@ -54,7 +54,7 @@ def clear_merged_labels(segmented_image, threshold_radius = 2):
     from skimage.measure import regionprops
     img = segmented_image.copy()
 
-    for rp in regionprops(segmented_image):
+    for rp in regionprops(segmented_image, coordinates = "rc"):
         radius = (rp.equivalent_diameter / 2) + threshold_radius
 
         # Copy the image in a radius around the center point
@@ -112,9 +112,6 @@ def standardise_labels_timeline(images_list, label_prepend = 99, start_at_end = 
         images.reverse()
         
     for i, image in enumerate(images):
-        if i > 0:
-            label_prepend = None
-
         # Store the labels for the current image
         labels = get_labelled_centers(image, label_prepend = label_prepend)
         
@@ -138,14 +135,16 @@ def get_labelled_centers(image, label_prepend = None):
     """
     from skimage.measure import regionprops
 
-    rps = regionprops(image)
+    rps = regionprops(image, coordinates = "rc")
     labels = []
 
     # Loop through labelled regions and store information
     for rp in rps:
         label = str(rp.label)
+        # Prepend label if it is not already
         if label_prepend is not None:
-            label  = str(label_prepend) + label 
+            if not label.startswith(str(label_prepend)):
+                label  = str(label_prepend) + label 
         labels.append((int(label), rp.centroid))
     
     return labels
