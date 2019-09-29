@@ -16,6 +16,35 @@
         raise IndexError("Index number is greater than the supplied lattice size")
 
     return (row, col)
+
+
+def coordinate_to_index_number(coordinate):
+    """
+    Find a positional index for a coordinate
+
+    Starting along rows and then down columns
+    """
+    import numpy as np
+
+    return np.prod(coordinate)
+
+
+def average_dicts_values_by_key(dicts):
+    """
+    Average values across multiple dicts with the same key
+
+    :param dicts: a list of dictionaries
+    :returns: a list of 
+    """
+    from collections import Counter
+
+    sums = Counter()
+    counters = Counter()
+    for itemset in dicts:
+        sums.update(itemset)
+        counters.update(itemset.keys())
+
+    return {x: float(sums[x])/counters[x] for x in sums.keys()}
     
 
 def is_outlier(points, thresh=3.5):
