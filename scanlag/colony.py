@@ -36,7 +36,39 @@ class Colony():
         self.__timepoints = val
 
     @property
-    def timepoint(self, time_point):
+    def timepoint_first(self):
+        return self.get_timepoint(min(self.timepoints.keys()))
+
+    @property
+    def timepoint_last(self):
+        return self.get_timepoint(max(self.timepoints.keys()))
+
+    @property
+    def areas(self):
+        return list(self.timepoints, key=attrgetter('area'))
+
+    @property
+    def center(self):
+        return sum(self.timepoints, key=attrgetter('center')) / len(self.timepoints)
+
+    @property
+    def growth_rate(self):
+        return (self.timepoint_last.area - self.timepoint_first.area) / self.timepoint_first.area
+
+    @property
+    def growth_rate_average(self):
+        #if self.growth_rate <= 0:
+        if (self.timepoint_last.area - self.timepoint_first.area) / self.timepoint_first.area <= 0:
+            return 0
+        else:
+            return ((self.timepoint_last.area - self.timepoint_first.area) ** (1 / len(self.timepoints))) - 1
+
+    @property
+    def time_of_appearance(self):
+        #return min(self.timepoints, key=attrgetter('date_time'))
+        return self.timepoint_first.date_time
+
+    def get_timepoint(self, time_point):
         if time_point in self.__timepoints:
             return self.timepoints[time_point]
         else:
@@ -49,34 +81,24 @@ class Colony():
             raise ValueError("This time point already exists")
         
     def update_timepoint(self, time_point, timepointdata):
-        self.timepoint[time_point] = timepointdata
+        self.timepoints[time_point] = timepointdata
 
-    def doubling_time(self):
+    def get_doubling_time(self, window = 10):
         x_pts = list(self.timepoints, key=attrgetter('date_time'))
         y_pts = list(self.timepoints, key=attrgetter('area'))
-        window = 10
         return [self.__local_doubling_time(i, x_pts, y_pts, window) for i in range(len(x_pts) - window)]
 
     def remove_timepoint(self, time_point):
-        del self.timepoint[time_point]
+        del self.timepoints[time_point]
 
     def area_at_timepoint(self, time_point):
-        return self.timepoint[time_point].area
-
-    def center(self):
-        return sum(self.timepoints, key=attrgetter('center')) / len(self.timepoints)
+        return self.get_timepoint(time_point).area
 
     def center_at_timepoint(self, time_point):
-        return self.timepoint[time_point].center
+        return self.get_timepoint(time_point).center
 
     def circularity_at_timepoint(self, time_point):
-        return self.__circularity(self.timepoint[time_point].area, self.timepoint[time_point].perimiter)
-            
-    def get_areas(self):
-        return list(self.timepoints, key=attrgetter('area'))
-
-    def time_of_appearance(self):
-        return min(self.timepoints, key=attrgetter('date_time'))
+        return self.__circularity(self.get_timepoint(time_point).area, self.get_timepoint(time_point).perimiter)
 
     def __circularity(self, area, perimeter):
         return (4 * pi * area) / (perimeter * perimeter)
