@@ -98,22 +98,31 @@ def watershed_separation(image, smoothing = 0.5):
     return img
 
 
-def standardise_labels_timeline(images_list, label_prepend = 99, start_at_end = True):
+def standardise_labels_timeline(images_list, start_at_end = True, count_offset = 1000):
     """
     Replace labels on similar images to allow tracking over time
 
     :param images_list: a list of segmented and lablled images as numpy arrays
-    :param label_prepend: an integer to prepend to relabelled object identifiers
     :param start_at_end: relabels the images beginning at the end of the list
+    :param count_offset: an int greater than the total number of expected labels in a single image
     :returns: a list of relablled images as numpy arrays
     """
+    import numpy as np
+
     images = list(images_list)
     if start_at_end:
         images.reverse()
+
+    # Relabel all images to ensure there are no duplicates
+    for image in images:
+        for label in np.unique(image):
+            if label > 0:
+                count_offset += 1
+                image[image == label] = count_offset
         
+    # Ensure labels are propagated through image timeline
     for i, image in enumerate(images):
-        # Store the labels for the current image
-        labels = get_labelled_centers(image, label_prepend = label_prepend)
+        labels = get_labelled_centers(image)
         
         # Apply labels to all subsequent images
         for j in range(i, len(images)):
@@ -125,29 +134,19 @@ def standardise_labels_timeline(images_list, label_prepend = 99, start_at_end = 
     return images
 
 
-def get_labelled_centers(image, label_prepend = None):
+def get_labelled_centers(image):
     """
     Builds a list of labels and their centers
 
-    :param image: a segmented and lablled image as a numpy array
-    :param label_prepend: an integer to prepend to relabelled object identifiers
-    :returns: a 2D list of label, co-ordinate pairs
+    :param image: a segmented and labelled image as a numpy array
+    :returns: a list of label, co-ordinate tuples
     """
     from skimage.measure import regionprops
 
-    rps = regionprops(image, coordinates = "rc")
-    labels = []
-
-    # Loop through labelled regions and store information
-    for rp in rps:
-        label = str(rp.label)
-        # Prepend label if it is not already
-        if label_prepend is not None:
-            if not label.startswith(str(label_prepend)):
-                label  = str(label_prepend) + label 
-        labels.append((int(label), rp.centroid))
+    # Find all labelled areas, disable caching so properties are only calculated if required
+    rps = regionprops(image, cache = False)
     
-    return labels
+    return [(r.label, r.centroid) for r in rps]
 
 
 def replace_image_point_labels(image, labels):
@@ -155,15 +154,14 @@ def replace_image_point_labels(image, labels):
     Replace the labelled at a list of points with new labels
 
     :param image: a segmented and lablled image as a numpy array
-    :param labels: a 2D list of label, co-ordinate pairs
+    :param labels: a list of label, co-ordinate tuples
     :returns: a relabelled image as a numpy array
     """
     img = image.copy()
     for label, point in labels:
-        # Ensure point values are integers
-        point = tuple(int(x) for x in point)
+        row, col = point
         # Find the existing label at the point
-        index = img[point]
+        index = img[int(row), int(col)]
         # Replace the existing label with new, excluding background
         if index > 0:
             img[img == index] = label
