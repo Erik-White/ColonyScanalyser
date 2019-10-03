@@ -78,35 +78,6 @@ def cut_image_circle(image, **kwargs):
         img[dist > radius] = 0
 
     return img
-    
-
-# Checks a circular area around each labelled part of an image
-# If other objects are found in the radius, remove the label
-def clear_merged_labels(segmented_image, threshold_radius = 2):
-    """
-    Checks a circular area around each labelled part of an image
-
-    If other labelled objects are found in the radius, remove all labels
-
-    :param segmented_image: a black and white labelled image as a numpy array
-    :param threshold_radius: the radius around each lablled object to clear
-    :returns: a relabelled image as a numpy array
-    """
-    import numpy as np
-    from skimage.measure import regionprops
-    img = segmented_image.copy()
-
-    for rp in regionprops(segmented_image, coordinates = "rc"):
-        radius = (rp.equivalent_diameter / 2) + threshold_radius
-
-        # Copy the image in a radius around the center point
-        search_area = cut_image_circle(segmented_image, center = rp.centroid, radius = radius)
-        # Remove labelled section if it is merged
-        # Should only find 0 and one other label
-        if len(np.unique(search_area)) > 2:
-            img[img == rp.label] = 0
-
-    return img
 
 
 def remove_background_mask(image, mask):
