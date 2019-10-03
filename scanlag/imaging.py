@@ -1,3 +1,39 @@
+def crop_image(image, crop_shape, center = None):
+    """
+    Get a subsection of an image
+
+    Optionally specify a center point to crop around
+
+    :param image: an image as a numpy array
+    :param crop_shape: a row, column tuple array size to crop
+    :param center: a row, column tuple co-ordinate point
+    :returns: an image as a numpy array
+    """
+    import operator
+
+    img = image.copy()
+
+    if any(x < 0 for x in crop_shape) or len(image.shape) < len(crop_shape):
+        raise ValueError("The crop shape must be positive integers and the same dimensions as the image to crop")
+    if any(r < c for r, c in zip(img.shape, crop_shape)):
+        raise ValueError("The crop shape cannot be larger than the image to crop")
+
+    if center is None:
+        # Use the center of the image
+        start = tuple(map(lambda a, da: a // 2 - da // 2, img.shape, crop_shape))
+    else:
+        # Use a custom center point
+        start = tuple(map(lambda a, da: a - da // 2, center, crop_shape))
+
+    end = tuple(map(operator.add, start, crop_shape))
+    
+    if any(x < 0 for x in start) or any(x > y for x in end for y in img.shape):
+        raise ValueError("The crop area cannot be outside the original image")
+
+    slices = tuple(map(slice, start, end))
+
+    return img[slices]
+
 def cut_image_circle(image, **kwargs):
     """
     Get the circular area of an image
@@ -11,26 +47,32 @@ def cut_image_circle(image, **kwargs):
     :returns: an image as a numpy array
     """
     import numpy as np
+
     img = image.copy()
     center = kwargs.get('center', None)
     radius = kwargs.get('radius', None)
     inverse = kwargs.get('inverse', False)
 
-    # Use the centre of the image bounding box if none specified
-    if center is None:
-        (cy, cx) = map(lambda x: x / 2.0, img.shape)
-    else:
-        (cy, cx) = center
+    # Either use the entire image or crop to a radius
     if radius is None:
-        radius = len(image[0]) / 2
-
+        radius = image.shape[0] // 2
+    else:
+        if any(radius * 2 > x for x in img.shape):
+            raise ValueError("The circle radius cannot be larger than the supplied image")
+        # Crop the image around the center point (if provided)
+        crop_area = (radius * 2) + 1
+        img = crop_image(img, (crop_area, crop_area), center)
+        
+    (cy, cx) = map(lambda x: x // 2, img.shape)
+        
+    # Calculate distances from center
     dist_x = np.vstack([(np.arange(img.shape[1]) - cx)] * (img.shape[0]))
     dist_y = np.vstack([(np.arange(img.shape[0]) - cy)] * (img.shape[1])).T
-    dist = np.sqrt(dist_x**2 + dist_y**2)
-
+    dist = np.sqrt(dist_x ** 2 + dist_y ** 2)
+    
     if inverse:
         # Remove image information in area inside boundary
-        img[dist < radius] = 0
+        img[dist <= radius] = 0
     else:
         # Remove image information in area outside boundary
         img[dist > radius] = 0
