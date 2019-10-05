@@ -168,7 +168,7 @@ def standardise_labels_timeline(images_list, start_at_end = True, count_offset =
         
         # Apply labels to all subsequent images
         for j in range(i, len(images)):
-            images[j] = replace_image_point_labels(images[j], labels)
+            images[j] = replace_image_point_labels(images[j], labels, in_place = in_place)
 
     if start_at_end:
         images.reverse()
@@ -191,15 +191,19 @@ def get_labelled_centers(image):
     return [(r.label, r.centroid) for r in rps]
 
 
-def replace_image_point_labels(image, labels):
+def replace_image_point_labels(image, labels, in_place = True):
     """
-    Replace the labelled at a list of points with new labels
+    Replace the labels at a list of points with new labels
 
-    :param image: a segmented and lablled image as a numpy array
+    :param image: a segmented and labelled image as a numpy array
     :param labels: a list of label, co-ordinate tuples
     :returns: a relabelled image as a numpy array
     """
-    img = image.copy()
+    if in_place:
+        img = image
+    else:
+        img = image.copy()
+
     for label, point in labels:
         row, col = point
         # Find the existing label at the point
