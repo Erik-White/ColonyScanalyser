@@ -80,16 +80,27 @@ def cut_image_circle(image, **kwargs):
     return img
 
 
-def remove_background_mask(image, mask):
+def remove_background_mask(image, mask, smoothing = 0.5, **filter_args):
     """
     Process an image by removing a background mask
     """
-    from skimage import exposure
+    #from skimage import exposure
     from skimage.filters import gaussian
     
-    background = image[mask & (image > 0.05)].mean()
-    ind = gaussian(image, 0.5) > background + 0.03
+    if image.size == 0 or mask.size == 0:
+        raise ValueError("The supplied image or mask cannot be empty")
+    if image.shape != mask.shape:
+        raise ValueError("The supplied image and mask must be the same shape")
+    image = image.copy()
+    mask = mask.copy()
 
+    # Get background mask intensity
+    background = image[mask & (image > 0.05)].mean()
+    
+    # Determine image foreground
+    ind = gaussian(image, smoothing, preserve_range = True, **filter_args) > background + 0.03
+    
+    # Subtract background, returning only the area in the mask
     return mask & ind
 
 
@@ -97,7 +108,17 @@ def watershed_separation(image, smoothing = 0.5):
     """
     Returns a labelled image where merged objects are separated
     """
+    import numpy as np
+    from scipy import ndimage
+    from skimage.filters import gaussian
+    from skimage.measure import label
+    from skimage.morphology import watershed
+    from skimage.feature import peak_local_max
+
+    if image.size == 0:
+        return image
     img = image.copy()
+
     # Estimate smoothed distance from peaks to background
     distance = ndimage.distance_transform_edt(img)
     distance = gaussian(distance, smoothing)
@@ -111,18 +132,26 @@ def watershed_separation(image, smoothing = 0.5):
     return img
 
 
-def standardise_labels_timeline(images_list, start_at_end = True, count_offset = 1000):
+def standardise_labels_timeline(images_list, start_at_end = True, count_offset = 1000, in_place = True):
     """
     Replace labels on similar images to allow tracking over time
 
-    :param images_list: a list of segmented and lablled images as numpy arrays
-    :param start_at_end: relabels the images beginning at the end of the list
+    :param images_list: a list of segmented and labelled images as numpy arrays
+    :param start_at_end: relabel the images beginning at the end of the list
     :param count_offset: an int greater than the total number of expected labels in a single image
     :returns: a list of relablled images as numpy arrays
     """
     import numpy as np
+    from copy import deepcopy
 
-    images = list(images_list)
+    if count_offset < 0 or not isinstance(count_offset, int):
+        raise ValueError("count_offset must be a positive integer")
+    
+    if not in_place:
+        images = deepcopy(images_list)
+    else:
+        images = images_list.copy()
+    
     if start_at_end:
         images.reverse()
 
@@ -174,7 +203,7 @@ def replace_image_point_labels(image, labels):
     for label, point in labels:
         row, col = point
         # Find the existing label at the point
-        index = img[int(row), int(col)]
+        index = img[int(round(row)), int(round(col))]
         # Replace the existing label with new, excluding background
         if index > 0:
             img[img == index] = label
