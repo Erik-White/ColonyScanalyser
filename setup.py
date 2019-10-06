@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup(
     python_requires = ">3.7",
@@ -6,20 +6,23 @@ setup(
     version = "0.1",
     description = "Runs ScanLag analysis on image files",
     url = "https://github.com/Erik-White/ScanLag/",
-    author = "",
+    author = "Erik White",
     author_email = "",
     license = "GPL-3.0",
     packages =  find_packages(),
-    zip_safe = False
+    zip_safe = False,
     install_requires = [
         "numpy",
         "matplotlib",
         "scikit-image >= 0.16"
     ],
     extras_require = {
-        #"dev": ["check-manifest"],
+        "dev": [
+            "check-manifest"
+            "pytest",
+            "pytest-cov"
+            ],
         "test": [
-            "mock",
             "pytest",
             "pytest-cov"
         ],
