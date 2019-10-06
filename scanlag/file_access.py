@@ -100,9 +100,6 @@ class CompressionMethod(Enum):
     PICKLE = ".pyc"
     NONE = ""
 
-    def __str__(self):
-        return str(self.value)
-
 
 def file_compression(file_path, compression, access_mode = "r"):
     """

@@ -27,6 +27,9 @@ class TestFileExists():
     def test_file_does_not_exist(self):
         assert file_exists(FILE_NON_EXISTANT) == False
 
+    def test_file_string(self):
+        assert file_exists("") == False
+
 
 class TestGetFilesByType():
     def test_return_list(self):
@@ -51,6 +54,10 @@ class TestGetFilesByType():
         assert len(result) > 0
         result = [x.suffix for x in result]
         assert set(result) == set(suffixes)
+
+    def test_file_string(self):
+        result = get_files_by_type("")
+        assert all(result) == True
 
 
 class TestCreateSubdirectory():
@@ -98,6 +105,22 @@ class TestMoveToSubdirectory():
     def test_string_value_exception(self, tmp_path):
         with pytest.raises(ValueError):
             move_to_subdirectory([tmp_path], "")
+
+    def test_write_exception(self, tmp_path):
+        temp_file = create_temp_file(tmp_path)
+        # Store the original folder permissions
+        test_dir_chmod = Path.stat(tmp_path).st_mode
+
+        # Create a new subdir and make it read + execute
+        test_dir = create_subdirectory(tmp_path, SUB_DIR)
+        test_dir.chmod(555)
+
+        try:
+            with pytest.raises(EnvironmentError):
+                move_to_subdirectory([temp_file], test_dir)
+        finally:
+            # Restore original folder permissions
+            test_dir.chmod(test_dir_chmod)
 
 
 class TestFileCompression():
