@@ -27,10 +27,12 @@ import plotting
 import colony
 
 
-def get_plate_directory(parent_path, row, col, create_dir = False):
+def get_plate_directory(parent_path, row, col, create_dir = True):
     """
     Determine the directory path for a specified plate
+
     Can create the directory if needed
+
     :param parent_path: a path object
     :param row: a lattice co-ordinate row
     :param col: a lattice co-ordinate column
@@ -141,10 +143,12 @@ def split_image_into_plates(img, borders, edge_cut=100):
     return plates
 
 
-def segment_image(plate, plate_mask, plate_noise_mask, area_min=30, area_max=500):
+def segment_image(plate, plate_mask, plate_noise_mask, area_min = 5):
     """
     Finds all colonies on a plate and returns an array of co-ordinates
+
     If a co-ordinate is occupied by a colony, it contains that colonies labelled number
+
     :param plate: a black and white image as a numpy array
     :param mask: a black and white image as a numpy array
     :param plate_noise_mask: a black and white image as a numpy array
@@ -164,7 +168,7 @@ def segment_image(plate, plate_mask, plate_noise_mask, area_min=30, area_max=500
     plate = ndimage.morphology.binary_fill_holes(plate)
 
     # Remove background noise
-    plate = remove_small_objects(plate, min_size = 10)
+    plate = remove_small_objects(plate, min_size = area_min)
 
     # Return an ordered array, relabelled sequentially
     #(colonies, fwdmap, revmap) = relabel_sequential(colonies)
@@ -175,7 +179,7 @@ def segment_image(plate, plate_mask, plate_noise_mask, area_min=30, area_max=500
     colonies = label(plate)
 
     # Exclude objects that are too eccentric
-    rps = regionprops(colonies)
+    rps = regionprops(colonies, coordinates = "rc")
     for rp in rps:
         # Eccentricity of zero is a perfect circle
         # Circularity of 1 is a perfect circle
@@ -193,7 +197,9 @@ def segment_image(plate, plate_mask, plate_noise_mask, area_min=30, area_max=500
 def segment_plate_timepoints(plate_images_list, date_times):
     """
     Build an array of segmented image data for all available time points
+
     Takes list of pre-processed plate images of size (total timepoints)
+
     :param plate_images_list: a list of black and white images as numpy arrays
     :param date_times: an ordered list of datetime objects
     :returns: a segmented and labelled list of images as numpy arrays
@@ -212,7 +218,7 @@ def segment_plate_timepoints(plate_images_list, date_times):
         if i == 1:
             plate_noise_mask = plate_image
         # Build a 2D array of colony co-ordinate data for the plate image
-        segmented_image = segment_image(plate_image, plate_mask, plate_noise_mask)
+        segmented_image = segment_image(plate_image, plate_mask, plate_noise_mask, area_min = 8)
         # segmented_images is an array of size (total plates)*(total timepoints)
         # Each time point element of the array contains a co-ordinate array of size (total image columns)*(total image rows)
         segmented_images.append(segmented_image)
@@ -232,7 +238,7 @@ def load_plate_timeline(load_filename, plate_lat, plate_pos = None):
         load_filepath = get_plate_directory(BASE_PATH, row, column).joinpath(load_filename)
         temp_data = file_access.load_file(load_filepath, file_access.CompressionMethod.LZMA, pickle = True)
         if temp_data is not None:
-            plate_list[0] = temp_data
+            plate_list[utilities.coordinate_to_index_number(plate_pos)] = temp_data
 
     # Otherwise, load data for all plates
     else:
