@@ -5,6 +5,7 @@ An image analysis tool for measuring microorganism colony growth.
 ScanLag will analyse and collate statistical data from cell-culture plate images. It requires a series of images from a fixed point that show the development of microorganism colonies over time.
 
 <img align="right" src="docs/images/colony_growth_curve_small.png">
+
 ScanLag can provide information on:
 * Colony growth lag time (time of appearance)
 * Bimodal lag time distribution (comparing lag times of two colonies)
@@ -35,13 +36,14 @@ For testing:
 
 ### Installing
 
-####Using pip
+#### Using pip
 Install Scikit-image (unless already installed)
 `pip install scikit-image`
+
 Install ScanLag
 `pip install scanlag`
 
-####From github (requires [git](https://git-scm.com/) install)
+#### From github (requires [git](https://git-scm.com/) install)
 ```
 git clone https://github.com/erik-white/scanlag.git
 cd scanlag
