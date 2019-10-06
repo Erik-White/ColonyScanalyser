@@ -30,9 +30,7 @@ import colony
 def get_plate_directory(parent_path, row, col, create_dir = False):
     """
     Determine the directory path for a specified plate
-
     Can create the directory if needed
-
     :param parent_path: a path object
     :param row: a lattice co-ordinate row
     :param col: a lattice co-ordinate column
@@ -146,9 +144,7 @@ def split_image_into_plates(img, borders, edge_cut=100):
 def segment_image(plate, plate_mask, plate_noise_mask, area_min=30, area_max=500):
     """
     Finds all colonies on a plate and returns an array of co-ordinates
-
     If a co-ordinate is occupied by a colony, it contains that colonies labelled number
-
     :param plate: a black and white image as a numpy array
     :param mask: a black and white image as a numpy array
     :param plate_noise_mask: a black and white image as a numpy array
@@ -197,9 +193,7 @@ def segment_image(plate, plate_mask, plate_noise_mask, area_min=30, area_max=500
 def segment_plate_timepoints(plate_images_list, date_times):
     """
     Build an array of segmented image data for all available time points
-
     Takes list of pre-processed plate images of size (total timepoints)
-
     :param plate_images_list: a list of black and white images as numpy arrays
     :param date_times: an ordered list of datetime objects
     :returns: a segmented and labelled list of images as numpy arrays
@@ -263,7 +257,6 @@ def load_plate_timeline(load_filename, plate_lat, plate_pos = None):
 def save_plate_segmented_image(plate_image, segmented_image, plate_coordinate, date_time):
     """
     Saves processed plate images and corresponding segmented data plots
-
     :param plate_image: a black and white image as a numpy array
     :param segmented_image: a segmented and labelled image as a numpy array
     :param plate_coordinate: a row, column tuple representing the plate position
@@ -317,41 +310,48 @@ def save_plate_segmented_image(plate_image, segmented_image, plate_coordinate, d
 # Script
 if __name__ == "__main__":
 
-    parser = argparse.ArgumentParser(description="Analyze ScanLag images to track colonies and generate statistical data.")
-    parser.add_argument("--path", type=str, default=None,
-                       help="Image files location")
-    parser.add_argument("--verbose", type=int, default=0,
-                       help="Output information level")
-    parser.add_argument("--plate_lattice", type=int, nargs=2, default=(3, 2),
-                        metavar=("ROW", "COL"),
-                        help="The row and column co-ordinate layout of plates")
-    parser.add_argument("--plate_position", type=int, nargs=2, default=None,
-                        metavar=("ROW", "COL"),
-                        help="The row and column co-ordinates of the plate to study (default: all)")
-    parser.add_argument("--save_data", type=int, default=1,
-                        help="Which data files to store on disk")
-    parser.add_argument("--save_plots", type=int, default=1,
-                        help="The level of plot images to store on disk")
-    parser.add_argument("--use_saved", type=strtobool, default=True,
-                        help="Allow or prevent use of previously calculated data")
+    parser = argparse.ArgumentParser(
+        description="Analyze ScanLag images to track colonies and generate statistical data.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+        )
+    parser.add_argument("path", type = str,
+                       help="Image files location", default = None)
+    parser.add_argument("-v", "--verbose", type = int, default = 1,
+                       help="Information output level")
+    parser.add_argument("--plate_lattice", type = int, nargs = 2, default = (3, 2),
+                        metavar = ("ROW", "COL"),
+                        help="The row and column co-ordinate layout of plates. Example usage: --plate_lattice 3 3")
+    parser.add_argument("--pos", "--plate_position", type = int, nargs = 2, default = argparse.SUPPRESS,
+                        metavar = ("ROW", "COL"),
+                        help = "The row and column co-ordinates of a single plate to study in the plate lattice. Example usage: --plate_position 2 1 (default: all)")
+    parser.add_argument("--save_data", type = int, default = 1,
+                        help = "Which compressed image data files to store on disk")
+    parser.add_argument("--save_plots", type = int, default = 1,
+                        help = "The detail level of plot images to store on disk")
+    parser.add_argument("--use_saved", type = strtobool, default = True,
+                        help = "Allow or prevent use of previously calculated data")
 
     args = parser.parse_args()
     BASE_PATH = args.path
     IMAGE_PATH = "source_images"
     VERBOSE = args.verbose
-    PLATE_LATTICE = args.plate_lattice
-    PLATE_POSITION = args.plate_position
+    PLATE_LATTICE = tuple(args.plate_lattice)
+    if "plate_position" not in args:
+        PLATE_POSITION = None
+    else:
+        PLATE_POSITION = args.plate_position
     SAVE_DATA = args.save_data
     SAVE_PLOTS = args.save_plots
     USE_SAVED = args.use_saved
 
     if PLATE_POSITION is not None:
         PLATE_POSITION = tuple(PLATE_POSITION)
+        if utilities.coordinate_to_index_number(PLATE_POSITION) > utilities.coordinate_to_index_number(PLATE_LATTICE):
+            raise ValueError("The supplied plate position coordinate is outside the plate grid")
 
     # Resolve working directory
     if BASE_PATH is None:
-        # Default to user home directory if none supplied
-        BASE_PATH = Path.home()
+        raise ValueError("A path to a working directory must be supplied")
     else:
         BASE_PATH = Path(args.path).resolve()
     if not BASE_PATH.exists():
@@ -360,7 +360,7 @@ if __name__ == "__main__":
         print("Working directory:", BASE_PATH)
 
     # Find images in working directory
-    image_formats = "tif, png"
+    image_formats = ["tif", "tiff", "png"]
     image_files = file_access.get_files_by_type(BASE_PATH, image_formats)
     # Try images directory if none found
     if not len(image_files) > 0:
