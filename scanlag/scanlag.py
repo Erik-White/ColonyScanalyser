@@ -13,10 +13,6 @@ from distutils.util import strtobool
 # Third party modules
 import numpy as np
 from skimage.io import imread, imsave
-import matplotlib
-matplotlib.use("TkAgg") # Required for OSX
-from matplotlib import cm
-from matplotlib.dates import DateFormatter
 import matplotlib.pyplot as plt
 
 # Local modules
@@ -24,6 +20,7 @@ import utilities
 import file_access
 import imaging
 import plotting
+import plots
 import colony
 
 
@@ -263,6 +260,7 @@ def load_plate_timeline(load_filename, plate_lat, plate_pos = None):
 def save_plate_segmented_image(plate_image, segmented_image, plate_coordinate, date_time):
     """
     Saves processed plate images and corresponding segmented data plots
+
     :param plate_image: a black and white image as a numpy array
     :param segmented_image: a segmented and labelled image as a numpy array
     :param plate_coordinate: a row, column tuple representing the plate position
@@ -278,7 +276,7 @@ def save_plate_segmented_image(plate_image, segmented_image, plate_coordinate, d
     ax[1].imshow(segmented_image, vmax = 1)
             
     # Place maker labels on colonies
-    for rp in regionprops(segmented_image):
+    for rp in regionprops(segmented_image, coordinates = "rc"):
         ax[1].annotate("+",
             plotting.rc_to_xy(rp.centroid),
             xycoords = "data",
@@ -288,11 +286,13 @@ def save_plate_segmented_image(plate_image, segmented_image, plate_coordinate, d
             )
         ax[1].annotate(str(rp.label),
             plotting.rc_to_xy(rp.centroid),
-            xytext = (5, -16),
+            xytext = (5, 5),
             xycoords = "data",
             textcoords = "offset pixels",
             color = "white",
             alpha = 0.8,
+            horizontalalignment = "left",
+            verticalalignment = "center"
             )
 
     fig_title = " ".join(["Plate at row", str(plate_row), ": column", str(plate_column), "at time point", date_time.strftime("%Y/%m/%d %H:%M")])
@@ -399,10 +399,10 @@ if __name__ == "__main__":
     plates_list_segmented = dict()
 
     # Check if split and segmented image data is already stored and can be loaded
+    segmented_image_data_filename = "split_image_data_segmented"
     if USE_SAVED:
         if VERBOSE >= 1:
             print("Attempting to load segmented processed image data for all plates")
-        segmented_image_data_filename = "split_image_data_segmented"
         plates_list_segmented = load_plate_timeline(segmented_image_data_filename, PLATE_LATTICE, PLATE_POSITION)
     # Check that segmented image data has been loaded for all plates
     if len(plates_list_segmented) > 0:
@@ -414,17 +414,17 @@ if __name__ == "__main__":
             print("Unable to load and uncompress segmented processed image data for all plates")
 
         # Check if split image data is already stored and can be loaded
+        split_image_data_filename = "split_image_data"
         if USE_SAVED:
             if VERBOSE >= 1:
                 print("Attempting to load and uncompress processed image data for all plates")
-            split_image_data_filename = "split_image_data"
             plates_list_temp = load_plate_timeline(split_image_data_filename, PLATE_LATTICE, PLATE_POSITION)
             if plates_list_temp is not None:
                 plates_list = plates_list_temp
         
         # Check that image data has been loaded for all plates
         if len(plates_list) > 0:
-            if len(plates_list[0]) == len(time_points):
+            if len(plates_list.values()) == len(time_points):
                 if VERBOSE >= 1:
                     print("Successfully loaded processed image data for all plates")
         else:
@@ -466,10 +466,10 @@ if __name__ == "__main__":
                     print("Store split plate image data for this time point")
                 if PLATE_POSITION is not None:
                     # Save image for only a single plate
-                    plate_index = np.prod(PLATE_POSITION)
+                    plate_index = utilities.coordinate_to_index_number(PLATE_POSITION)
                     if plate_index not in plates_list:
                         plates_list[plate_index] = list()
-                    plates_list[plate_index].append(plates[plate_index])
+                    plates_list[plate_index].append(plates[plate_index - 1])
                 else:
                     # Save images for all plates
                     for i, plate in enumerate(plates, start = 1):
@@ -482,7 +482,10 @@ if __name__ == "__main__":
                 # Save plates_list to disk for re-use if needed
                 # Have to save each plate's data separately as it cannot be saved combined
                 for i, plate in enumerate(plates_list.values(), start = 1):
-                    (row, col) = utilities.index_number_to_coordinate(i, PLATE_LATTICE)
+                    if PLATE_POSITION is not None:
+                        (row, col) = PLATE_POSITION
+                    else:
+                        (row, col) = utilities.index_number_to_coordinate(i, PLATE_LATTICE)
                     split_image_data_filepath = get_plate_directory(BASE_PATH, row, col, create_dir = True).joinpath(split_image_data_filename)
                     if VERBOSE >= 2:
                         print("Saving image data for plate #", i, "at position row", row, "column", col)
@@ -495,7 +498,10 @@ if __name__ == "__main__":
 
         # Loop through plates and segment images at all timepoints
         for i, plate_timepoints in enumerate(plates_list.values(), start = 1):
-            (row, col) = utilities.index_number_to_coordinate(i, PLATE_LATTICE)
+            if PLATE_POSITION is not None:
+                (row, col) = PLATE_POSITION
+            else:
+                (row, col) = utilities.index_number_to_coordinate(i, PLATE_LATTICE)
             if VERBOSE >= 2:
                 print("Segmenting images from plate #", i, "at position row", row, "column", col)
 
@@ -529,8 +535,11 @@ if __name__ == "__main__":
         # Can't pickle arrays with >3 dimensions
         if SAVE_DATA >= 1:
             for i, plate in enumerate(plates_list_segmented.values(), start = 1):
-                (row, col) = utilities.index_number_to_coordinate(i, PLATE_LATTICE)
-                segmented_image_data_filepath = get_plate_directory(BASE_PATH, row, col).joinpath(segmented_image_data_filename)
+                if PLATE_POSITION is not None:
+                    (row, col) = PLATE_POSITION
+                else:
+                    (row, col) = utilities.index_number_to_coordinate(i, PLATE_LATTICE)
+                segmented_image_data_filepath = get_plate_directory(BASE_PATH, row, col, create_dir = True).joinpath(segmented_image_data_filename)
                 if VERBOSE >= 2:
                     print("Saving segmented image data for plate #", i, "at position row", row, "column", col)
                 saved_status = file_access.save_file(segmented_image_data_filepath, plate, file_access.CompressionMethod.LZMA)
@@ -539,17 +548,22 @@ if __name__ == "__main__":
                         print("Saved processed and segmented image timeline data to:", segmented_image_data_filepath)
                     else:
                         print("An error occurred, unable to save processed and segmented image timeline data to:", segmented_image_data_filepath)
+                        sys.exit()
 
     # Record individual colony information
     if VERBOSE >= 1:
         print("Tracking colonies")
 
-    # Loop through plates
+    # Loop through plates and store data for each colony found
     from collections import defaultdict
     plate_colonies = defaultdict(dict)
     for i, plate_images in enumerate(plates_list_segmented.values(), start = 1):
         if VERBOSE >= 1:
-            print("Tacking colonies on plate", i, "of", len(plates_list_segmented))
+            plate_number = i
+            if PLATE_POSITION is not None:
+                plate_number = utilities.coordinate_to_index_number(PLATE_POSITION)
+            else:
+                print("Tacking colonies on plate", plate_number, "of", len(plates_list_segmented))
 
         # Process image at each time point
         for j, plate_image in enumerate(plate_images):
@@ -557,10 +571,24 @@ if __name__ == "__main__":
                 print("Tacking colonies at time point", j + 1, "of", len(plate_images))
 
             # Store data for each colony at every timepoint it is found
-            plate_colonies[i] = colony.timepoints_from_image(plate_colonies[i], plate_image, time_points[j])
+            plate_colonies[i] = colony.timepoints_from_image(plate_colonies[i], plate_image, time_points[j], time_points_elapsed[j])
+
+        # Remove objects that do not have sufficient data points, usually just noise
+        plate_colonies[i] = dict(filter(lambda elem: len(elem[1].timepoints) > len(time_points) * 0.2, plate_colonies[i].items()))
+        # Remove object that do not show growth, these are not colonies
+        #plate_colonies[i] = dict(filter(lambda elem: elem[1].growth_rate > 1, plate_colonies[i].items()))
 
         if VERBOSE >= 1:
-            print("Data stored for", len(plate_colonies[i].keys()), "colonies found for plate", i)
+            print("Colony data stored for", len(plate_colonies[i].keys()), "colonies on plate", plate_number)
+
+        # Plot change in colony growth curves for the plate
+        if SAVE_PLOTS >= 1:
+            if PLATE_POSITION is not None:
+                (row, col) = PLATE_POSITION
+            else:
+                row, col = utilities.index_number_to_coordinate(i, PLATE_LATTICE)
+            save_path = get_plate_directory(BASE_PATH, row, col, create_dir = True)
+            plots.plot_colony_growth_curve(plate_colonies[i], time_points_elapsed, save_path)
 
     sys.exit()
 
