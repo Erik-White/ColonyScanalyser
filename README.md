@@ -4,12 +4,13 @@ An image analysis tool for measuring microorganism colony growth.
 
 ScanLag will analyse and collate statistical data from cell-culture plate images. It requires a series of images from a fixed point that show the development of microorganism colonies over time.
 
+<img align="right" src="docs/images/colony_growth_curve_small.png">
+
 ScanLag can provide information on:
 * Colony growth lag time (time of appearance)
 * Bimodal lag time distribution (comparing lag times of two colonies)
 * Colony area growth over time
 
-<img align="right" src="docs/images/colony_growth_curve_small.png">
 By default, it will output a set of data and plots that summarize the information from all the plates in the image series. If you require further detail, such as plots of each individual plate, you can increase the `save_plots` command line argument.
 
 ## Getting Started
@@ -35,11 +36,16 @@ For testing:
 
 ### Installing
 
-* Using pip
-Install Scikit-image `pip install scikit-image`
-Install ScanLag `pip install scanlag`
+#### Using pip
+Install Scikit-image (unless already installed)
 
-* From github (requires [git](https://git-scm.com/) install)
+`pip install scikit-image`
+
+Install ScanLag
+
+`pip install scanlag`
+
+#### From github (requires [git](https://git-scm.com/) install)
 ```
 git clone https://github.com/erik-white/scanlag.git
 cd scanlag
@@ -60,11 +66,11 @@ Please read [CONTRIBUTING.md](docs/CONTRIBUTING.md) for details on our code of c
 
 ## Versioning
 
-We use [SemVer](http://semver.org/) for versioning. For the versions available, see the [tags on this repository](https://github.com/your/project/tags).
+We use [SemVer](http://semver.org/) for versioning. For the versions available, see the [tags on this repository](https://github.com/erik-white/scanlag/tags).
 
 ## License
 
-This project is licensed under the GPLv3 - see the [LICENSE.md](LICENSE.md) file for details
+This project is licensed under the GPLv3 - see the [LICENSE](LICENSE) file for details
 
 ## Acknowledgments
 
