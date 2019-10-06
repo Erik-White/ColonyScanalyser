@@ -26,7 +26,7 @@ def plot_colony_growth_curve(plate_colonies, time_points_elapsed, save_path):
         ax.scatter(*zip(*sorted(time_points_dict.items())),
             color = "Purple",
             marker = "o",
-            s = 6,
+            s = 4,
             #label = str(colony_id),
             alpha = 0.1
             )
@@ -36,16 +36,15 @@ def plot_colony_growth_curve(plate_colonies, time_points_elapsed, save_path):
     ax.plot(*zip(*sorted(areas_averages.items())),
         color = "Aqua",
         label = "Mean area",
-        linewidth = 2
+        linewidth = 1.5
         )
 
     # Format x-axis labels as integer hours
     ax.set_xticklabels(["{:.0f}".format(x // 60) for x in ax.get_xticks()])
 
-    # could use this for multiple:
     lgd = ax.legend(loc = 'center right', fontsize = 8, bbox_to_anchor = (1.25, 0.5))
     ax.set_xlabel("Elapsed time (hours)")
-    ax.set_ylabel("Colony area [px^2]")
+    ax.set_ylabel("Colony area (pixels)")
     plt.title("Colony growth")
 
     save_params = {"format": "png",
@@ -59,6 +58,7 @@ def plot_colony_growth_curve(plate_colonies, time_points_elapsed, save_path):
     # Plot with logarithmic areas
     plt.ylim(ymin = 1)
     ax.set_yscale("log")
+    ax.set_ylabel("Colony area [px^2]")
     fig.savefig(str(save_path.joinpath("colony_growth_curve_log.png")), **save_params)
 
     plt.close()
