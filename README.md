@@ -38,9 +38,11 @@ For testing:
 
 #### Using pip
 Install Scikit-image (unless already installed)
+
 `pip install scikit-image`
 
 Install ScanLag
+
 `pip install scanlag`
 
 #### From github (requires [git](https://git-scm.com/) install)
@@ -64,7 +66,7 @@ Please read [CONTRIBUTING.md](docs/CONTRIBUTING.md) for details on our code of c
 
 ## Versioning
 
-We use [SemVer](http://semver.org/) for versioning. For the versions available, see the [tags on this repository](https://github.com/your/project/tags).
+We use [SemVer](http://semver.org/) for versioning. For the versions available, see the [tags on this repository](https://github.com/erik-white/scanlag/tags).
 
 ## License
 
