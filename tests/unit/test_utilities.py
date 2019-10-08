@@ -4,6 +4,7 @@ import numpy as np
 from scanlag.utilities import (index_number_to_coordinate,
                                 coordinate_to_index_number,
                                 average_dicts_values_by_key,
+                                average_median_dicts_values_by_key,
                                 is_outlier
                                 )
 
@@ -58,34 +59,71 @@ class TestCoordinateToIndexNumber():
 
 
 class TestAverageDictsByKeys():
-    dicts = [[
-        {"key1": 5,
+    @pytest.fixture(params=[[{
+            "key1": 5,
             "key2": 1,
             "key3": 0,
             "key4": -1
-        },
-        {"key1": 10,
+        },{
+            "key1": 10,
             "key2": 2,
             "key3": 0,
             "key4": 1,
             "key5": 100
-        }]]
+        }]])
+    def dicts(self, request):
+        yield request.param
 
-    dicts_averaged = {
+    @pytest.fixture(params=[{
             "key1": 7.5,
             "key2": 1.5,
             "key3": 0,
             "key4": 0,
             "key5": 100
-        }
+        }])
+    def dicts_averaged(self, request):
+        yield request.param
 
-    @pytest.mark.parametrize("dicts", dicts)
-    def test_average(self, dicts):
-        assert average_dicts_values_by_key(dicts) == self.dicts_averaged
+    def test_average(self, dicts, dicts_averaged):
+        print(average_dicts_values_by_key(dicts))
+        assert average_dicts_values_by_key(dicts) == dicts_averaged
 
     def test_empty_dicts(self):
-        print(average_dicts_values_by_key([{},{}]))
         assert average_dicts_values_by_key([{},{}]) == {}
+
+
+class TestAverageMedianDictsByKeys():
+    @pytest.fixture(params=[[{
+            "key1": 5,
+            "key2": 1,
+            "key3": 0,
+            "key4": -1
+        },{
+            "key1": 10,
+            "key2": 2,
+            "key3": 0,
+            "key4": 1,
+            "key5": 100
+        }]])
+    def dicts(self, request):
+        yield request.param
+
+    @pytest.fixture(params=[{
+            "key1": 7.5,
+            "key2": 1.5,
+            "key3": 0,
+            "key4": 0,
+            "key5": 100
+        }])
+    def dicts_averaged(self, request):
+        yield request.param
+
+    def test_average(self, dicts, dicts_averaged):
+        assert average_median_dicts_values_by_key(dicts) == dicts_averaged
+
+    def test_empty_dicts(self):
+        assert average_median_dicts_values_by_key([{},{}]) == {}
+
 
 class TestIsOutlier():
     @pytest.mark.parametrize("points, expected", [

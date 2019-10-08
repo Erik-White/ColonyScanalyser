@@ -35,10 +35,10 @@ def coordinate_to_index_number(coordinate):
 
 def average_dicts_values_by_key(dicts):
     """
-    Average values across multiple dicts with the same key
+    Mean average values across multiple dicts with the same key
 
     :param dicts: a list of dictionaries
-    :returns: a list of 
+    :returns: a dictionary of averaged values
     """
     from collections import Counter
 
@@ -49,6 +49,31 @@ def average_dicts_values_by_key(dicts):
         counters.update(itemset.keys())
 
     return {x: float(sums[x])/counters[x] for x in sums.keys()}
+
+
+def average_median_dicts_values_by_key(dicts):
+    """
+    Median average values across multiple dicts with the same key
+
+    :param dicts: a list of dictionaries
+    :returns: a dictionary of averaged values
+    """
+    from numpy import median
+    from collections import defaultdict
+
+    values = defaultdict(list)
+
+    # Assemble a dict containing all values
+    for itemset in dicts:
+        for key, value in itemset.items():
+            values[key].append(value)
+    '''
+    for key, value in values.items():
+        values[key] = median(value)
+
+    return values
+    '''
+    return {key: median(value) for key, value in values.items()}
     
 
 def is_outlier(points, thresh=3.5):
