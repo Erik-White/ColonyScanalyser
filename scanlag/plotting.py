@@ -55,3 +55,10 @@ def _label_barh(ax, bars, text_format, **kwargs):
         text_y = bar.get_y() + bar.get_height() / 2
 
         ax.text(text_x, text_y, text, va='center', **kwargs)
+
+
+def axis_minutes_to_hours(labels):
+    """
+    Format axis labels in minutes to integer hours
+    """
+    return ["{:.0f}".format(x // 60) for x in labels]

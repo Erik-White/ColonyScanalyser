@@ -576,20 +576,30 @@ if __name__ == "__main__":
         # Remove objects that do not have sufficient data points, usually just noise
         plate_colonies[i] = dict(filter(lambda elem: len(elem[1].timepoints) > len(time_points) * 0.2, plate_colonies[i].items()))
         # Remove object that do not show growth, these are not colonies
-        #plate_colonies[i] = dict(filter(lambda elem: elem[1].growth_rate > 1, plate_colonies[i].items()))
+        plate_colonies[i] = dict(filter(lambda elem: elem[1].growth_rate > 1, plate_colonies[i].items()))
 
         if VERBOSE >= 1:
             print("Colony data stored for", len(plate_colonies[i].keys()), "colonies on plate", plate_number)
 
-        # Plot change in colony growth curves for the plate
-        if SAVE_PLOTS >= 1:
+        # Plot colony growth curves and time of appearance for the plate
+        if SAVE_PLOTS >= 2:
             if PLATE_POSITION is not None:
                 (row, col) = PLATE_POSITION
             else:
                 row, col = utilities.index_number_to_coordinate(i, PLATE_LATTICE)
             save_path = get_plate_directory(BASE_PATH, row, col, create_dir = True)
-            plots.plot_colony_growth_curve(plate_colonies[i], time_points_elapsed, save_path)
+            plots.plot_growth_curve((i, plate_colonies[i]), time_points_elapsed, save_path)
+            plots.plot_growth_curve((i, plate_colonies[i]), time_points_elapsed, save_path)
+            plots.plot_appearance_frequency((i, plate_colonies[i]), time_points_elapsed, save_path)
 
+    # Plot colony growth curves for all plates
+    if SAVE_PLOTS >= 1:
+        save_path = file_access.create_subdirectory(BASE_PATH, "plots")
+        plots.plot_growth_curve_all((plate_colonies), PLATE_LATTICE, time_points_elapsed, save_path)
+        plots.plot_appearance_frequency_all((plate_colonies), PLATE_LATTICE, time_points_elapsed, save_path)
+
+    if VERBOSE >= 1:
+        print("Scanlag analysis complete")
     sys.exit()
 
 
