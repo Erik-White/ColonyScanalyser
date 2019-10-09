@@ -2,8 +2,6 @@
 An object to hold information on a single colony over time
 """
 import datetime
-import operator
-from operator import attrgetter
 from math import pi, log
 from dataclasses import dataclass
 
@@ -45,11 +43,11 @@ class Colony():
 
     @property
     def areas(self):
-        return list(self.timepoints, key=attrgetter('area'))
+        return [value.area for key, value in self.timepoints.items()]
 
     @property
     def center(self):
-        return sum(self.timepoints, key=attrgetter('center')) / len(self.timepoints)
+        return sum([value.center for key, value in self.timepoints.items()]) / len(self.timepoints)
 
     @property
     def growth_rate(self):
@@ -57,7 +55,6 @@ class Colony():
 
     @property
     def growth_rate_average(self):
-        #if self.growth_rate <= 0:
         if (self.timepoint_last.area - self.timepoint_first.area) / self.timepoint_first.area <= 0:
             return 0
         else:
@@ -65,7 +62,6 @@ class Colony():
 
     @property
     def time_of_appearance(self):
-        #return min(self.timepoints, key=attrgetter('date_time'))
         return self.timepoint_first.date_time
 
     def get_timepoint(self, time_point):
@@ -83,10 +79,19 @@ class Colony():
     def update_timepoint(self, time_point, timepointdata):
         self.timepoints[time_point] = timepointdata
 
-    def get_doubling_time(self, window = 10):
-        x_pts = list(self.timepoints, key=attrgetter('date_time'))
-        y_pts = list(self.timepoints, key=attrgetter('area'))
+    def get_doubling_times(self, window = 10, elapsed_minutes = False):
+        if elapsed_minutes:
+            x_pts = [value.elapsed_minutes for key, value in self.timepoints.items()]
+        else:
+            x_pts = [value.date_time for key, value in self.timepoints.items()]
+        y_pts = [value.area for key, value in self.timepoints.items()]
+
         return [self.__local_doubling_time(i, x_pts, y_pts, window) for i in range(len(x_pts) - window)]
+
+    def get_doubling_time_average(self, window = 10, elapsed_minutes = False):
+        doubling_times = self.get_doubling_times(window, elapsed_minutes)
+        
+        return sum(doubling_times) / len(doubling_times)
 
     def remove_timepoint(self, time_point):
         del self.timepoints[time_point]
