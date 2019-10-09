@@ -588,15 +588,17 @@ if __name__ == "__main__":
             else:
                 row, col = utilities.index_number_to_coordinate(i, PLATE_LATTICE)
             save_path = get_plate_directory(BASE_PATH, row, col, create_dir = True)
-            plots.plot_growth_curve((i, plate_colonies[i]), time_points_elapsed, save_path)
-            plots.plot_growth_curve((i, plate_colonies[i]), time_points_elapsed, save_path)
-            plots.plot_appearance_frequency((i, plate_colonies[i]), time_points_elapsed, save_path)
+            plate_item = {i : plate_colonies[i]}
+            plots.plot_growth_curve(plate_item, time_points_elapsed, save_path)
+            plots.plot_appearance_frequency(plate_item, time_points_elapsed, save_path)
+            plots.plot_appearance_frequency(plate_item, time_points_elapsed, save_path, bar = True)
 
     # Plot colony growth curves for all plates
     if SAVE_PLOTS >= 1:
         save_path = file_access.create_subdirectory(BASE_PATH, "plots")
-        plots.plot_growth_curve_all((plate_colonies), PLATE_LATTICE, time_points_elapsed, save_path)
-        plots.plot_appearance_frequency_all((plate_colonies), PLATE_LATTICE, time_points_elapsed, save_path)
+        plots.plot_growth_curve((plate_colonies), time_points_elapsed, save_path)
+        plots.plot_appearance_frequency((plate_colonies), time_points_elapsed, save_path)
+        plots.plot_appearance_frequency((plate_colonies), time_points_elapsed, save_path, bar = True)
 
     if VERBOSE >= 1:
         print("Scanlag analysis complete")
