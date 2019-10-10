@@ -15,7 +15,7 @@ def crop_image(image, crop_shape, center = None):
 
     if any(x < 0 for x in crop_shape) or len(image.shape) < len(crop_shape):
         raise ValueError("The crop shape must be positive integers and the same dimensions as the image to crop")
-    if any(r < c for r, c in zip(img.shape, crop_shape)):
+    if crop_shape > img.shape:
         raise ValueError("The crop shape cannot be larger than the image to crop")
 
     if center is None:
@@ -27,14 +27,14 @@ def crop_image(image, crop_shape, center = None):
 
     end = tuple(map(operator.add, start, crop_shape))
     
-    if any(x < 0 for x in start) or any(x > y for x in end for y in img.shape):
+    if any(x < 0 for x in start) or end > img.shape:
         raise ValueError("The crop area cannot be outside the original image")
 
     slices = tuple(map(slice, start, end))
 
     return img[slices]
 
-def cut_image_circle(image, **kwargs):
+def cut_image_circle(image, center = None, radius = None, inverse = False):
     """
     Get the circular area of an image
 
@@ -49,9 +49,6 @@ def cut_image_circle(image, **kwargs):
     import numpy as np
 
     img = image.copy()
-    center = kwargs.get('center', None)
-    radius = kwargs.get('radius', None)
-    inverse = kwargs.get('inverse', False)
 
     # Either use the entire image or crop to a radius
     if radius is None:
@@ -80,11 +77,47 @@ def cut_image_circle(image, **kwargs):
     return img
 
 
+def get_image_circles(image, circle_count, circle_size = 450, search_radius = 50):
+    """
+    Get circular parts of an image matching the size criteria
+
+    :param image: a greyscale image as a numpy array
+    :param circle_count: the number of expected circles in the image
+    :param circle_size: a circle radius, in pixels
+    :param edge_cut: a radius to remove from the edge of the circle, in pixels
+    :returns: a list of center  radii
+    """
+    from skimage.transform import hough_circle, hough_circle_peaks
+    from skimage.feature import canny
+    
+    if image.size == 0:
+        raise ValueError("The supplied image cannot be empty")
+    img = image.copy()
+
+    # Find edges in the image
+    edges = canny(img, sigma = 3)
+
+    # Check search_radius pixels around the target radius, in steps of 20
+    radii = range(circle_size - search_radius, circle_size + search_radius, 20)
+    hough_circles = hough_circle(edges, radii)
+    
+    # Find the most significant circles
+    _, cx, cy, radii = hough_circle_peaks(
+        hough_circles,
+        radii,
+        #normalize = True,
+        min_xdistance = circle_size,
+        min_ydistance = circle_size,
+        total_num_peaks = circle_count
+        )
+        
+    return [*zip(zip(cy, cx), radii)]
+
+
 def remove_background_mask(image, mask, smoothing = 0.5, **filter_args):
     """
     Process an image by removing a background mask
     """
-    #from skimage import exposure
     from skimage.filters import gaussian
     
     if image.size == 0 or mask.size == 0:
