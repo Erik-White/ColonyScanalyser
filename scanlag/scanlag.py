@@ -46,7 +46,13 @@ def get_plate_directory(parent_path, row, col, create_dir = True):
 
 
 def find_plate_center_rough(image, lattice):
-    """Find the rough middle of the plate"""
+    """
+    Find the rough middle of a plate
+
+    :param image: a black and white image as a numpy array
+    :param lattice: a row, column tuple of the plate lattice size
+    :returns: a list x, y tuples marking the plates centres
+    """
     centers_y = np.linspace(0, 1, 2 * lattice[0] + 1)[1::2] * image.shape[0]
     centers_x = np.linspace(0, 1, 2 * lattice[1] + 1)[1::2] * image.shape[1]
     centers = [(int(cx), int(cy)) for cy in centers_y for cx in centers_x]
@@ -54,8 +60,15 @@ def find_plate_center_rough(image, lattice):
     return centers
 
 
-def find_plate_borders(img, centers, refine=True):
-    """Find the plates"""
+def find_plate_borders(img, centers, refine = True):
+    """
+    Find the plate limits on the x and y axes
+
+    :param img: a black and white image as a numpy array
+    :param centers: a list x, y tuples marking the plates centres
+    :param refine: repeat the process again for greater accuracy
+    :returns: a list of min and max x/y values marking the plate edges
+    """
     # Return a numpy array
     img = img.T
 
@@ -119,13 +132,20 @@ def find_plate_borders(img, centers, refine=True):
     return borders
 
 
-def split_image_into_plates(img, borders, edge_cut=100):
-    """Split image into lattice subimages and delete background"""
+def split_image_into_plates(img, borders, edge_cut = 100):
+    """
+    Split image into lattice subimages and delete background
+    
+    :param img: a black and white image as a numpy array
+    :param borders: a list of min and max x/y values marking the plate edges
+    :param edge_cut: a radius, in pixels, to remove from the outer edge of the plate
+    :returns: a list of plate images
+    """
     plates = []
 
     for border in borders:
-        #Find x and y centers, measured from image edges
-        (cx, cy) = map(lambda x: int(np.mean(x)), border)
+        #Find x and y centers, half way between the min/max values
+        cx, cy = map(lambda x: int(np.mean(x)), border)
         radius = int(0.25 * (border[0][1] - border[0][0] + border[1][1] - border[1][0]) - edge_cut)
 
         # Copy a plate bounding box from the image
@@ -166,9 +186,6 @@ def segment_image(plate, plate_mask, plate_noise_mask, area_min = 5):
 
     # Remove background noise
     plate = remove_small_objects(plate, min_size = area_min)
-
-    # Return an ordered array, relabelled sequentially
-    #(colonies, fwdmap, revmap) = relabel_sequential(colonies)
 
     #versions <0.16 do not allow for a mask
     #colonies = clear_border(pl_th, buffer_size = 1, mask = pl_th)

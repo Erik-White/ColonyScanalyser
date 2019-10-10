@@ -1,11 +1,11 @@
-﻿"""
-An object to hold information on a single colony over time
-"""
-import datetime
+﻿import datetime
 from math import pi, log
 from dataclasses import dataclass
 
 class Colony():
+    """
+    An object to hold information on a single colony over time
+    """
     @dataclass
     class Timepoint:
         date_time: datetime.datetime
