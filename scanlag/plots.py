@@ -7,11 +7,63 @@ from utilities import average_dicts_values_by_key
 from plotting import axis_minutes_to_hours
 
 
+def plot_plate_segmented(plate_image, segmented_image, plate_coordinate, date_time, save_path):
+    """
+    Saves processed plate images and corresponding segmented data plots
+
+    :param plate_image: a black and white image as a numpy array
+    :param segmented_image: a segmented and labelled image as a numpy array
+    :param plate_coordinate: a row, column tuple representing the plate position
+    :param date_time: a datetime object
+    :param save_path: a path object
+    :returns: a file path object if the plot was saved sucessfully
+    """
+    from plotting import rc_to_xy
+    from skimage.measure import regionprops
+    plate_row, plate_column = plate_coordinate
+
+    _, ax = plt.subplots(1, 2, figsize=(12, 6))
+    ax[0].imshow(plate_image)
+    # Set colour range so all colonies are clearly visible and the same colour
+    ax[1].imshow(segmented_image, vmax = 1)
+            
+    # Place maker labels on colonies
+    for rp in regionprops(segmented_image, coordinates = "rc"):
+        ax[1].annotate("+",
+            rc_to_xy(rp.centroid),
+            xycoords = "data",
+            color = "red",
+            horizontalalignment = "center",
+            verticalalignment = "center"
+            )
+        ax[1].annotate(str(rp.label),
+            rc_to_xy(rp.centroid),
+            xytext = (5, 5),
+            xycoords = "data",
+            textcoords = "offset pixels",
+            color = "white",
+            alpha = 0.8,
+            horizontalalignment = "left",
+            verticalalignment = "center"
+            )
+
+    plt.title(f"Plate at row {plate_row} : column {plate_column} at time point {date_time.strftime('%Y/%m/%d %H:%M')}")
+    image_path = f"time_point_{date_time.strftime('%Y%m%d')}_{date_time.strftime('%H%M')}.png"
+    save_path = save_path.joinpath(image_path)
+    try:
+        plt.savefig(str(save_path), format = "png")
+    except:
+        save_path = None
+    finally:
+        plt.close()
+        return save_path
+
+
 def plot_growth_curve(plates_dict, time_points_elapsed, save_path):
     """
     Growth curves for either a single plate, or all plates on the lattice
     """
-    fig, ax = plt.subplots()
+    _, ax = plt.subplots()
     colormap = cm.get_cmap("plasma")
     
     for plate_item in plates_dict.items():
@@ -84,7 +136,7 @@ def plot_appearance_frequency(plates_dict, time_points_elapsed, save_path, bar =
     """
     Time of appearance frequency for either a single plate, or all plates on the lattice
     """
-    fig, ax = plt.subplots()
+    _, ax = plt.subplots()
     colormap = cm.get_cmap("plasma")
     
     for plate_item in plates_dict.items():
