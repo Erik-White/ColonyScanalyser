@@ -596,9 +596,10 @@ if __name__ == "__main__":
     # Plot colony growth curves for all plates
     if SAVE_PLOTS >= 1:
         save_path = file_access.create_subdirectory(BASE_PATH, "plots")
-        plots.plot_growth_curve((plate_colonies), time_points_elapsed, save_path)
-        plots.plot_appearance_frequency((plate_colonies), time_points_elapsed, save_path)
-        plots.plot_appearance_frequency((plate_colonies), time_points_elapsed, save_path, bar = True)
+        plots.plot_growth_curve(plate_colonies, time_points_elapsed, save_path)
+        plots.plot_appearance_frequency(plate_colonies, time_points_elapsed, save_path)
+        plots.plot_appearance_frequency(plate_colonies, time_points_elapsed, save_path, bar = True)
+        plots.plot_doubling_map(plate_colonies, time_points_elapsed, save_path)
 
     if VERBOSE >= 1:
         print("Scanlag analysis complete")

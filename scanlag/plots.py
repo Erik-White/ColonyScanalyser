@@ -34,7 +34,7 @@ def plot_growth_curve(plates_dict, time_points_elapsed, save_path):
     
     plt.ylim(ymin = 0)
     plt.title("Colony growth")
-    fig.savefig(str(save_path.joinpath("growth_curve.png")), **save_params)
+    plt.savefig(str(save_path.joinpath("growth_curve.png")), **save_params)
 
     plt.close()
 
@@ -111,7 +111,7 @@ def plot_appearance_frequency(plates_dict, time_points_elapsed, save_path, bar =
         save_name = "time_of_appearance_bar.png"
     else:
         save_name = "time_of_appearance.png"
-    fig.savefig(str(save_path.joinpath(save_name)), **save_params)
+    plt.savefig(str(save_path.joinpath(save_name)), **save_params)
 
     plt.close()
 
@@ -161,3 +161,56 @@ def time_of_appearance_frequency(ax, plate_item, time_points_elapsed, plot_color
     ax.set_xticklabels(axis_minutes_to_hours(ax.get_xticks()))
     ax.set_xlabel("Elapsed time (hours)")
     ax.set_ylabel("Frequency")
+
+
+def plot_doubling_map(plates_dict, time_points_elapsed, save_path):
+    """
+    Heatmap of doubling time vs time of appearance
+    """
+    from numpy import histogram2d, zeros_like
+    from numpy.ma import masked_where
+    from mpl_toolkits.axes_grid1 import make_axes_locatable
+
+    _, ax = plt.subplots()
+    x = [0]
+    y = [0]
+
+    for plate in plates_dict.values():
+        for colony in plate.values():
+            x.append(colony.timepoint_first.elapsed_minutes)
+            y.append(colony.get_doubling_time_average(elapsed_minutes = True))
+    
+    # Normalise
+    weights = zeros_like(x) + 1. / len(x)
+    heatmap, xedges, yedges = histogram2d(x, y, bins = 50, weights = weights)
+    extent = [xedges[0], xedges[-1], yedges[0], yedges[-1]]
+    
+    # Mask out background values
+    heatmap = masked_where(heatmap.T == 0, heatmap.T)
+
+    img = plt.imshow(
+        heatmap,
+        cmap = "RdPu",
+        extent = extent,
+        origin = "lower"
+        )
+
+    plt.xlim(xmin = 0)
+    plt.ylim(ymin = 0)
+    plt.title("Appearance and doubling time distribution")
+
+    # Add a divider so the colorbar will match the plot size
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes("right", size = "5%", pad = 0.05)
+    cb = plt.colorbar(img, cax)
+    cb.set_label('Frequency')
+
+    ax.set_xticklabels(axis_minutes_to_hours(ax.get_xticks()))
+    ax.set_yticklabels(axis_minutes_to_hours(ax.get_yticks()))
+    ax.set_xlabel("Time of appearance (hours)")
+    ax.set_ylabel("Average doubling time (hours)")
+
+    plt.tight_layout()
+    plt.savefig(str(save_path.joinpath("appearance_doubling_distribution.png")), format = "png")
+
+    plt.close()
