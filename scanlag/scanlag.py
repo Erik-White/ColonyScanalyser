@@ -254,66 +254,6 @@ def load_plate_timeline(load_filename, plate_lat, plate_pos = None):
     return plate_list
 
 
-# Save the processed plate images and corresponding segmented data plots
-# Images are stored in the corresponding plate data folder i.e. /row_2_col_1/segmented_image_plots/
-# A Python datetime is required to save the image with the correct filename
-def save_plate_segmented_image(plate_image, segmented_image, plate_coordinate, date_time):
-    """
-    Saves processed plate images and corresponding segmented data plots
-
-    :param plate_image: a black and white image as a numpy array
-    :param segmented_image: a segmented and labelled image as a numpy array
-    :param plate_coordinate: a row, column tuple representing the plate position
-    :param date_time: a datetime object
-    :returns: the filepath string if the plot is sucessfully saved
-    """
-    from skimage.measure import regionprops
-    (plate_row, plate_column) = plate_coordinate
-
-    fig, ax = plt.subplots(1, 2, figsize=(12, 6))
-    ax[0].imshow(plate_image)
-    # Set colour range so all colonies are clearly visible and the same colour
-    ax[1].imshow(segmented_image, vmax = 1)
-            
-    # Place maker labels on colonies
-    for rp in regionprops(segmented_image, coordinates = "rc"):
-        ax[1].annotate("+",
-            plotting.rc_to_xy(rp.centroid),
-            xycoords = "data",
-            color = "red",
-            horizontalalignment = "center",
-            verticalalignment = "center"
-            )
-        ax[1].annotate(str(rp.label),
-            plotting.rc_to_xy(rp.centroid),
-            xytext = (5, 5),
-            xycoords = "data",
-            textcoords = "offset pixels",
-            color = "white",
-            alpha = 0.8,
-            horizontalalignment = "left",
-            verticalalignment = "center"
-            )
-
-    fig_title = " ".join(["Plate at row", str(plate_row), ": column", str(plate_column), "at time point", date_time.strftime("%Y/%m/%d %H:%M")])
-    fig.suptitle(fig_title)
-
-    folder_path = get_plate_directory(BASE_PATH, plate_row, plate_column).joinpath("segmented_image_plots")
-    image_path = "".join(["time_point_", str(date_time.strftime("%Y%m%d")), "_" + str(date_time.strftime("%H%M")), ".jpg"])
-    folder_path.mkdir(parents = True, exist_ok = True)
-
-    with open(folder_path.joinpath(image_path), "wb") as outfile:
-        plt.savefig(outfile)
-    plt.close()
-
-    # Return the path to the new image if it was saved successfully
-    if Path.is_file(folder_path.joinpath(image_path)):
-        return image_path
-    else:
-        return None
-
-
-# Script
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(
@@ -443,26 +383,26 @@ if __name__ == "__main__":
                     print("Imaging date-time:", time_points[ifn].strftime("%Y%m%d %H%M"))
 
                 if VERBOSE >= 1:
-                    print("Read image:", image_file)
+                    print("Processing image:", image_file)
                 img = imread(str(image_file), as_gray = True)
                 
-                if VERBOSE >= 1:
+                if VERBOSE >= 2:
                     print("Find plate center rough")
                 # Only find centers using first image. Assume plates do not move
                 if centers is None:
                     centers = find_plate_center_rough(img, PLATE_LATTICE)
 
-                if VERBOSE >= 1:
+                if VERBOSE >= 2:
                     print("Find plate borders")
                 # Only find borders using first image. Assume plates do not move
                 if borders is None:
                     borders = find_plate_borders(img, centers)
 
-                if VERBOSE >= 1:
+                if VERBOSE >= 2:
                     print("Split image into plates")
                 plates = split_image_into_plates(img, borders)
 
-                if VERBOSE >= 1:
+                if VERBOSE >= 2:
                     print("Store split plate image data for this time point")
                 if PLATE_POSITION is not None:
                     # Save image for only a single plate
@@ -523,10 +463,13 @@ if __name__ == "__main__":
                 for j, segmented_plate_timepoint in enumerate(segmented_plate_timepoints):
                     if VERBOSE >= 3:
                         print("Saving segmented image plot for time point ", j + 1, "of", len(segmented_plate_timepoints))
-                    image_path = save_plate_segmented_image(plate_timepoints[j], segmented_plate_timepoint, (row, col), time_points[j])
+                    plots_path = file_access.create_subdirectory(BASE_PATH, "plots")
+                    save_path = get_plate_directory(plots_path, row, col, create_dir = True)
+                    save_path = file_access.create_subdirectory(save_path, "segmented_images")
+                    image_path = plots.plot_plate_segmented(plate_timepoints[j], segmented_plate_timepoint, (row, col), time_points[j], save_path)
                     if image_path is not None:
                         if VERBOSE >= 3:
-                            print("Saved segmented image plot to:", image_path)
+                            print("Saved segmented image plot to:", str(image_path))
                     else:
                         print("Error: Unable to save segmented image plot for plate at row", row, "column", col)
 
@@ -581,14 +524,25 @@ if __name__ == "__main__":
         if VERBOSE >= 1:
             print("Colony data stored for", len(plate_colonies[i].keys()), "colonies on plate", plate_number)
 
-        # Plot colony growth curves and time of appearance for the plate
-        if SAVE_PLOTS >= 2:
+    # Store pickled data to allow quick re-use
+    if SAVE_DATA >= 1:
+        save_path = BASE_PATH.joinpath("processed_data")
+        save_status = file_access.save_file(save_path, plate_colonies, file_access.CompressionMethod.LZMA)
+        if VERBOSE >= 1:
+            if save_status:
+                print(f"Cached data saved to {save_path}")
+            else:
+                print(f"An error occurred and cached data could not be written to disk at {save_path}")
+
+    # Plot colony growth curves and time of appearance for the plate
+    if SAVE_PLOTS >= 2:
+        for plate_id, plate in plate_colonies.items():
             if PLATE_POSITION is not None:
                 (row, col) = PLATE_POSITION
             else:
-                row, col = utilities.index_number_to_coordinate(i, PLATE_LATTICE)
-            save_path = get_plate_directory(BASE_PATH, row, col, create_dir = True)
-            plate_item = {i : plate_colonies[i]}
+                row, col = utilities.index_number_to_coordinate(plate_id, PLATE_LATTICE)
+            save_path = get_plate_directory(BASE_PATH.joinpath("plots"), row, col, create_dir = True)
+            plate_item = {plate_id : plate}
             plots.plot_growth_curve(plate_item, time_points_elapsed, save_path)
             plots.plot_appearance_frequency(plate_item, time_points_elapsed, save_path)
             plots.plot_appearance_frequency(plate_item, time_points_elapsed, save_path, bar = True)
