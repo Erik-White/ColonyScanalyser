@@ -45,117 +45,20 @@ def get_plate_directory(parent_path, row, col, create_dir = True):
         return parent_path.joinpath(child_path)
 
 
-def find_plate_center_rough(image, lattice):
-    """
-    Find the rough middle of a plate
-
-    :param image: a black and white image as a numpy array
-    :param lattice: a row, column tuple of the plate lattice size
-    :returns: a list x, y tuples marking the plates centres
-    """
-    centers_y = np.linspace(0, 1, 2 * lattice[0] + 1)[1::2] * image.shape[0]
-    centers_x = np.linspace(0, 1, 2 * lattice[1] + 1)[1::2] * image.shape[1]
-    centers = [(int(cx), int(cy)) for cy in centers_y for cx in centers_x]
-
-    return centers
-
-
-def find_plate_borders(img, centers, refine = True):
-    """
-    Find the plate limits on the x and y axes
-
-    :param img: a black and white image as a numpy array
-    :param centers: a list x, y tuples marking the plates centres
-    :param refine: repeat the process again for greater accuracy
-    :returns: a list of min and max x/y values marking the plate edges
-    """
-    # Return a numpy array
-    img = img.T
-
-    borders = []
-    for c in centers:
-        # Slice the image around the center
-        roi_c = img[c[0] - 50: c[0] + 50,
-                        c[1] - 50: c[1] + 50]
-                        
-        iavg_c = np.mean(roi_c)
-        istd_c = np.std(roi_c)
-        dyn_r = img.max() - img.min()
-
-        roi_side = 100
-        th = 0.2 * dyn_r
-
-        # Find x borders
-        max_x = c[0]
-        roi = img[max_x - roi_side // 2: max_x + roi_side // 2, c[1]]
-        iavg = roi.mean()
-        
-        while np.abs(iavg - iavg_c) < th:
-            max_x += 10
-            roi = img[max_x - roi_side // 2: max_x + roi_side // 2, c[1]]
-            iavg = roi.mean()
-
-        min_x = c[0]
-        roi = img[min_x - roi_side // 2: min_x + roi_side // 2, c[1]]
-        iavg = roi.mean()
-        while np.abs(iavg - iavg_c) < th:
-            min_x -= 10
-            roi = img[min_x - roi_side // 2: min_x + roi_side // 2, c[1]]
-            iavg = roi.mean()
-
-        # Find y borders
-        max_y = c[1]
-        roi = img[c[0], max_y - roi_side // 2: max_y + roi_side // 2]
-        iavg = roi.mean()
-        while np.abs(iavg - iavg_c) < th:
-            max_y += 10
-            roi = img[c[0], max_y - roi_side // 2: max_y + roi_side // 2]
-            iavg = roi.mean()
-
-        min_y = c[1]
-        roi = img[c[0], min_y - roi_side // 2: min_y + roi_side // 2]
-        iavg = roi.mean()
-        while np.abs(iavg - iavg_c) < th:
-            min_y -= 10
-            roi = img[c[0], min_y - roi_side // 2: min_y + roi_side // 2]
-            iavg = roi.mean()
-
-        #Each plate has two points on each axis to mark the borders
-        #The points are measured from the image edges
-        borders.append([[min_x, max_x],
-                        [min_y, max_y]])
-
-    #if refine:
-        #centers = list([map(lambda x: int(np.mean(x)), b) for b in borders])
-        #borders = find_plate_borders(img.T, centers, refine=False)
-
-    return borders
-
-
-def split_image_into_plates(img, borders, edge_cut = 100):
+def get_plate_images(image, plate_coordinates, edge_cut = 100):
     """
     Split image into lattice subimages and delete background
     
     :param img: a black and white image as a numpy array
-    :param borders: a list of min and max x/y values marking the plate edges
+    :param plate_coordinates: a list of centers and radii
     :param edge_cut: a radius, in pixels, to remove from the outer edge of the plate
     :returns: a list of plate images
     """
     plates = []
-
-    for border in borders:
-        #Find x and y centers, half way between the min/max values
-        cx, cy = map(lambda x: int(np.mean(x)), border)
-        radius = int(0.25 * (border[0][1] - border[0][0] + border[1][1] - border[1][0]) - edge_cut)
-
-        # Copy a plate bounding box from the image
-        plate_area = img[cy - radius: cy + radius + 1,
-                  cx - radius: cx + radius + 1].copy()
-
-        # Get a circular image
-        plate_area = imaging.cut_image_circle(plate_area)          
-        
-        plates.append(plate_area)
+    
+    for coordinate in plate_coordinates:
+        center, radius = coordinate
+        plates.append(imaging.cut_image_circle(image, center, radius - edge_cut))
     
     return plates
 
@@ -258,7 +161,7 @@ def load_plate_timeline(load_filename, plate_lat, plate_pos = None):
     else:
         for row in range(1, plate_lat[0] + 1):
             for col in range(1, plate_lat[1] + 1):
-                load_filepath = get_plate_directory(BASE_PATH, row, col).joinpath(load_filename)
+                load_filepath = get_plate_directory(BASE_PATH, row, col, create_dir = False).joinpath(load_filename)
                 temp_data = file_access.load_file(load_filepath, file_access.CompressionMethod.LZMA, pickle = True)
                 
                 if temp_data is not None:
@@ -388,8 +291,7 @@ if __name__ == "__main__":
             if VERBOSE >= 1:
                 print("Unable to load processed image data for all plates")
 
-            centers = None
-            borders = None
+            plate_coordinates = None
             # Loop through and preprocess image files
             for ifn, image_file in enumerate(image_files):
 
@@ -402,23 +304,17 @@ if __name__ == "__main__":
                 if VERBOSE >= 1:
                     print("Processing image:", image_file)
                 img = imread(str(image_file), as_gray = True)
-                
-                if VERBOSE >= 2:
-                    print("Find plate center rough")
-                # Only find centers using first image. Assume plates do not move
-                if centers is None:
-                    centers = find_plate_center_rough(img, PLATE_LATTICE)
 
-                if VERBOSE >= 2:
-                    print("Find plate borders")
-                # Only find borders using first image. Assume plates do not move
-                if borders is None:
-                    borders = find_plate_borders(img, centers)
+                if VERBOSE >= 1:
+                    print("Find plates:", image_file)
+                # Only find centers using first image. Assume plates do not move
+                if plate_coordinates is None:
+                    plate_coordinates = imaging.get_image_circles(img, 6, circle_size = 450)
 
                 if VERBOSE >= 2:
                     print("Split image into plates")
-                plates = split_image_into_plates(img, borders)
-
+                plates = get_plate_images(img, plate_coordinates, edge_cut = 60)
+                
                 if VERBOSE >= 2:
                     print("Store split plate image data for this time point")
                 if PLATE_POSITION is not None:
@@ -460,7 +356,7 @@ if __name__ == "__main__":
             else:
                 (row, col) = utilities.index_number_to_coordinate(i, PLATE_LATTICE)
             if VERBOSE >= 2:
-                print("Segmenting images from plate #", i, "at position row", row, "column", col)
+                print(f"Segmenting images from plate #{i}, in position row {row} column {col}")
 
             # plates_list is an array of size (total plates)*(total timepoints)
             # Each time point element of the array contains a co-ordinate array of size (total image columns)*(total image rows)
@@ -527,7 +423,7 @@ if __name__ == "__main__":
 
         # Process image at each time point
         for j, plate_image in enumerate(plate_images):
-            if VERBOSE >= 2:
+            if VERBOSE >= 3:
                 print("Tacking colonies at time point", j + 1, "of", len(plate_images))
 
             # Store data for each colony at every timepoint it is found
