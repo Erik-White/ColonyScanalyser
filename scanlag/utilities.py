@@ -67,12 +67,7 @@ def average_median_dicts_values_by_key(dicts):
     for itemset in dicts:
         for key, value in itemset.items():
             values[key].append(value)
-    '''
-    for key, value in values.items():
-        values[key] = median(value)
-
-    return values
-    '''
+            
     return {key: median(value) for key, value in values.items()}
     
 
