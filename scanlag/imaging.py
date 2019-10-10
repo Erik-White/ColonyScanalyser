@@ -15,7 +15,7 @@ def crop_image(image, crop_shape, center = None):
 
     if any(x < 0 for x in crop_shape) or len(image.shape) < len(crop_shape):
         raise ValueError("The crop shape must be positive integers and the same dimensions as the image to crop")
-    if any(r < c for r, c in zip(img.shape, crop_shape)):
+    if crop_shape > img.shape:
         raise ValueError("The crop shape cannot be larger than the image to crop")
 
     if center is None:
@@ -27,7 +27,7 @@ def crop_image(image, crop_shape, center = None):
 
     end = tuple(map(operator.add, start, crop_shape))
     
-    if any(x < 0 for x in start) or any(x > y for x in end for y in img.shape):
+    if any(x < 0 for x in start) or end > img.shape:
         raise ValueError("The crop area cannot be outside the original image")
 
     slices = tuple(map(slice, start, end))
@@ -110,7 +110,7 @@ def get_image_circles(image, circle_count, circle_size = 450, search_radius = 50
         min_ydistance = circle_size,
         total_num_peaks = circle_count
         )
-
+        
     return [*zip(zip(cy, cx), radii)]
 
 
