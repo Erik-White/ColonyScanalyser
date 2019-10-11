@@ -199,7 +199,6 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     BASE_PATH = args.path
-    IMAGE_PATH = "source_images"
     VERBOSE = args.verbose
     PLATE_LATTICE = tuple(args.plate_lattice)
     if "plate_position" not in args:
@@ -221,26 +220,20 @@ if __name__ == "__main__":
     else:
         BASE_PATH = Path(args.path).resolve()
     if not BASE_PATH.exists():
-        raise ValueError(f"The supplied folder path could not be found: {BASE_PATH}")
+        raise EnvironmentError(f"The supplied folder path could not be found: {BASE_PATH}")
     if VERBOSE >= 1:
         print(f"Working directory: {BASE_PATH}")
 
     # Find images in working directory
     image_formats = ["tif", "tiff", "png"]
     image_files = file_access.get_files_by_type(BASE_PATH, image_formats)
-    # Try images directory if none found
-    if not len(image_files) > 0:
-        image_files = file_access.get_files_by_type(BASE_PATH.joinpath(IMAGE_PATH), image_formats)
-
+    
     #Check if images have been loaded
-    if not len(image_files) > 0:
-        raise ValueError(f"No images could be found in the supplied folder path. Images are expected in these formats: {image_formats}")
-
-    # Move images to subdirectory if they are not already
-    if IMAGE_PATH not in image_files[0].parts:
-        image_files = file_access.move_to_subdirectory(image_files, IMAGE_PATH)
-    if VERBOSE >= 1:
-        print(f"{len(image_files)} images found")
+    if len(image_files) > 0:
+        if VERBOSE >= 1:
+            print(f"{len(image_files)} images found")
+    else:
+        raise EnvironmentError(f"No images could be found in the supplied folder path. Images are expected in these formats: {image_formats}")
     
     # Get date and time information from filenames
     time_points = get_image_timestamps(image_files)
