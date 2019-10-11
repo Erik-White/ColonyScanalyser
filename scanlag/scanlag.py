@@ -45,6 +45,37 @@ def get_plate_directory(parent_path, row, col, create_dir = True):
         return parent_path.joinpath(child_path)
 
 
+def get_image_timestamps(image_paths, elapsed_minutes = False):
+    """
+    Get timestamps from a list of images
+
+    Assumes images have a file name with as timestamp
+    Timestamps should be in YYYYMMDD_HHMM format
+
+    :param images: a list of image file path objects
+    :param elapsed_minutes: return timestamps as elapsed integer minutes
+    :returns: a list of timestamps
+    """
+    time_points = list()
+
+    # Get date and time information from filenames
+    dates = [str(image.name[:-8].split("_")[-2]) for image in image_paths]
+    times = [str(image.name[:-4].split("_")[-1]) for image in image_paths]
+    
+    # Convert string timestamps to Python datetime objects
+    for i, date in enumerate(dates):
+        time_points.append(datetime.combine(datetime.strptime(date, "%Y%m%d"),datetime.strptime(times[i], "%H%M").time()))
+    
+    if elapsed_minutes:
+        # Store time points as elapsed minutes since start
+        time_points_elapsed = list()
+        for time_point in time_points:
+            time_points_elapsed.append(int((time_point - time_points[0]).total_seconds() / 60))
+        time_points = time_points_elapsed
+
+    return time_points
+
+
 def get_plate_images(image, plate_coordinates, edge_cut = 100):
     """
     Split image into lattice subimages and delete background
@@ -210,19 +241,12 @@ if __name__ == "__main__":
         image_files = file_access.move_to_subdirectory(image_files, IMAGE_PATH)
     if VERBOSE >= 1:
         print(len(image_files), "images found")
-        
-    # Get date and time information from filenames
-    dates = [str(image.name[:-8].split("_")[-2]) for image in image_files]
-    times = [str(image.name[:-4].split("_")[-1]) for image in image_files]
     
-    # Convert string timestamps to Python datetime objects
-    time_points = []
-    time_points_elapsed = []
-    for i, date in enumerate(dates):
-        time_points.append(datetime.combine(datetime.strptime(dates[i], "%Y%m%d"),datetime.strptime(times[i], "%H%M").time()))
-    # Also store time points as elapsed minutes since start
-    for time_point in time_points:
-        time_points_elapsed.append(int((time_point - time_points[0]).total_seconds() / 60))
+    # Get date and time information from filenames
+    time_points = get_image_timestamps(image_files)
+    time_points_elapsed = get_image_timestamps(image_files, elapsed_minutes = True)
+    if len(time_points) != len(image_files) or len(time_points) != len(image_files):
+        raise EnvironmentError("Unable to load timestamps from all image filenames. Please check that images have a filename with YYYYMMDD_HHMM timestamps")
 
     # Check if processed image data is already stored and can be loaded
     segmented_image_data_filename = "processed_data"
