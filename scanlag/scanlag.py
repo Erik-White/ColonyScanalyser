@@ -177,16 +177,16 @@ def segment_plate_timepoints(plate_images_list, date_times):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(
-        description="Analyze ScanLag images to track colonies and generate statistical data.",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+        description = "Analyze ScanLag images to track colonies and generate statistical data.",
+        formatter_class = argparse.ArgumentDefaultsHelpFormatter
         )
     parser.add_argument("path", type = str,
-                       help="Image files location", default = None)
+                       help = "Image files location", default = None)
     parser.add_argument("-v", "--verbose", type = int, default = 1,
-                       help="Information output level")
+                       help = "Information output level")
     parser.add_argument("--plate_lattice", type = int, nargs = 2, default = (3, 2),
                         metavar = ("ROW", "COL"),
-                        help="The row and column co-ordinate layout of plates. Example usage: --plate_lattice 3 3")
+                        help = "The row and column co-ordinate layout of plates. Example usage: --plate_lattice 3 3")
     parser.add_argument("--pos", "--plate_position", type = int, nargs = 2, default = argparse.SUPPRESS,
                         metavar = ("ROW", "COL"),
                         help = "The row and column co-ordinates of a single plate to study in the plate lattice. Example usage: --plate_position 2 1 (default: all)")
@@ -213,7 +213,7 @@ if __name__ == "__main__":
     if PLATE_POSITION is not None:
         PLATE_POSITION = tuple(PLATE_POSITION)
         if utilities.coordinate_to_index_number(PLATE_POSITION) > utilities.coordinate_to_index_number(PLATE_LATTICE):
-            raise ValueError("The supplied plate position coordinate is outside the plate grid")
+            raise ValueError(f"The supplied plate position coordinate ({PLATE_POSITION})is outside the plate grid ({PLATE_LATTICE})")
 
     # Resolve working directory
     if BASE_PATH is None:
@@ -221,9 +221,9 @@ if __name__ == "__main__":
     else:
         BASE_PATH = Path(args.path).resolve()
     if not BASE_PATH.exists():
-        raise ValueError("The supplied folder path could not be found:", BASE_PATH)
+        raise ValueError(f"The supplied folder path could not be found: {BASE_PATH}")
     if VERBOSE >= 1:
-        print("Working directory:", BASE_PATH)
+        print(f"Working directory: {BASE_PATH}")
 
     # Find images in working directory
     image_formats = ["tif", "tiff", "png"]
@@ -234,13 +234,13 @@ if __name__ == "__main__":
 
     #Check if images have been loaded
     if not len(image_files) > 0:
-        raise ValueError("No images could be found in the supplied folder path. Images are expected in these formats:", image_formats)
+        raise ValueError(f"No images could be found in the supplied folder path. Images are expected in these formats: {image_formats}")
 
     # Move images to subdirectory if they are not already
     if IMAGE_PATH not in image_files[0].parts:
         image_files = file_access.move_to_subdirectory(image_files, IMAGE_PATH)
     if VERBOSE >= 1:
-        print(len(image_files), "images found")
+        print(f"{len(image_files)} images found")
     
     # Get date and time information from filenames
     time_points = get_image_timestamps(image_files)
@@ -271,17 +271,17 @@ if __name__ == "__main__":
         for ifn, image_file in enumerate(image_files):
 
             if VERBOSE >= 1:
-                print("Image number", ifn + 1, "of", len(image_files))
+                print(f"Image number {ifn + 1} of {len(image_files)}")
 
             if VERBOSE >= 2:
-                print("Imaging date-time:", time_points[ifn].strftime("%Y%m%d %H%M"))
+                print(f"Imaging date-time: {time_points[ifn].strftime('%Y%m%d %H%M')}")
 
             if VERBOSE >= 1:
-                print("Processing image:", image_file)
+                print(f"Processing image: {image_file}")
             img = imread(str(image_file), as_gray = True)
 
-            if VERBOSE >= 1:
-                print("Find plates:", image_file)
+            if VERBOSE >= 2:
+                print(f"Locate plates in image: {image_file}")
             # Only find centers using first image. Assume plates do not move
             if plate_coordinates is None:
                 plate_coordinates = imaging.get_image_circles(
@@ -337,16 +337,16 @@ if __name__ == "__main__":
             if SAVE_PLOTS >= 2:
                 for j, segmented_plate_timepoint in enumerate(segmented_plate_timepoints):
                     if VERBOSE >= 3:
-                        print("Saving segmented image plot for time point ", j + 1, "of", len(segmented_plate_timepoints))
+                        print(f"Saving segmented image plot for time point {j + 1} of {len(segmented_plate_timepoints)}")
                     plots_path = file_access.create_subdirectory(BASE_PATH, "plots")
                     save_path = get_plate_directory(plots_path, row, col, create_dir = True)
                     save_path = file_access.create_subdirectory(save_path, "segmented_images")
                     image_path = plots.plot_plate_segmented(plate_timepoints[j], segmented_plate_timepoint, (row, col), time_points[j], save_path)
                     if image_path is not None:
                         if VERBOSE >= 3:
-                            print("Saved segmented image plot to:", str(image_path))
+                            print(f"Saved segmented image plot to: {str(image_path)}")
                     else:
-                        print("Error: Unable to save segmented image plot for plate at row", row, "column", col)
+                        print(f"Error: Unable to save segmented image plot for plate at row {row} column {col}")
 
         # Record individual colony information
         if VERBOSE >= 1:
@@ -361,12 +361,12 @@ if __name__ == "__main__":
                 if PLATE_POSITION is not None:
                     plate_number = utilities.coordinate_to_index_number(PLATE_POSITION)
                 else:
-                    print("Tacking colonies on plate", plate_number, "of", len(plates_list_segmented))
+                    print(f"Tacking colonies on plate {plate_number} of {len(plates_list_segmented)}")
 
             # Process image at each time point
             for j, plate_image in enumerate(plate_images):
                 if VERBOSE >= 3:
-                    print("Tacking colonies at time point", j + 1, "of", len(plate_images))
+                    print(f"Tacking colonies at time point {j + 1} of {len(plate_images)}")
 
                 # Store data for each colony at every timepoint it is found
                 plate_colonies[i] = colony.timepoints_from_image(plate_colonies[i], plate_image, time_points[j], time_points_elapsed[j])
@@ -377,7 +377,7 @@ if __name__ == "__main__":
             plate_colonies[i] = dict(filter(lambda elem: elem[1].growth_rate > 1, plate_colonies[i].items()))
 
             if VERBOSE >= 1:
-                print("Colony data stored for", len(plate_colonies[i].keys()), "colonies on plate", plate_number)
+                print(f"Colony data stored for {len(plate_colonies[i].keys())} colonies on plate {plate_number}")
 
     # Store pickled data to allow quick re-use
     if SAVE_DATA >= 1:

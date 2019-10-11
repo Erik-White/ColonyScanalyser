@@ -14,9 +14,9 @@ def crop_image(image, crop_shape, center = None):
     img = image.copy()
 
     if any(x < 0 for x in crop_shape) or len(image.shape) < len(crop_shape):
-        raise ValueError("The crop shape must be positive integers and the same dimensions as the image to crop")
+        raise ValueError(f"The crop shape ({crop_shape}) must be positive integers and the same dimensions as the image to crop")
     if crop_shape > img.shape:
-        raise ValueError("The crop shape cannot be larger than the image to crop")
+        raise ValueError(f"The crop shape ({crop_shape}) cannot be larger than the image ({iamge.shape}) to crop")
 
     if center is None:
         # Use the center of the image
@@ -122,7 +122,7 @@ def remove_background_mask(image, mask, smoothing = 0.5, **filter_args):
     if image.size == 0 or mask.size == 0:
         raise ValueError("The supplied image or mask cannot be empty")
     if image.shape != mask.shape:
-        raise ValueError("The supplied image and mask must be the same shape")
+        raise ValueError(f"The supplied image ({image.shape}) and mask ({mask.shape}) must be the same shape")
     image = image.copy()
     mask = mask.copy()
 

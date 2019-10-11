@@ -52,7 +52,7 @@ def create_subdirectory(parent_path, subdirectory):
     except:
         # There are many reasons creating a directory may fail
         # Invalid filename, permissions, etc
-        raise EnvironmentError("Unable to create new subfolder:", subdirectory)
+        raise EnvironmentError(f"Unable to create new subfolder: {subdirectory}")
 
     return subdir_path
 
@@ -87,7 +87,7 @@ def move_to_subdirectory(file_list, subdirectory):
             file.replace(sub_dir.joinpath(file.name))
             files.append(sub_dir.joinpath(file.name))
     except:
-        raise EnvironmentError("Unable to move files to subdirectory:", sub_dir)
+        raise EnvironmentError(f"Unable to move files to subdirectory: {sub_dir}")
 
     return files
 

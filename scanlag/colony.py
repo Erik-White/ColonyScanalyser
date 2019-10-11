@@ -68,13 +68,13 @@ class Colony():
         if time_point in self.__timepoints:
             return self.timepoints[time_point]
         else:
-            raise ValueError("The requested time point does not exist")
+            raise ValueError(f"The requested time point ({time_point}) does not exist")
 
     def append_timepoint(self, time_point, timepointdata):
         if time_point not in self.__timepoints:
             self.__timepoints[time_point] = timepointdata
         else:
-            raise ValueError("This time point already exists")
+            raise ValueError(f"This time point ({time_point})  already exists")
         
     def update_timepoint(self, time_point, timepointdata):
         self.timepoints[time_point] = timepointdata
