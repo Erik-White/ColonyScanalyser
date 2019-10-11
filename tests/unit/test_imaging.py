@@ -3,6 +3,7 @@ import numpy as np
 
 from scanlag.imaging import (crop_image,
                             cut_image_circle,
+                            get_image_circles,
                             remove_background_mask,
                             watershed_separation,
                             standardise_labels_timeline,
@@ -123,6 +124,49 @@ class TestCutImageCircle():
     def test_exceed_bounds(self, image):
         with pytest.raises(ValueError):
             cut_image_circle(image, center = (2, 4), radius = 3)
+
+
+class TestGetImageCircles():
+    def image_circle_ref():
+        # Create a 200x200 array with a donut around the centre
+        xx, yy = np.mgrid[:200, :200]
+        circle = (xx - 100) ** 2 + (yy - 100) ** 2
+        img = (circle < (6400 + 60)) & (circle > (6400 - 60))
+        return img
+    
+    @pytest.fixture(params = [image_circle_ref()])
+    def image_circle(self, request):
+        yield request.param
+
+    def test_get_circles(self, image_circle):
+        result = get_image_circles(image_circle, 80, search_radius = 50)
+        
+        assert len(result) == 9
+        assert result[0] == ((102, 102), 80)
+
+    @pytest.mark.parametrize("radius, count, search_radius, expected", [
+        (80, 1, 10, ((102, 102), 80)),
+        (80, None, 20, ((102, 102), 80)),
+        (40, 4, 40, ((154, 150), 10)),
+        (80, 2, 20, ((102, 102), 80)),
+        (40, 4, 10, ((62, 62), 30)),
+        ])
+    def test_get_circles_with_params(self, image_circle, radius, count, search_radius, expected):
+        result = get_image_circles(
+            image_circle,
+            radius,
+            circle_count = count,
+            search_radius = search_radius
+            )
+            
+        if count == None and expected == ((102, 102), 80):
+            count = 4
+        assert len(result) == count
+        assert result[0] == expected
+
+    def test_image_empty(self):
+        with pytest.raises(ValueError):
+            get_image_circles(np.zeros_like((1, 1)), 1)
 
 
 class TestRemoveBackgroundMask():
