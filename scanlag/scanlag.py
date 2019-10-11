@@ -184,10 +184,14 @@ if __name__ == "__main__":
                        help = "Image files location", default = None)
     parser.add_argument("-v", "--verbose", type = int, default = 1,
                        help = "Information output level")
+    parser.add_argument("-dpi", "--dots_per_inch", type = int, default = 2540,
+                       help = "The image DPI (dots per inch) setting")
+    parser.add_argument("--plate_size", type = int, default = 100,
+                       help = "The plate diameter, in millimetres")
     parser.add_argument("--plate_lattice", type = int, nargs = 2, default = (3, 2),
                         metavar = ("ROW", "COL"),
                         help = "The row and column co-ordinate layout of plates. Example usage: --plate_lattice 3 3")
-    parser.add_argument("--pos", "--plate_position", type = int, nargs = 2, default = argparse.SUPPRESS,
+    parser.add_argument("-pos", "--plate_position", type = int, nargs = 2, default = argparse.SUPPRESS,
                         metavar = ("ROW", "COL"),
                         help = "The row and column co-ordinates of a single plate to study in the plate lattice. Example usage: --plate_position 2 1 (default: all)")
     parser.add_argument("--save_data", type = int, default = 1,
@@ -200,6 +204,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     BASE_PATH = args.path
     VERBOSE = args.verbose
+    PLATE_SIZE = imaging.mm_to_pixels(args.plate_size, dots_per_inch = args.dots_per_inch)
     PLATE_LATTICE = tuple(args.plate_lattice)
     if "plate_position" not in args:
         PLATE_POSITION = None
@@ -279,7 +284,7 @@ if __name__ == "__main__":
             if plate_coordinates is None:
                 plate_coordinates = imaging.get_image_circles(
                     img,
-                    450,
+                    PLATE_SIZE / 2,
                     circle_count = utilities.coordinate_to_index_number(PLATE_LATTICE),
                     search_radius = 50
                     )
@@ -288,8 +293,6 @@ if __name__ == "__main__":
                 print("Split image into plates")
             plates = get_plate_images(img, plate_coordinates, edge_cut = 60)
             
-            if VERBOSE >= 2:
-                print("Store split plate image data for this time point")
             if PLATE_POSITION is not None:
                 # Save image for only a single plate
                 plate_index = utilities.coordinate_to_index_number(PLATE_POSITION)
@@ -317,8 +320,7 @@ if __name__ == "__main__":
             # Each time point element of the array contains a co-ordinate array of size (total image columns)*(total image rows)
             segmented_plate_timepoints = segment_plate_timepoints(plate_timepoints, time_points)
             if segmented_plate_timepoints is None:
-                print("Error: Unable to segment image data for plate")
-                sys.exit()
+                raise RuntimeError("Unable to segment image data for plate")
             
             # Ensure labels remain constant
             segmented_plate_timepoints = imaging.standardise_labels_timeline(segmented_plate_timepoints)
@@ -341,11 +343,9 @@ if __name__ == "__main__":
                     else:
                         print(f"Error: Unable to save segmented image plot for plate at row {row} column {col}")
 
-        # Record individual colony information
+        # Loop through plates and colony objects for each colony found
         if VERBOSE >= 1:
             print("Tracking individual colonies")
-
-        # Loop through plates and colony objects for each colony found
         from collections import defaultdict
         plate_colonies = defaultdict(dict)
         for i, plate_images in enumerate(plates_list_segmented.values(), start = 1):

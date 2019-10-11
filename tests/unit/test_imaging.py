@@ -1,7 +1,8 @@
 import pytest
 import numpy as np
 
-from scanlag.imaging import (crop_image,
+from scanlag.imaging import (mm_to_pixels,
+                            crop_image,
                             cut_image_circle,
                             get_image_circles,
                             remove_background_mask,
@@ -79,6 +80,32 @@ class TestCropImage():
     def test_crop_outside(self, image, center):
         with pytest.raises(ValueError):
             print(crop_image(image, image.shape, center))
+
+
+class TestMMToPixels():
+    @pytest.fixture(params = [100, 356, 95.6])
+    def measurements(self, request):
+        yield request.param
+
+    @pytest.fixture(params = [150, 300, 2540])
+    def dpi(self, request):
+        yield request.param
+
+    @pytest.fixture(params = [-1, 0, -25.4])
+    def arg_invalid(self, request):
+        yield request.param
+
+    def test_dpi(self, measurements, dpi):
+        result = mm_to_pixels(measurements, dpi)
+        assert result == measurements * (dpi / 254)
+
+    def test_ppmm(self, measurements, dpi):
+        result = mm_to_pixels(measurements, dpi, pixels_per_mm = dpi)
+        assert result == measurements * dpi
+
+    def test_arg_invalid(self, arg_invalid):
+        with pytest.raises(ValueError):
+            mm_to_pixels(arg_invalid, arg_invalid, pixels_per_mm = arg_invalid)
 
 
 class TestCutImageCircle():
