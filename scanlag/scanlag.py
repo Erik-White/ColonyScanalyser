@@ -194,8 +194,6 @@ if __name__ == "__main__":
     parser.add_argument("-pos", "--plate_position", type = int, nargs = 2, default = argparse.SUPPRESS,
                         metavar = ("ROW", "COL"),
                         help = "The row and column co-ordinates of a single plate to study in the plate lattice. Example usage: --plate_position 2 1 (default: all)")
-    parser.add_argument("--save_data", type = int, default = 1,
-                        help = "Which compressed image data files to store on disk")
     parser.add_argument("--save_plots", type = int, default = 1,
                         help = "The detail level of plot images to store on disk")
     parser.add_argument("--use_saved", type = strtobool, default = True,
@@ -210,7 +208,6 @@ if __name__ == "__main__":
         PLATE_POSITION = None
     else:
         PLATE_POSITION = args.plate_position
-    SAVE_DATA = args.save_data
     SAVE_PLOTS = args.save_plots
     USE_SAVED = args.use_saved
 
@@ -373,14 +370,13 @@ if __name__ == "__main__":
                 print(f"Colony data stored for {len(plate_colonies[i].keys())} colonies on plate {plate_number}")
 
     # Store pickled data to allow quick re-use
-    if SAVE_DATA >= 1:
-        save_path = BASE_PATH.joinpath(segmented_image_data_filename)
-        save_status = file_access.save_file(save_path, plate_colonies, file_access.CompressionMethod.LZMA)
-        if VERBOSE >= 1:
-            if save_status:
-                print(f"Cached data saved to {save_path}")
-            else:
-                print(f"An error occurred and cached data could not be written to disk at {save_path}")
+    save_path = BASE_PATH.joinpath(segmented_image_data_filename)
+    save_status = file_access.save_file(save_path, plate_colonies, file_access.CompressionMethod.LZMA)
+    if VERBOSE >= 1:
+        if save_status:
+            print(f"Cached data saved to {save_path}")
+        else:
+            print(f"An error occurred and cached data could not be written to disk at {save_path}")
 
     # Plot colony growth curves and time of appearance for the plate
     if SAVE_PLOTS >= 2:
