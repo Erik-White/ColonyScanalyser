@@ -75,6 +75,7 @@ class TestCropImage():
 
     def test_shape_invalid(self, image, crop_shape_invalid):
         with pytest.raises(ValueError):
+
             crop_image(image, crop_shape_invalid)
 
     def test_crop_outside(self, image, center):
@@ -154,16 +155,13 @@ class TestCutImageCircle():
 
 
 class TestGetImageCircles():
-    def image_circle_ref():
+    @pytest.fixture
+    def image_circle(self, request):
         # Create a 200x200 array with a donut around the centre
         xx, yy = np.mgrid[:200, :200]
         circle = (xx - 100) ** 2 + (yy - 100) ** 2
         img = (circle < (6400 + 60)) & (circle > (6400 - 60))
-        return img
-    
-    @pytest.fixture(params = [image_circle_ref()])
-    def image_circle(self, request):
-        yield request.param
+        yield img
 
     def test_get_circles(self, image_circle):
         result = get_image_circles(image_circle, 80, search_radius = 50)
@@ -193,7 +191,7 @@ class TestGetImageCircles():
 
     def test_image_empty(self):
         with pytest.raises(ValueError):
-            get_image_circles(np.zeros_like((1, 1)), 1)
+            get_image_circles(np.array([]), 1)
 
 
 class TestRemoveBackgroundMask():
