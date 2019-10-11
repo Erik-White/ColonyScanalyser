@@ -14,7 +14,7 @@ def mm_to_pixels(millimeters, dots_per_inch = 300, pixels_per_mm = None):
     if pixels_per_mm is not None:
         factor = pixels_per_mm
 
-    return millimeters * factor
+    return int(millimeters * factor)
 
 
 def crop_image(image, crop_shape, center = None):

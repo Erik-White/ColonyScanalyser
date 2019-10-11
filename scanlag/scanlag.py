@@ -281,8 +281,8 @@ if __name__ == "__main__":
             if plate_coordinates is None:
                 plate_coordinates = imaging.get_image_circles(
                     img,
-                    PLATE_SIZE / 2,
-                    circle_count = utilities.coordinate_to_index_number(PLATE_LATTICE),
+                    int(PLATE_SIZE / 2),
+                    circle_count = (utilities.coordinate_to_index_number(PLATE_LATTICE)),
                     search_radius = 50
                     )
 
