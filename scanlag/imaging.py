@@ -77,15 +77,15 @@ def cut_image_circle(image, center = None, radius = None, inverse = False):
     return img
 
 
-def get_image_circles(image, circle_count, circle_size = 450, search_radius = 50):
+def get_image_circles(image, circle_radius, circle_count = -1, search_radius = 0):
     """
     Get circular parts of an image matching the size criteria
 
     :param image: a greyscale image as a numpy array
+    :param circle_radius: a circle radius to search for, in pixels
     :param circle_count: the number of expected circles in the image
-    :param circle_size: a circle radius, in pixels
-    :param edge_cut: a radius to remove from the edge of the circle, in pixels
-    :returns: a list of center  radii
+    :param search_radius: an additional area around the expected circle size to search
+    :returns: a list of center co-ordinate tuples and radii
     """
     from skimage.transform import hough_circle, hough_circle_peaks
     from skimage.feature import canny
@@ -97,17 +97,16 @@ def get_image_circles(image, circle_count, circle_size = 450, search_radius = 50
     # Find edges in the image
     edges = canny(img, sigma = 3)
 
-    # Check search_radius pixels around the target radius, in steps of 20
-    radii = range(circle_size - search_radius, circle_size + search_radius, 20)
+    # Check search_radius pixels around the target radius, in steps of 10
+    radii = range(circle_radius - search_radius, circle_radius + search_radius, 10)
     hough_circles = hough_circle(edges, radii)
     
     # Find the most significant circles
     _, cx, cy, radii = hough_circle_peaks(
         hough_circles,
         radii,
-        #normalize = True,
-        min_xdistance = circle_size,
-        min_ydistance = circle_size,
+        min_xdistance = circle_radius,
+        min_ydistance = circle_radius,
         total_num_peaks = circle_count
         )
         

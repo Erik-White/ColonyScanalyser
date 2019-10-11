@@ -309,7 +309,12 @@ if __name__ == "__main__":
                     print("Find plates:", image_file)
                 # Only find centers using first image. Assume plates do not move
                 if plate_coordinates is None:
-                    plate_coordinates = imaging.get_image_circles(img, 6, circle_size = 450)
+                    plate_coordinates = imaging.get_image_circles(
+                        img,
+                        450,
+                        circle_count = utilities.coordinate_to_index_number(PLATE_LATTICE),
+                        search_radius = 50
+                        )
 
                 if VERBOSE >= 2:
                     print("Split image into plates")
