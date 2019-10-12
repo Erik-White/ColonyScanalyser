@@ -1,12 +1,42 @@
 import pytest
 import numpy as np
 
-from scanlag.utilities import (index_number_to_coordinate,
+from scanlag.utilities import (round_tuple_floats,
+                                index_number_to_coordinate,
                                 coordinate_to_index_number,
                                 average_dicts_values_by_key,
                                 average_median_dicts_values_by_key,
                                 is_outlier
                                 )
+
+
+class TestRoundTupleFloats():
+    @pytest.fixture(params=[
+        (1.3285, 1.00001),
+        (-95840.3567, 0.0),
+        (43.94387678, "string.", 2.567)
+        ])
+    def tuples(self, request):
+        yield request.param
+
+    @pytest.fixture(params=[1, 3, 5])
+    def rounding(self, request):
+        yield request.param
+
+    def float_precision(self, number):
+        _, after = str(number).split('.')
+        return len(after)
+
+    def test_rounding(self, tuples, rounding):
+        result = round_tuple_floats(tuples, rounding)
+        
+        for value in result:
+            assert self.float_precision(value) <= rounding
+
+    def test_value_error(self):
+        with pytest.raises(ValueError):
+            round_tuple_floats(1)
+
 
 class TestIndexNumberToCoordinate():
     @pytest.fixture(params=[1, 2, 4, 10])
@@ -45,7 +75,7 @@ class TestIndexNumberToCoordinate():
     def test_index_error(self, lattice):
         with pytest.raises(IndexError):
             index_number_to_coordinate(100, lattice)
-
+    
 
 class TestCoordinateToIndexNumber():
     @pytest.mark.parametrize("coordinate, expected", [
