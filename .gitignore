@@ -1,7 +1,10 @@
-# Ignore data and figures
+# Data and figures
 data
 figures
 plots
+
+# IDEs
+.vscode
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
