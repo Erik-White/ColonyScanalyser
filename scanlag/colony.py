@@ -1,8 +1,9 @@
 ﻿import datetime
 from math import pi, log
 from dataclasses import dataclass
+from utilities import round_tuple_floats
 
-class Colony():
+class Colony:
     """
     An object to hold information on a single colony over time
     """
@@ -14,6 +15,16 @@ class Colony():
         center: tuple
         diameter: float
         perimeter: float
+        
+        def __iter__(self):
+            return iter([
+                self.date_time,
+                self.elapsed_minutes,
+                self.area,
+                round_tuple_floats(self.center, 2),
+                round(self.diameter, 2),
+                round(self.perimeter, 2)
+                ])
 
     def __init__(self, id, timepoints = None):
         self.id = id
@@ -21,6 +32,26 @@ class Colony():
         if timepoints is None:
             timepoints = dict()
         self.timepoints = timepoints
+    
+    def __iter__(self):
+        return iter([
+            self.id,
+            self.time_of_appearance,
+            self.timepoint_first.elapsed_minutes,
+            round_tuple_floats(self.center, 2),
+            round(self.growth_rate_average, 2),
+            round(self.growth_rate, 2),
+            round(self.get_doubling_time_average(elapsed_minutes = True), 2),
+            round_tuple_floats(tuple(self.get_doubling_times(elapsed_minutes = True)), 2),
+            self.timepoint_first.elapsed_minutes,
+            round_tuple_floats(self.timepoint_first.center, 2),
+            self.timepoint_first.area,
+            round(self.timepoint_first.diameter, 2),
+            self.timepoint_last.elapsed_minutes,
+            round_tuple_floats(self.timepoint_last.center, 2),
+            self.timepoint_last.area,
+            round(self.timepoint_last.diameter, 2)
+            ])
 
     @property
     def timepoints(self):
@@ -47,7 +78,8 @@ class Colony():
 
     @property
     def center(self):
-        return sum([value.center for key, value in self.timepoints.items()]) / len(self.timepoints)
+        centers = [x.center for x in self.timepoints.values()]
+        return tuple(sum(x) / len(self.timepoints) for x in zip(*centers))
 
     @property
     def growth_rate(self):
@@ -86,11 +118,16 @@ class Colony():
             x_pts = [value.date_time for key, value in self.timepoints.items()]
         y_pts = [value.area for key, value in self.timepoints.items()]
 
+        if not len(x_pts) > 0 or not len(y_pts) > 0:
+            return []
+
         return [self.__local_doubling_time(i, x_pts, y_pts, window) for i in range(len(x_pts) - window)]
 
     def get_doubling_time_average(self, window = 10, elapsed_minutes = False):
         doubling_times = self.get_doubling_times(window, elapsed_minutes)
-        
+        if not len(doubling_times) > 0:
+            return 0
+
         return sum(doubling_times) / len(doubling_times)
 
     def remove_timepoint(self, time_point):
