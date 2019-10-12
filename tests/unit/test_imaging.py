@@ -98,7 +98,7 @@ class TestMMToPixels():
 
     def test_dpi(self, measurements, dpi):
         result = mm_to_pixels(measurements, dpi)
-        assert result == measurements * (dpi / 254)
+        assert result == int(measurements * (dpi / 254))
 
     def test_ppmm(self, measurements, dpi):
         result = mm_to_pixels(measurements, dpi, pixels_per_mm = dpi)
