@@ -9,7 +9,8 @@ from scanlag.file_access import (file_exists,
                                 CompressionMethod,
                                 file_compression,
                                 load_file,
-                                save_file
+                                save_file,
+                                save_to_csv
                                 )
 
 FILE_NON_EXISTANT = Path("")
@@ -170,3 +171,112 @@ class TestSaveFile():
                             method
                             ) as temp_file:
                 assert file_exists(temp_file) is True
+
+
+class TestSaveToCSV():
+    @pytest.fixture
+    def headers(self):
+        return ["one", "two", "three"]
+
+    @pytest.fixture
+    def data_list(self):
+        return [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
+
+    @pytest.fixture
+    def data_dict(self, data_list, headers):
+        data_dict = dict.fromkeys(headers)
+        for i, key in enumerate(data_dict.keys()):
+            data_dict[key] = data_list[0][i]
+        yield data_dict
+
+    def test_list(self, tmp_path, headers, data_list):
+        import csv
+
+        result = save_to_csv(data_list, headers, tmp_path.joinpath("csv_list"))
+        # Add headers to data
+        data_list.insert(0, headers)
+        
+        # Check all rows were written correctly
+        with open(result, 'r') as csvfile:
+            reader = csv.reader(csvfile)
+            for i, row in enumerate(reader):
+                assert [str(x) for x in data_list[i]] == row
+
+    def test_dict(self, tmp_path, headers, data_dict):
+        import csv
+        
+        result = save_to_csv(data_dict, headers, tmp_path.joinpath("csv_dict"))
+        result_dict = dict.fromkeys(headers)
+        
+        with open(result, 'r') as csvfile:
+            reader = csv.DictReader(csvfile)
+            for row in reader:
+                for key in result_dict.keys():
+                    result_dict[key] = int(row[key])
+
+        assert data_dict == result_dict
+
+    def test_dict_view(self, tmp_path, headers, data_dict, data_list):
+        import csv
+
+        result = save_to_csv(data_dict.values(), headers, tmp_path.joinpath("csv_dict_view"))
+        # Add headers to data
+        data_list.insert(0, headers)
+        
+        # Check all rows were written correctly
+        with open(result, 'r') as csvfile:
+            reader = csv.reader(csvfile)
+            for i, row in enumerate(reader):
+                assert [str(x) for x in data_list[i]] == row
+
+    def test_iterable_unpack(self, tmp_path, headers, data_list):
+        import csv
+        
+        # Create a generic object that will require unpacking
+        class TestIterator:
+            def __init__(self, prop):
+                self.prop = prop
+            
+            def __iter__(self):
+                return iter([
+                    self.prop
+                    ])
+
+        data_iters = list()
+        for row in data_list:
+            data_iters.append(TestIterator(row[0]))
+
+        result = save_to_csv(data_iters, headers, tmp_path.joinpath("csv_unpack"))
+        data_iters.insert(0, TestIterator(headers))
+        
+        # Check all rows were written correctly
+        with open(result, 'r') as csvfile:
+            reader = csv.reader(csvfile)
+            for i, row in enumerate(reader):
+                if i == 0:
+                    data_iters[i].prop == row
+                else:
+                    assert [str(data_iters[i].prop)] == row
+
+    def test_iterable(self, tmp_path):
+        with pytest.raises(ValueError):
+            save_to_csv(0, "", tmp_path.joinpath("test_csv"))
+
+    def test_string_path(self, tmp_path):
+        save_path = tmp_path.joinpath("test_csv")
+        assert save_to_csv("", "", str(save_path)) == save_path.with_suffix(".csv")
+
+    def test_ioerror(self, tmp_path):
+        # Store the original folder permissions
+        test_dir_chmod = Path.stat(tmp_path).st_mode
+
+        # Create a new subdir and make it read + execute
+        test_dir = create_subdirectory(tmp_path, SUB_DIR)
+        test_dir.chmod(555)
+
+        try:
+            with pytest.raises(IOError):
+                save_to_csv("", "", test_dir.joinpath("test_csv"))
+        finally:
+            # Restore original folder permissions
+            test_dir.chmod(test_dir_chmod)

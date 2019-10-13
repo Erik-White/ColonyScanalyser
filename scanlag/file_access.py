@@ -154,3 +154,63 @@ def save_file(file_path, data, compression):
             completed = file_path
     finally:
         return completed
+
+
+def save_to_csv(data, headers, save_path, delimiter = ","):
+    """
+    Save objects to CSV
+
+    Accepts lists, dictionaries and iterable objects
+
+    :param data: an iterable object
+    :param headers: column headers for the CSV file
+    :param save_path: the save location as a path object or string
+    :returns: a path object representing the new file, if successful
+    """
+    import csv
+    from pathlib import Path
+    from collections.abc import Collection, Iterable, MappingView
+    
+    if not isinstance(data, Iterable):
+        raise ValueError("The data object must be iterable e.g. a list")
+
+    if isinstance(save_path, str):
+        save_path = Path(save_path)
+    save_path = save_path.with_suffix(".csv")
+
+    try:
+        with open(save_path, 'w') as outfile:
+            if isinstance(data, dict):
+                # Dictionary values are assigned by key to column headers
+                writer = csv.DictWriter(
+                    outfile,
+                    delimiter = delimiter,
+                    fieldnames = headers
+                    )
+                writer.writeheader()
+                data = [data]
+            else:
+                writer = csv.writer(outfile, delimiter = delimiter)
+                writer.writerow(headers)
+            
+            # Check if iterable contains objects that need unpacking
+            unpack = False
+            for row in data:
+                if isinstance(row, Iterable) and not isinstance(row, Collection):
+                    unpack = True
+                break
+            
+            # View objects are not iterable and need wrapping
+            if isinstance(data, MappingView) or unpack:
+                data = [data]
+
+            # Write the data
+            if unpack:
+                writer.writerows(*data)
+            else:
+                writer.writerows(data)
+    
+    except:
+        raise IOError(f"Unable to save data to CSV file at {save_path}")
+
+    return save_path
