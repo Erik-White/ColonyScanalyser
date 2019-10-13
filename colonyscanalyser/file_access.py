@@ -8,7 +8,7 @@
     from pathlib import Path
     
     if not isinstance(file_path, Path):
-        filepath = Path(file_path)
+        file_path = Path(file_path)
 
     if Path.exists(file_path) and Path.is_file(file_path) and Path.stat(file_path).st_size > 0:
         return True

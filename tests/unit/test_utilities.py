@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 
-from scanlag.utilities import (round_tuple_floats,
+from colonyscanalyser.utilities import (round_tuple_floats,
                                 index_number_to_coordinate,
                                 coordinate_to_index_number,
                                 average_dicts_values_by_key,

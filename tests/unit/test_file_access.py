@@ -2,7 +2,7 @@ import pytest
 import tempfile
 from pathlib import Path
 
-from scanlag.file_access import (file_exists,
+from colonyscanalyser.file_access import (file_exists,
                                 get_files_by_type,
                                 create_subdirectory,
                                 move_to_subdirectory,

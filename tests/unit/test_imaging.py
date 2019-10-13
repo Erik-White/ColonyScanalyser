@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 
-from scanlag.imaging import (mm_to_pixels,
+from colonyscanalyser.imaging import (mm_to_pixels,
                             crop_image,
                             cut_image_circle,
                             get_image_circles,

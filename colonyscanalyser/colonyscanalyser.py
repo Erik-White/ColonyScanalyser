@@ -177,7 +177,7 @@ def segment_plate_timepoints(plate_images_list, date_times):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(
-        description = "Analyze ScanLag images to track colonies and generate statistical data.",
+        description = "An image analysis tool for measuring microorganism colony growth",
         formatter_class = argparse.ArgumentDefaultsHelpFormatter
         )
     parser.add_argument("path", type = str,
@@ -215,6 +215,9 @@ if __name__ == "__main__":
         PLATE_POSITION = tuple(PLATE_POSITION)
         if utilities.coordinate_to_index_number(PLATE_POSITION) > utilities.coordinate_to_index_number(PLATE_LATTICE):
             raise ValueError(f"The supplied plate position coordinate ({PLATE_POSITION})is outside the plate grid ({PLATE_LATTICE})")
+
+    if VERBOSE >= 1:
+        print("Starting ColonyScanalyser analysis")
 
     # Resolve working directory
     if BASE_PATH is None:
@@ -457,6 +460,6 @@ if __name__ == "__main__":
         plots.plot_doubling_map(plate_colonies, time_points_elapsed, save_path)
 
     if VERBOSE >= 1:
-        print("Scanlag analysis complete")
+        print("ColonyScanalyser analysis complete")
 
     sys.exit()

@@ -1,11 +1,15 @@
 from setuptools import setup, find_packages
 
+with open("README.md", 'r') as f:
+    long_description = f.read()
+
 setup(
     python_requires = ">3.7",
-    name = "scanlag",
-    version = "0.1",
-    description = "Runs ScanLag analysis on image files",
-    url = "https://github.com/Erik-White/ScanLag/",
+    name = "colonyscanalyser",
+    version = "0.1.0",
+    description = "An image analysis tool for measuring microorganism colony growth",
+    long_description = long_description,
+    url = "https://github.com/Erik-White/ColonyScanalyser/",
     author = "Erik White",
     author_email = "",
     license = "GPL-3.0",
@@ -14,7 +18,7 @@ setup(
     install_requires = [
         "numpy",
         "matplotlib",
-        "scikit-image >= 0.16"
+        "scikit-image >= 0.15"
     ],
     extras_require = {
         "dev": [
@@ -26,5 +30,10 @@ setup(
             "pytest",
             "pytest-cov"
         ],
-    }
+    },
+    entry_points={
+        'console_scripts': [
+            'scanalyser = colonyscanalyser:main',
+        ],
+    },
 )
