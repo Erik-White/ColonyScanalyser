@@ -1,13 +1,16 @@
-﻿def file_exists(filepath):
+﻿def file_exists(file_path):
     """
     Check whether a file exists and contains data
+
+    :param file_path: a Path object representing a file
+    :returns: True if the file exists and contains data
     """
     from pathlib import Path
     
-    if not isinstance(filepath, Path):
-        filepath = Path(filepath)
+    if not isinstance(file_path, Path):
+        filepath = Path(file_path)
 
-    if Path.exists(filepath) and Path.is_file(filepath) and Path.stat(filepath).st_size > 0:
+    if Path.exists(file_path) and Path.is_file(file_path) and Path.stat(file_path).st_size > 0:
         return True
     
     return False
@@ -94,6 +97,11 @@ def move_to_subdirectory(file_list, subdirectory):
 
 from enum import Enum, auto
 class CompressionMethod(Enum):
+    """
+    An Enum representing different types of data compression
+
+    The enum values are the corresponding file suffixes
+    """
     BZ2 = ".pbz2"
     GZIP = ".gz"
     LZMA = ".xz"
@@ -104,6 +112,11 @@ class CompressionMethod(Enum):
 def file_compression(file_path, compression, access_mode = "r"):
     """
     Allows access to a file using the desired compression method
+
+    :param file_path: a Path object
+    :param compression: a CompressionMethod enum
+    :param access_mode: the access mode for opening the file
+    :returns: a file object or datastream, if successful, or None
     """
     from pathlib import Path
 
@@ -127,6 +140,12 @@ def file_compression(file_path, compression, access_mode = "r"):
 def load_file(file_path, compression, access_mode = "rb", pickle = True):
     """
     Load compressed data from a file
+
+    :param file_path: a Path object
+    :param compression: a CompressionMethod enum
+    :param access_mode: the access mode for opening the file
+    :param pickle: optionally disallow loading object arrays for security reasons
+    :returns: the loaded data object, if successful, or None
     """
     from numpy import load
     
@@ -143,6 +162,11 @@ def save_file(file_path, data, compression):
     Save data to specified file
 
     Returns the saved file path if successful
+
+    :param file_path: a Path object
+    :param data: the output data to save
+    :param compression: a CompressionMethod enum
+    :returns: a Path object representing the saved file, if successful
     """
     import pickle
 
@@ -158,9 +182,9 @@ def save_file(file_path, data, compression):
 
 def save_to_csv(data, headers, save_path, delimiter = ","):
     """
-    Save objects to CSV
+    Save data to CSV files on disk
 
-    Accepts lists, dictionaries and iterable objects
+    Accepts lists, dictionaries and generic iterable objects
 
     :param data: an iterable object
     :param headers: column headers for the CSV file
