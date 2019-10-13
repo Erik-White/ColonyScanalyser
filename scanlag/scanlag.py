@@ -249,7 +249,7 @@ if __name__ == "__main__":
         if VERBOSE >= 1:
             print("Attempting to load cached data")
         plate_colonies = file_access.load_file(
-            BASE_PATH.joinpath(segmented_image_data_filename),
+            BASE_PATH.joinpath("data", segmented_image_data_filename),
             file_access.CompressionMethod.LZMA,
             pickle = True
             )
@@ -327,6 +327,8 @@ if __name__ == "__main__":
 
             # Save segmented image plot for each timepoint
             if SAVE_PLOTS >= 2:
+                if VERBOSE >= 1:
+                    print("Saving segmented image plots for each plate. This process will take a long time")
                 for j, segmented_plate_timepoint in enumerate(segmented_plate_timepoints):
                     if VERBOSE >= 3:
                         print(f"Saving segmented image plot for time point {j + 1} of {len(segmented_plate_timepoints)}")
@@ -370,7 +372,7 @@ if __name__ == "__main__":
                 print(f"Colony data stored for {len(plate_colonies[i].keys())} colonies on plate {plate_number}")
 
     # Store pickled data to allow quick re-use
-    save_path = BASE_PATH.joinpath(segmented_image_data_filename)
+    save_path = BASE_PATH.joinpath("data", segmented_image_data_filename)
     save_status = file_access.save_file(save_path, plate_colonies, file_access.CompressionMethod.LZMA)
     if VERBOSE >= 1:
         if save_status:
@@ -378,6 +380,61 @@ if __name__ == "__main__":
         else:
             print(f"An error occurred and cached data could not be written to disk at {save_path}")
 
+    # Store colony data in CSV format
+    if VERBOSE >= 1:
+        print("Saving data to CSV")
+    save_path = BASE_PATH.joinpath("data")
+    for plate_id, plate in plate_colonies.items():
+        headers = [
+            "Colony ID",
+            "Time of appearance",
+            "Time of appearance (elapsed minutes)",
+            "Center point averaged (row, column)",
+            "Growth rate average",
+            "Growth rate",
+            "Doubling time average (minutes)",
+            "Doubling times (minutes)",
+            "First detection (elapsed minutes)",
+            "First center point (row, column)",
+            "First area (pixels)",
+            "First diameter (pixels)",
+            "Final detection (elapsed minutes)",
+            "Final center point (row, column)",
+            "Final area (pixels)",
+            "Final diameter (pixels)"
+            ]
+
+        # Save data for all colonies on one plate
+        file_access.save_to_csv(
+            plate.values(),
+            headers,
+            save_path.joinpath(f"plate{plate_id}_colonies")
+            )
+
+        # Save data for each colony on a plate
+        headers = [
+            "Colony ID",
+            "Date/Time",
+            "Elapsed time (minutes)",
+            "Area (pixels)",
+            "Center (row, column)",
+            "Diameter (pixels)",
+            "Perimeter (pixels)"
+        ]
+        colony_timepoints = list()
+        for colony_id, colony in plate.items():
+            for timepoint in colony.timepoints.values():
+                # Unpack timepoint properties to a flat list
+                colony_timepoints.append([colony_id, *timepoint])
+                
+        file_access.save_to_csv(
+            colony_timepoints,
+            headers,
+            save_path.joinpath(f"plate{plate_id}_colony_timepoints")
+            )
+    
+    if VERBOSE >= 1:
+        print("Saving plots")
     # Plot colony growth curves and time of appearance for the plate
     if SAVE_PLOTS >= 2:
         for plate_id, plate in plate_colonies.items():
