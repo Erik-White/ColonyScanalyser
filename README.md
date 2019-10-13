@@ -1,12 +1,12 @@
-# ScanLag
+# ColonyScanalyser
 
 An image analysis tool for measuring microorganism colony growth.
 
-ScanLag will analyse and collate statistical data from cell-culture plate images. It requires a series of images from a fixed point that show the development of microorganism colonies over time.
+ColonyScanalyser will analyse and collate statistical data from cell-culture plate images. It requires a series of images from a fixed point that show the development of microorganism colonies over time.
 
 <img align="right" src="docs/images/colony_growth_curve_small.png">
 
-ScanLag can provide information on:
+ColonyScanalyser can provide information on:
 * Colony growth lag time (time of appearance)
 * Bimodal lag time distribution (comparing lag times of two colonies)
 * Colony area growth over time
@@ -17,11 +17,11 @@ By default, it will output a set of data and plots that summarize the informatio
 
 * Install the [prerequisites](#prerequisites) and [package](#installing)
 * Locate your image series in a folder e.g. `\user\images\series1`
-* Run the analysis using ScanLag `python scanlag \user\images\series1`
+* Run the analysis using ColonyScanalyser `python scanalyser \user\images\series1`
 
-There are various command line arguments that can alter the way the package is run. To see a list of arguments and information on each, run the command `python scanlag --help`
+There are various command line arguments that can alter the way the package is run. To see a list of arguments and information on each, run the command `python scanalyser --help`
 
-For example, to run the package 'silently' with no console output: `python scanlag \user\images\series1 --verbose 0`
+For example, to run the package 'silently' with no console output: `python scanalyser \user\images\series1 --verbose 0`
 
 ### Prerequisites
 
@@ -38,27 +38,29 @@ For testing:
 
 #### Using pip
 Install Scikit-image (unless already installed)
+```
+pip install scikit-image
+```
 
-`pip install scikit-image`
-
-Install ScanLag
-
-`pip install scanlag`
+Install ColonyScanalyser
+```
+pip install scanalyser
+```
 
 #### From github (requires [git](https://git-scm.com/) install)
 ```
-git clone https://github.com/erik-white/scanlag.git
-cd scanlag
+git clone https://github.com/erik-white/scanalyser.git
+cd scanalyser
 pip install -e .
 ```
 
 ## Testing
 
 Install the package with the extra test packages:
-`pip install scanlag[test]`
+`pip install scanalyser[test]`
 
 Run the tests:
-`python pytest --cov scanlag`
+`python pytest --cov scanalyser`
 
 ## Contributing
 
@@ -66,7 +68,7 @@ Please read [CONTRIBUTING.md](docs/CONTRIBUTING.md) for details on our code of c
 
 ## Versioning
 
-We use [SemVer](http://semver.org/) for versioning. For the versions available, see the [tags on this repository](https://github.com/erik-white/scanlag/tags).
+We use [SemVer](http://semver.org/) for versioning. For the versions available, see the [tags on this repository](https://github.com/erik-white/scanalyser/tags).
 
 ## License
 
