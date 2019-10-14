@@ -6,7 +6,7 @@ An image analysis tool for measuring microorganism colony growth.
 
 ColonyScanalyser will analyse and collate statistical data from cell-culture plate images. It requires a series of images from a fixed point that show the development of microorganism colonies over time.
 
-<img align="right" src="docs/images/colony_growth_curve_small.png">
+<img align="right" src="docs/images/growth_curve_small.png">
 
 ColonyScanalyser can provide information on:
 * Colony growth lag time (time of appearance)
@@ -46,23 +46,23 @@ pip install scikit-image
 
 Install ColonyScanalyser
 ```
-pip install scanalyser
+pip install colonyscanalyser
 ```
 
 #### From github (requires [git](https://git-scm.com/) install)
 ```
-git clone https://github.com/erik-white/scanalyser.git
-cd scanalyser
+git clone https://github.com/erik-white/colonyscanalyser.git
+cd colonyscanalyser
 pip install -e .
 ```
 
 ## Testing
 
 Install the package with the extra test packages:
-`pip install scanalyser[test]`
+`pip install colonyscanalyser[test]`
 
 Run the tests:
-`pytest --cov scanalyser`
+`pytest --cov colonyscanalyser`
 
 ## Contributing
 
