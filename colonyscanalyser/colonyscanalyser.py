@@ -239,13 +239,13 @@ def main():
         if VERBOSE >= 1:
             print(f"{len(image_files)} images found")
     else:
-        raise EnvironmentError(f"No images could be found in the supplied folder path. Images are expected in these formats: {image_formats}")
+        raise IOError(f"No images could be found in the supplied folder path. Images are expected in these formats: {image_formats}")
     
     # Get date and time information from filenames
     time_points = get_image_timestamps(image_files)
     time_points_elapsed = get_image_timestamps(image_files, elapsed_minutes = True)
     if len(time_points) != len(image_files) or len(time_points) != len(image_files):
-        raise EnvironmentError("Unable to load timestamps from all image filenames. Please check that images have a filename with YYYYMMDD_HHMM timestamps")
+        raise IOError("Unable to load timestamps from all image filenames. Please check that images have a filename with YYYYMMDD_HHMM timestamps")
 
     # Check if processed image data is already stored and can be loaded
     segmented_image_data_filename = "processed_data"
@@ -260,6 +260,8 @@ def main():
         # Check that segmented image data has been loaded for all plates
         if VERBOSE >= 1 and plate_colonies is not None and len(plate_colonies) == utilities.coordinate_to_index_number(PLATE_LATTICE):
             print("Successfully loaded cached data")
+        else:
+            print("Unable to load cached data, starting image processing")
             
     # Process images
     plates_list = dict()
@@ -270,7 +272,7 @@ def main():
         for ifn, image_file in enumerate(image_files):
 
             if VERBOSE >= 1:
-                print(f"Image number {ifn + 1} of {len(image_files)}")
+                print(f"Processing image number {ifn + 1} of {len(image_files)}")
 
             if VERBOSE >= 2:
                 print(f"Imaging date-time: {time_points[ifn].strftime('%Y%m%d %H%M')}")
