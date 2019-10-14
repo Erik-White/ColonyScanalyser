@@ -3,8 +3,8 @@ matplotlib.use("TkAgg") # Required for OSX
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 
-from utilities import average_dicts_values_by_key
-from plotting import axis_minutes_to_hours
+from .utilities import average_dicts_values_by_key
+from .plotting import rc_to_xy, axis_minutes_to_hours
 
 
 def plot_plate_segmented(plate_image, segmented_image, plate_coordinate, date_time, save_path):
@@ -18,11 +18,10 @@ def plot_plate_segmented(plate_image, segmented_image, plate_coordinate, date_ti
     :param save_path: a path object
     :returns: a file path object if the plot was saved sucessfully
     """
-    from plotting import rc_to_xy
     from skimage.measure import regionprops
     plate_row, plate_column = plate_coordinate
 
-    _, ax = plt.subplots(1, 2, figsize=(12, 6))
+    fig, ax = plt.subplots(1, 2, figsize=(12, 6))
     ax[0].imshow(plate_image)
     # Set colour range so all colonies are clearly visible and the same colour
     ax[1].imshow(segmented_image, vmax = 1)
@@ -47,7 +46,7 @@ def plot_plate_segmented(plate_image, segmented_image, plate_coordinate, date_ti
             verticalalignment = "center"
             )
 
-    plt.title(f"Plate at row {plate_row} : column {plate_column} at time point {date_time.strftime('%Y/%m/%d %H:%M')}")
+    fig.title(f"Plate at row {plate_row} : column {plate_column} at time point {date_time.strftime('%Y/%m/%d %H:%M')}")
     image_path = f"time_point_{date_time.strftime('%Y%m%d')}_{date_time.strftime('%H%M')}.png"
     save_path = save_path.joinpath(image_path)
     try:

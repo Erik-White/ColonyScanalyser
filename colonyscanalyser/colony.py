@@ -1,7 +1,7 @@
 ﻿import datetime
 from math import pi, log
 from dataclasses import dataclass
-from utilities import round_tuple_floats
+from .utilities import round_tuple_floats
 
 class Colony:
     """

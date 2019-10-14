@@ -16,12 +16,15 @@ from skimage.io import imread, imsave
 import matplotlib.pyplot as plt
 
 # Local modules
-import utilities
-import file_access
-import imaging
-import plotting
-import plots
-import colony
+from colonyscanalyser import (
+    utilities,
+    file_access,
+    imaging,
+    plotting,
+    plots,
+    colony
+)
+from .colony import timepoints_from_image
 
 
 def get_plate_directory(parent_path, row, col, create_dir = True):
@@ -173,9 +176,7 @@ def segment_plate_timepoints(plate_images_list, date_times):
 
     return segmented_images
 
-
-if __name__ == "__main__":
-
+def main():
     parser = argparse.ArgumentParser(
         description = "An image analysis tool for measuring microorganism colony growth",
         formatter_class = argparse.ArgumentDefaultsHelpFormatter
@@ -274,7 +275,7 @@ if __name__ == "__main__":
             if VERBOSE >= 2:
                 print(f"Imaging date-time: {time_points[ifn].strftime('%Y%m%d %H%M')}")
 
-            if VERBOSE >= 1:
+            if VERBOSE >= 2:
                 print(f"Processing image: {image_file}")
             img = imread(str(image_file), as_gray = True)
 
@@ -313,7 +314,7 @@ if __name__ == "__main__":
                 (row, col) = PLATE_POSITION
             else:
                 (row, col) = utilities.index_number_to_coordinate(i, PLATE_LATTICE)
-            if VERBOSE >= 2:
+            if VERBOSE >= 1:
                 print(f"Segmenting images from plate #{i}, in position row {row} column {col}")
 
             # plates_list is an array of size (total plates)*(total timepoints)
@@ -364,7 +365,7 @@ if __name__ == "__main__":
                     print(f"Tacking colonies at time point {j + 1} of {len(plate_images)}")
 
                 # Store data for each colony at every timepoint it is found
-                plate_colonies[i] = colony.timepoints_from_image(plate_colonies[i], plate_image, time_points[j], time_points_elapsed[j])
+                plate_colonies[i] = timepoints_from_image(plate_colonies[i], plate_image, time_points[j], time_points_elapsed[j])
 
             # Remove objects that do not have sufficient data points, usually just noise
             plate_colonies[i] = dict(filter(lambda elem: len(elem[1].timepoints) > len(time_points) * 0.2, plate_colonies[i].items()))
@@ -375,7 +376,8 @@ if __name__ == "__main__":
                 print(f"Colony data stored for {len(plate_colonies[i].keys())} colonies on plate {plate_number}")
 
     # Store pickled data to allow quick re-use
-    save_path = BASE_PATH.joinpath("data", segmented_image_data_filename)
+    save_path = file_access.create_subdirectory(BASE_PATH, "data")
+    save_path = save_path.joinpath(segmented_image_data_filename)
     save_status = file_access.save_file(save_path, plate_colonies, file_access.CompressionMethod.LZMA)
     if VERBOSE >= 1:
         if save_status:
@@ -463,3 +465,8 @@ if __name__ == "__main__":
         print("ColonyScanalyser analysis complete")
 
     sys.exit()
+
+
+if __name__ == "__main__":
+
+    main()

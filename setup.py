@@ -6,7 +6,7 @@ with open("README.md", 'r') as f:
 setup(
     python_requires = ">3.7",
     name = "colonyscanalyser",
-    version = "0.1.2",
+    version = "0.1.4",
     description = "An image analysis tool for measuring microorganism colony growth",
     long_description = long_description,
     url = "https://github.com/Erik-White/ColonyScanalyser/",
