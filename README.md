@@ -1,3 +1,5 @@
+[![PyPI version](https://badge.fury.io/py/colonyscanalyser.svg)](https://pypi.org/project/colonyscanalyser/) [![Known Vulnerabilities](https://snyk.io//test/github/Erik-White/ColonyScanalyser/badge.svg?targetFile=requirements.txt)](https://snyk.io//test/github/Erik-White/ColonyScanalyser?targetFile=requirements.txt) [![GitHub](https://img.shields.io/github/license/erik-white/colonyscanalyser?color=blue)](https://github.com/Erik-White/ColonyScanalyser/blob/master/LICENSE)
+
 # ColonyScanalyser
 
 An image analysis tool for measuring microorganism colony growth.
@@ -17,11 +19,11 @@ By default, it will output a set of data and plots that summarize the informatio
 
 * Install the [prerequisites](#prerequisites) and [package](#installing)
 * Locate your image series in a folder e.g. `\user\images\series1`
-* Run the analysis using ColonyScanalyser `python scanalyser \user\images\series1`
+* Run the analysis using ColonyScanalyser `scanalyser \user\images\series1`
 
-There are various command line arguments that can alter the way the package is run. To see a list of arguments and information on each, run the command `python scanalyser --help`
+There are various command line arguments that can alter the way the package is run. To see a list of arguments and information on each, run the command `scanalyser --help`
 
-For example, to run the package 'silently' with no console output: `python scanalyser \user\images\series1 --verbose 0`
+For example, to run the package 'silently' with no console output: `scanalyser \user\images\series1 --verbose 0`
 
 ### Prerequisites
 
@@ -60,7 +62,7 @@ Install the package with the extra test packages:
 `pip install scanalyser[test]`
 
 Run the tests:
-`python pytest --cov scanalyser`
+`pytest --cov scanalyser`
 
 ## Contributing
 
