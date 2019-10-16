@@ -129,7 +129,10 @@ def get_image_circles(image, circle_radius, circle_count = -1, search_radius = 0
         total_num_peaks = circle_count
         )
         
-    return [*zip(zip(cy, cx), radii)]
+    # Group and order coordinates in rows from top left
+    coordinates = sorted(zip(cy, cx), key = lambda k: (k[0]//100, 0, k[1]))
+
+    return [*zip(coordinates, radii)]
 
 
 def remove_background_mask(image, mask, smoothing = 0.5, **filter_args):
