@@ -366,6 +366,8 @@ def main():
             plate_colonies[plate_id] = dict(filter(lambda elem: len(elem[1].timepoints) > len(time_points) * 0.2, plate_colonies[plate_id].items()))
             # Remove object that do not show growth, these are not colonies
             plate_colonies[plate_id] = dict(filter(lambda elem: elem[1].growth_rate > 1, plate_colonies[plate_id].items()))
+            # Colonies that appear with a large area are most likely already merged colonies, not new colonies
+            plate_colonies[plate_id] = dict(filter(lambda elem: elem[1].timepoint_first.area < 50, plate_colonies[plate_id].items()))
 
             if VERBOSE >= 1:
                 print(f"Colony data stored for {len(plate_colonies[plate_id].keys())} colonies on plate {plate_id}")
