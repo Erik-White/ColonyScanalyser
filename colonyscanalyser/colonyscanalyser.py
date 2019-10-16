@@ -311,13 +311,10 @@ def main():
                     plates_list[i].append(plate)
                         
         # Loop through plates and segment images at all timepoints
-        for i, plate_timepoints in enumerate(plates_list.values(), start = 1):
-            if PLATE_POSITION is not None:
-                (row, col) = PLATE_POSITION
-            else:
-                (row, col) = utilities.index_number_to_coordinate(i, PLATE_LATTICE)
+        for plate_id, plate_timepoints in sorted(plates_list.items()):
+            row, col = utilities.index_number_to_coordinate(plate_id, PLATE_LATTICE)
             if VERBOSE >= 1:
-                print(f"Segmenting images from plate #{i}, in position row {row} column {col}")
+                print(f"Segmenting images from plate #{plate_id}, in position row {row} column {col}")
 
             # plates_list is an array of size (total plates)*(total timepoints)
             # Each time point element of the array contains a co-ordinate array of size (total image columns)*(total image rows)
@@ -329,7 +326,7 @@ def main():
             segmented_plate_timepoints = imaging.standardise_labels_timeline(segmented_plate_timepoints)
 
             # Store the images for this plate
-            plates_list_segmented[i] = segmented_plate_timepoints
+            plates_list_segmented[plate_id] = segmented_plate_timepoints
 
             # Save segmented image plot for each timepoint
             if SAVE_PLOTS >= 2:
@@ -353,13 +350,9 @@ def main():
             print("Tracking individual colonies")
         from collections import defaultdict
         plate_colonies = defaultdict(dict)
-        for i, plate_images in enumerate(plates_list_segmented.values(), start = 1):
+        for plate_id, plate_images in sorted(plates_list_segmented.items()):
             if VERBOSE >= 1:
-                plate_number = i
-                if PLATE_POSITION is not None:
-                    plate_number = utilities.coordinate_to_index_number(PLATE_POSITION)
-                else:
-                    print(f"Tacking colonies on plate {plate_number} of {len(plates_list_segmented)}")
+                print(f"Tacking colonies on plate {plate_id} of {len(plates_list_segmented)}")
 
             # Process image at each time point
             for j, plate_image in enumerate(plate_images):
@@ -367,15 +360,15 @@ def main():
                     print(f"Tacking colonies at time point {j + 1} of {len(plate_images)}")
 
                 # Store data for each colony at every timepoint it is found
-                plate_colonies[i] = timepoints_from_image(plate_colonies[i], plate_image, time_points[j], time_points_elapsed[j])
+                plate_colonies[plate_id] = timepoints_from_image(plate_colonies[plate_id], plate_image, time_points[j], time_points_elapsed[j])
 
             # Remove objects that do not have sufficient data points, usually just noise
-            plate_colonies[i] = dict(filter(lambda elem: len(elem[1].timepoints) > len(time_points) * 0.2, plate_colonies[i].items()))
+            plate_colonies[plate_id] = dict(filter(lambda elem: len(elem[1].timepoints) > len(time_points) * 0.2, plate_colonies[plate_id].items()))
             # Remove object that do not show growth, these are not colonies
-            plate_colonies[i] = dict(filter(lambda elem: elem[1].growth_rate > 1, plate_colonies[i].items()))
+            plate_colonies[plate_id] = dict(filter(lambda elem: elem[1].growth_rate > 1, plate_colonies[plate_id].items()))
 
             if VERBOSE >= 1:
-                print(f"Colony data stored for {len(plate_colonies[i].keys())} colonies on plate {plate_number}")
+                print(f"Colony data stored for {len(plate_colonies[plate_id].keys())} colonies on plate {plate_id}")
 
     # Store pickled data to allow quick re-use
     save_path = file_access.create_subdirectory(BASE_PATH, "data")
@@ -445,10 +438,7 @@ def main():
     # Plot colony growth curves and time of appearance for the plate
     if SAVE_PLOTS >= 2:
         for plate_id, plate in plate_colonies.items():
-            if PLATE_POSITION is not None:
-                (row, col) = PLATE_POSITION
-            else:
-                row, col = utilities.index_number_to_coordinate(plate_id, PLATE_LATTICE)
+            row, col = utilities.index_number_to_coordinate(plate_id, PLATE_LATTICE)
             save_path = get_plate_directory(BASE_PATH.joinpath("plots"), row, col, create_dir = True)
             plate_item = {plate_id : plate}
             plots.plot_growth_curve(plate_item, time_points_elapsed, save_path)
@@ -464,7 +454,7 @@ def main():
         plots.plot_doubling_map(plate_colonies, time_points_elapsed, save_path)
 
     if VERBOSE >= 1:
-        print("ColonyScanalyser analysis complete")
+        print(f"ColonyScanalyser analysis completed for: {BASE_PATH}")
 
     sys.exit()
 

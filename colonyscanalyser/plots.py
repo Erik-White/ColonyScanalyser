@@ -65,7 +65,7 @@ def plot_growth_curve(plates_dict, time_points_elapsed, save_path):
     _, ax = plt.subplots()
     colormap = cm.get_cmap("plasma")
     
-    for plate_item in plates_dict.items():
+    for plate_item in sorted(plates_dict.items()):
         if len(plates_dict.keys()) > 1:
             # Get a color from the colourmap
             cm_scatter = colormap(0.2 + (0.65 - 0.2) * (plate_item[0] / len(plates_dict.keys())))
@@ -138,18 +138,19 @@ def plot_appearance_frequency(plates_dict, time_points_elapsed, save_path, bar =
     _, ax = plt.subplots()
     colormap = cm.get_cmap("plasma")
     
-    for plate_item in plates_dict.items():
+    for plate_id, plate_item in sorted(plates_dict.items()):
         if len(plates_dict.keys()) > 1:
             # Get a color from the colourmap
-            cm_plate = colormap(0.2 + (0.65 - 0.2) * (plate_item[0] / len(plates_dict.keys())))
+            cm_plate = colormap(0.2 + (0.65 - 0.2) * (plate_id / len(plates_dict.keys())))
             plot_total = len(plates_dict.keys())
         else:
             cm_plate = "Purple"
             plot_total = None
-
-        # Plot frequency for each time point
-        time_of_appearance_frequency(ax, plate_item, time_points_elapsed, cm_plate, plot_total, bar = bar)
-
+        
+        if not len(plate_item) < 1:
+            # Plot frequency for each time point
+            time_of_appearance_frequency(ax, (plate_id, plate_item), time_points_elapsed, cm_plate, plot_total, bar = bar)
+    
     lgd = ax.legend(loc = 'center right', fontsize = 8, bbox_to_anchor = (1.25, 0.5))
     save_params = {"format": "png",
           "bbox_extra_artists": (lgd,),
