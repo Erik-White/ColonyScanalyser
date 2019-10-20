@@ -152,7 +152,10 @@ class Colony:
         x2 = x_pts[index + window]
         y2 = y_pts[index + window]
 
-        return (x2 - x1) * log(2) / log(y2 / y1)
+        try:
+            return (x2 - x1) * log(2) / log(y2 / y1)
+        except ZeroDivisionError:
+            return 0
 
         
 def timepoints_from_image(colonies_dict, image, time_point, elapsed_minutes):
