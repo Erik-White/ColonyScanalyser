@@ -108,16 +108,20 @@ def get_image_circles(image, circle_radius, circle_count = -1, search_radius = 0
     """
     from skimage.transform import hough_circle, hough_circle_peaks
     from skimage.feature import canny
+    from skimage.filters import threshold_otsu
     
     if image.size == 0:
         raise ValueError("The supplied image cannot be empty")
     img = image.copy()
 
     # Find edges in the image
-    edges = canny(img, sigma = 3)
+    threshold = threshold_otsu(img)
+    edges = canny(img < threshold, sigma = 3)
 
-    # Check search_radius pixels around the target radius, in steps of 10
-    radii = range(circle_radius - search_radius, circle_radius + search_radius, 10)
+    # Check 20 pixels around the target radius, in steps of 5
+    # Ignore search_area until hough_circle_peaks respects min_xdistance and min_ydistance
+    # See: https://github.com/Erik-White/ColonyScanalyser/issues/10
+    radii = range(circle_radius - 10, circle_radius + 10, 5)
     hough_circles = hough_circle(edges, radii)
     
     # Find the most significant circles
@@ -131,6 +135,7 @@ def get_image_circles(image, circle_radius, circle_count = -1, search_radius = 0
         
     # Group and order coordinates in rows from top left
     coordinates = sorted(zip(cy, cx), key = lambda k: (k[0]//100, 0, k[1]))
+    radii = [max(radii, key = radii.tolist().count) for x in radii]
 
     return [*zip(coordinates, radii)]
 

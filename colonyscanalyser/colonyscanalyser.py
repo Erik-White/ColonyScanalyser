@@ -203,7 +203,7 @@ def main():
     args = parser.parse_args()
     BASE_PATH = args.path
     VERBOSE = args.verbose
-    PLATE_SIZE = imaging.mm_to_pixels(args.plate_size, dots_per_inch = args.dots_per_inch)
+    PLATE_SIZE = imaging.mm_to_pixels(args.plate_size - 5, dots_per_inch = args.dots_per_inch)
     PLATE_LATTICE = tuple(args.plate_lattice)
     if "plate_position" not in args:
         PLATE_POSITION = None
@@ -288,7 +288,7 @@ def main():
                 plate_coordinates = imaging.get_image_circles(
                     img,
                     int(PLATE_SIZE / 2),
-                    circle_count = (utilities.coordinate_to_index_number(PLATE_LATTICE)),
+                    circle_count = utilities.coordinate_to_index_number(PLATE_LATTICE),
                     search_radius = 50
                     )
 
@@ -386,7 +386,7 @@ def main():
     if VERBOSE >= 1:
         print("Saving data to CSV")
     save_path = BASE_PATH.joinpath("data")
-    for plate_id, plate in plate_colonies.items():
+    for plate_id, plate in sorted(plate_colonies.items()):
         headers = [
             "Colony ID",
             "Time of appearance",
