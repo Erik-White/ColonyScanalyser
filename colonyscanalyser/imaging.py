@@ -118,10 +118,10 @@ def get_image_circles(image, circle_radius, circle_count = -1, search_radius = 0
     threshold = threshold_otsu(img)
     edges = canny(img < threshold, sigma = 3)
 
-    # Check 20 pixels around the target radius, in steps of 5
+    # Check 10 pixels around the target radius, in steps of 5
     # Ignore search_area until hough_circle_peaks respects min_xdistance and min_ydistance
     # See: https://github.com/Erik-White/ColonyScanalyser/issues/10
-    radii = range(circle_radius - 10, circle_radius + 10, 5)
+    radii = range(circle_radius - 5, circle_radius + 5, 5)
     hough_circles = hough_circle(edges, radii)
     
     # Find the most significant circles
