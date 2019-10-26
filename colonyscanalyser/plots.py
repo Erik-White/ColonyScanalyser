@@ -19,7 +19,7 @@ def plot_plate_segmented(plate_image, segmented_image, date_time, save_path):
     """
     from skimage.measure import regionprops
 
-    fig, ax = plt.subplots(1, 2, figsize=(12, 6))
+    _, ax = plt.subplots(1, 2, figsize=(12, 6))
     ax[0].imshow(plate_image)
     # Set colour range so all colonies are clearly visible and the same colour
     ax[1].imshow(segmented_image, vmax = 1)
