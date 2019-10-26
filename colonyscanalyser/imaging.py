@@ -121,7 +121,7 @@ def get_image_circles(image, circle_radius, circle_count = -1, search_radius = 0
     # Check 10 pixels around the target radius, in steps of 5
     # Ignore search_area until hough_circle_peaks respects min_xdistance and min_ydistance
     # See: https://github.com/Erik-White/ColonyScanalyser/issues/10
-    radii = range(circle_radius - 5, circle_radius + 5, 5)
+    radii = range(circle_radius - 10, circle_radius + 10, 10)
     hough_circles = hough_circle(edges, radii)
     
     # Find the most significant circles
@@ -152,6 +152,10 @@ def remove_background_mask(image, mask, smoothing = 0.5, **filter_args):
         raise ValueError(f"The supplied image ({image.shape}) and mask ({mask.shape}) must be the same shape")
     image = image.copy()
     mask = mask.copy()
+    
+    # Do not process the image if it is empty
+    if not image.any():
+        return image
 
     # Get background mask intensity
     background = image[mask & (image > 0.05)].mean()
@@ -159,7 +163,7 @@ def remove_background_mask(image, mask, smoothing = 0.5, **filter_args):
     # Determine image foreground
     ind = gaussian(image, smoothing, preserve_range = True, **filter_args) > background + 0.03
     
-    # Subtract background, returning only the area in the mask
+    # Subtract the mask, returning only the foreground
     return mask & ind
 
 

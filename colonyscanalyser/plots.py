@@ -7,19 +7,17 @@ from .utilities import average_dicts_values_by_key
 from .plotting import rc_to_xy, axis_minutes_to_hours
 
 
-def plot_plate_segmented(plate_image, segmented_image, plate_coordinate, date_time, save_path):
+def plot_plate_segmented(plate_image, segmented_image, date_time, save_path):
     """
     Saves processed plate images and corresponding segmented data plots
 
     :param plate_image: a black and white image as a numpy array
     :param segmented_image: a segmented and labelled image as a numpy array
-    :param plate_coordinate: a row, column tuple representing the plate position
     :param date_time: a datetime object
     :param save_path: a path object
     :returns: a file path object if the plot was saved sucessfully
     """
     from skimage.measure import regionprops
-    plate_row, plate_column = plate_coordinate
 
     fig, ax = plt.subplots(1, 2, figsize=(12, 6))
     ax[0].imshow(plate_image)
@@ -35,18 +33,8 @@ def plot_plate_segmented(plate_image, segmented_image, plate_coordinate, date_ti
             horizontalalignment = "center",
             verticalalignment = "center"
             )
-        ax[1].annotate(str(rp.label),
-            rc_to_xy(rp.centroid),
-            xytext = (5, 5),
-            xycoords = "data",
-            textcoords = "offset pixels",
-            color = "white",
-            alpha = 0.8,
-            horizontalalignment = "left",
-            verticalalignment = "center"
-            )
 
-    fig.title(f"Plate at row {plate_row} : column {plate_column} at time point {date_time.strftime('%Y/%m/%d %H:%M')}")
+    plt.suptitle(f"Plate time point {date_time.strftime('%Y/%m/%d %H:%M')}")
     image_path = f"time_point_{date_time.strftime('%Y%m%d')}_{date_time.strftime('%H%M')}.png"
     save_path = save_path.joinpath(image_path)
     try:

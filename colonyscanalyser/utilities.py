@@ -3,6 +3,7 @@
         raise ValueError(f"The object must be of type 'tuple', not type '{type(tuple_item)}'")
     return tuple(map(lambda x: isinstance(x, float) and round(x, precision) or x, tuple_item))
 
+
 def index_number_to_coordinate(index, lattice):
     """
     Calculate row and column numbers for an item index
