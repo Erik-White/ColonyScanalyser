@@ -53,10 +53,10 @@ def plot_growth_curve(plates_dict, time_points_elapsed, save_path):
     _, ax = plt.subplots()
     colormap = cm.get_cmap("plasma")
     
-    for plate_item in sorted(plates_dict.items()):
-        if len(plates_dict.keys()) > 1:
+    for plate_item in plates_dict.items():
+        if len(plates_dict) > 1:
             # Get a color from the colourmap
-            cm_scatter = colormap(0.2 + (0.65 - 0.2) * (plate_item[0] / len(plates_dict.keys())))
+            cm_scatter = colormap(0.2 + (0.65 - 0.2) * (plate_item[0] / len(plates_dict)))
             cm_line = None
         else:
             cm_scatter = "Mediumpurple"
@@ -126,11 +126,11 @@ def plot_appearance_frequency(plates_dict, time_points_elapsed, save_path, bar =
     _, ax = plt.subplots()
     colormap = cm.get_cmap("plasma")
     
-    for plate_id, plate_item in sorted(plates_dict.items()):
-        if len(plates_dict.keys()) > 1:
+    for plate_id, plate_item in plates_dict.items():
+        if len(plates_dict) > 1:
             # Get a color from the colourmap
-            cm_plate = colormap(0.2 + (0.65 - 0.2) * (plate_id / len(plates_dict.keys())))
-            plot_total = len(plates_dict.keys())
+            cm_plate = colormap(0.2 + (0.65 - 0.2) * (plate_id / len(plates_dict)))
+            plot_total = len(plates_dict)
         else:
             cm_plate = "Purple"
             plot_total = None
@@ -170,7 +170,7 @@ def time_of_appearance_frequency(ax, plate_item, time_points_elapsed, plot_color
         time_points_dict[key] += 1
 
     # Normalise counts to frequency
-    time_points_dict = {key: value / len(time_points_dict.keys()) for key, value in time_points_dict.items()}
+    time_points_dict = {key: value / len(time_points_dict) for key, value in time_points_dict.items()}
 
     if not bar:
         ax.plot(*zip(*sorted(time_points_dict.items())),

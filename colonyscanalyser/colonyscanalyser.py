@@ -308,7 +308,7 @@ def main():
     if VERBOSE >= 1:
         print("Saving data to CSV")
     save_path = BASE_PATH.joinpath("data")
-    for plate_id, plate in sorted(plate_colonies.items()):
+    for plate_id, plate in plate_colonies.items():
         headers = [
             "Colony ID",
             "Time of appearance",
