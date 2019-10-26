@@ -134,7 +134,7 @@ def get_image_circles(image, circle_radius, circle_count = -1, search_radius = 0
         )
         
     # Group and order coordinates in rows from top left
-    coordinates = sorted(zip(cy, cx), key = lambda k: (k[0]//100, 0, k[1]))
+    coordinates = sorted(zip(cy, cx), key = lambda k: (round(k[0]/100), 0, k[1]))
     radii = [max(radii, key = radii.tolist().count) for x in radii]
 
     return [*zip(coordinates, radii)]
