@@ -220,14 +220,10 @@ def main():
         plate_images_mask = None
         plate_timepoints = defaultdict(list)
 
-        for i, image_file in enumerate(image_files):
-            if VERBOSE >= 1:
-                print(f"Processing image number {i + 1} of {len(image_files)}")
-            if VERBOSE >= 2:
-                print(f"Processing image: {image_file}")
-            if VERBOSE >= 3:
-                print(f"Imaging date-time: {time_points[i].strftime('%Y%m%d %H%M')}")
+        if VERBOSE >= 1:
+            print("Processing plate colony images")
 
+        for i, image_file in enumerate(image_files):
             # Load image
             img = imread(str(image_file), as_gray = True)
 
@@ -267,6 +263,9 @@ def main():
                         )
                     save_path = file_access.create_subdirectory(save_path, "segmented_images")
                     plots.plot_plate_segmented(plate_image, plate_images[j], time_points[i], save_path)
+            
+            # Display a progress bar
+            utilities.progress_bar(((i + 1) / len(image_files)) * 100, message = "Processing images")
 
         # Clear objects to free up memory
         plate_images = None
