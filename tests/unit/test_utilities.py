@@ -4,6 +4,7 @@ import numpy as np
 from colonyscanalyser.utilities import (round_tuple_floats,
                                 index_number_to_coordinate,
                                 coordinate_to_index_number,
+                                progress_bar,
                                 average_dicts_values_by_key,
                                 average_median_dicts_values_by_key,
                                 is_outlier
@@ -86,6 +87,31 @@ class TestCoordinateToIndexNumber():
     def test_index_valid(self, coordinate, expected):
         result = coordinate_to_index_number(coordinate)
         assert result == expected
+
+
+class TestProgressBar():
+    def count_lines(self, text):
+        return len(text.split('\n'))
+
+    def test_linecount(self, capsys):
+        progress_bar(50)
+        progress_bar(75.4)
+        captured = capsys.readouterr()
+
+        assert self.count_lines(captured.out) == 1
+
+    def test_linecount_finished(self, capsys):
+        progress_bar(100)
+        captured = capsys.readouterr()
+        
+        assert self.count_lines(captured.out) == 2
+    
+    def test_message(self, capsys):
+        message = "Test message"
+        progress_bar(100, message = message)
+        captured = capsys.readouterr()
+
+        assert captured.out[slice(-len(message) - 1, -1, 1)] == message
 
 
 class TestAverageDictsByKeys():

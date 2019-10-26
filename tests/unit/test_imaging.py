@@ -6,10 +6,7 @@ from colonyscanalyser.imaging import (mm_to_pixels,
                             cut_image_circle,
                             get_image_circles,
                             remove_background_mask,
-                            watershed_separation,
-                            standardise_labels_timeline,
-                            get_labelled_centers,
-                            replace_image_point_labels
+                            watershed_separation
                             )
 
 image_ref = np.array(
@@ -229,6 +226,11 @@ class TestRemoveBackgroundMask():
                 np.ones((5, 5), dtype = np.uint8),
                 np.ones((3, 5), dtype = np.uint8)
                 )
+
+    def test_image_blank(self):
+        image_blank = np.zeros((3,3))
+        result = remove_background_mask(image_blank, image_blank > 0)
+        assert (result == image_blank).all()
 
     def test_image_empty(self, image_mask):
         with pytest.raises(ValueError):
