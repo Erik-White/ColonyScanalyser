@@ -157,19 +157,19 @@ class Colony:
         except ZeroDivisionError:
             return 0
 
-        
-def timepoints_from_image(colonies_dict, image, time_point, elapsed_minutes):
-    """
-    Store individual colony data in a dict of colonies
 
-    :param colonies_dict: a dict of colony objects
+def timepoints_from_image(image, time_point, elapsed_minutes):
+    """
+    Create Timepoint objects from a segemented image
+
     :param image: a segmented and labelled image as a numpy array
     :param time_point: a datetime object corresponding to the image
     :param elapsed_minutes: an integer representing the number of minutes since starting
-    :returns: a dictionary of colony objects
+    :returns: a list of colony objects
     """
     from skimage.measure import regionprops
-    colonies = colonies_dict.copy()
+
+    colonies = list()
 
     for rp in regionprops(image, coordinates = "rc"):
         # Create a new time point object to store colony data
@@ -181,10 +181,33 @@ def timepoints_from_image(colonies_dict, image, time_point, elapsed_minutes):
             diameter = rp.equivalent_diameter,
             perimeter = rp.perimeter
         )
-        # Append the data at the time point for each colony
-        if rp.label not in colonies:
-            colonies[rp.label] = Colony(rp.label)
-            
-        colonies[rp.label].append_timepoint(timepoint_data.date_time, timepoint_data)
+        
+        colonies.append(timepoint_data)
     
+    return colonies
+
+
+def colonies_from_timepoints(timepoints):
+    """
+    Create a dictionary of Colony objects from Timepoint data
+
+    :param timepoints: a list of Timepoint data objects
+    :returns: a list of Colony objects containing Timepoint data
+    """
+    from collections import defaultdict
+
+    colony_centers = defaultdict(list)
+    colonies = list()
+
+    # Build lists of Timepoints, grouped by centres as dict keys
+    for timepoint in timepoints:
+        colony_centers[round_tuple_floats(timepoint.center, 0)].append(timepoint)
+        
+    # Create a colony object for each group of centres
+    for i, timepoint_objects in enumerate(colony_centers.values(), start = 1):
+        # Create a Dict of timepoints with date_time as the keys
+        timepoints_dict = {timepoint.date_time : timepoint for timepoint in timepoint_objects}
+        # Create the Colony object with the Timepoints
+        colonies.append(Colony(i, timepoints_dict))
+
     return colonies

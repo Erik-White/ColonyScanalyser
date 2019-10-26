@@ -25,6 +25,7 @@ def get_files_by_type(path, file_extensions = ["*"]):
     :returns: a list of matching path objects, sorted by filename
     """
     from pathlib import Path
+    import glob
 
     if not isinstance(path, Path):
         path = Path(path)
@@ -34,7 +35,7 @@ def get_files_by_type(path, file_extensions = ["*"]):
     
     path_list = []
     for file_extension in file_extensions:
-        path_list.extend(path.glob("*." + file_extension))
+        path_list.extend([x for x in path.glob("*." + file_extension) if not str(x.name).startswith(".")])
 
     return sorted(path_list)
 

@@ -121,7 +121,7 @@ def get_image_circles(image, circle_radius, circle_count = -1, search_radius = 0
     # Check 10 pixels around the target radius, in steps of 5
     # Ignore search_area until hough_circle_peaks respects min_xdistance and min_ydistance
     # See: https://github.com/Erik-White/ColonyScanalyser/issues/10
-    radii = range(circle_radius - 5, circle_radius + 5, 5)
+    radii = range(circle_radius - 10, circle_radius + 10, 10)
     hough_circles = hough_circle(edges, radii)
     
     # Find the most significant circles
@@ -134,7 +134,7 @@ def get_image_circles(image, circle_radius, circle_count = -1, search_radius = 0
         )
         
     # Group and order coordinates in rows from top left
-    coordinates = sorted(zip(cy, cx), key = lambda k: (k[0]//100, 0, k[1]))
+    coordinates = sorted(zip(cy, cx), key = lambda k: (round(k[0]/100), 0, k[1]))
     radii = [max(radii, key = radii.tolist().count) for x in radii]
 
     return [*zip(coordinates, radii)]
@@ -152,6 +152,10 @@ def remove_background_mask(image, mask, smoothing = 0.5, **filter_args):
         raise ValueError(f"The supplied image ({image.shape}) and mask ({mask.shape}) must be the same shape")
     image = image.copy()
     mask = mask.copy()
+    
+    # Do not process the image if it is empty
+    if not image.any():
+        return image
 
     # Get background mask intensity
     background = image[mask & (image > 0.05)].mean()
@@ -159,7 +163,7 @@ def remove_background_mask(image, mask, smoothing = 0.5, **filter_args):
     # Determine image foreground
     ind = gaussian(image, smoothing, preserve_range = True, **filter_args) > background + 0.03
     
-    # Subtract background, returning only the area in the mask
+    # Subtract the mask, returning only the foreground
     return mask & ind
 
 
@@ -187,88 +191,5 @@ def watershed_separation(image, smoothing = 0.5):
 
     # Find the borders around the peaks
     img = watershed(-distance, label(local_maxi), mask = img)
-
-    return img
-
-
-def standardise_labels_timeline(images_list, start_at_end = True, count_offset = 1000, in_place = True):
-    """
-    Replace labels on similar images to allow tracking over time
-
-    :param images_list: a list of segmented and labelled images as numpy arrays
-    :param start_at_end: relabel the images beginning at the end of the list
-    :param count_offset: an int greater than the total number of expected labels in a single image
-    :returns: a list of relablled images as numpy arrays
-    """
-    import numpy as np
-    from copy import deepcopy
-
-    if count_offset < 0 or not isinstance(count_offset, int):
-        raise ValueError("count_offset must be a positive integer")
-    
-    if not in_place:
-        images = deepcopy(images_list)
-    else:
-        images = images_list.copy()
-    
-    if start_at_end:
-        images.reverse()
-
-    # Relabel all images to ensure there are no duplicates
-    for image in images:
-        for label in np.unique(image):
-            if label > 0:
-                count_offset += 1
-                image[image == label] = count_offset
-        
-    # Ensure labels are propagated through image timeline
-    for i, image in enumerate(images):
-        labels = get_labelled_centers(image)
-        
-        # Apply labels to all subsequent images
-        for j in range(i, len(images)):
-            images[j] = replace_image_point_labels(images[j], labels, in_place = in_place)
-
-    if start_at_end:
-        images.reverse()
-
-    return images
-
-
-def get_labelled_centers(image):
-    """
-    Builds a list of labels and their centers
-
-    :param image: a segmented and labelled image as a numpy array
-    :returns: a list of label, co-ordinate tuples
-    """
-    from skimage.measure import regionprops
-
-    # Find all labelled areas, disable caching so properties are only calculated if required
-    rps = regionprops(image, cache = False)
-    
-    return [(r.label, r.centroid) for r in rps]
-
-
-def replace_image_point_labels(image, labels, in_place = True):
-    """
-    Replace the labels at a list of points with new labels
-
-    :param image: a segmented and labelled image as a numpy array
-    :param labels: a list of label, co-ordinate tuples
-    :returns: a relabelled image as a numpy array
-    """
-    if in_place:
-        img = image
-    else:
-        img = image.copy()
-
-    for label, point in labels:
-        row, col = point
-        # Find the existing label at the point
-        index = img[int(round(row)), int(round(col))]
-        # Replace the existing label with new, excluding background
-        if index > 0:
-            img[img == index] = label
 
     return img
