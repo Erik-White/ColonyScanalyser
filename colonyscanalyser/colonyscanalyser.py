@@ -5,6 +5,8 @@ from pathlib import Path
 from datetime import datetime
 from distutils.util import strtobool
 from collections import defaultdict
+from multiprocessing import Pool, cpu_count
+from functools import partial
 
 # Third party modules
 from skimage.io import imread
@@ -91,39 +93,39 @@ def get_plate_images(image, plate_coordinates, edge_cut = 100):
     return plates
 
 
-def segment_image(plate, plate_mask, plate_noise_mask, area_min = 5):
+def segment_image(plate_image, plate_mask, plate_noise_mask, area_min = 5):
     """
     Finds all colonies on a plate and returns an array of co-ordinates
 
     If a co-ordinate is occupied by a colony, it contains that colonies labelled number
 
-    :param plate: a black and white image as a numpy array
+    :param plate_image: a black and white image as a numpy array
     :param mask: a black and white image as a numpy array
     :param plate_noise_mask: a black and white image as a numpy array
     :returns: a segmented and labelled image as a numpy array
     """
     from math import pi
-    from scipy import ndimage
+    from scipy.ndimage.morphology import binary_fill_holes
     from skimage.morphology import remove_small_objects
     from skimage.measure import regionprops, label
 
-    plate = imaging.remove_background_mask(plate, plate_mask)
+    plate_image = imaging.remove_background_mask(plate_image, plate_mask)
     plate_noise_mask = imaging.remove_background_mask(plate_noise_mask, plate_mask)
 
     # Subtract an image of the first (i.e. empty) plate to remove static noise
-    plate[plate_noise_mask] = 0
+    plate_image[plate_noise_mask] = 0
 
     # Fill any small gaps
-    plate = ndimage.morphology.binary_fill_holes(plate)
+    plate_image = binary_fill_holes(plate_image)
 
     # Remove background noise
-    plate = remove_small_objects(plate, min_size = area_min)
+    plate_image = remove_small_objects(plate_image, min_size = area_min)
+
+    colonies = label(plate_image)
 
     # Remove colonies that are on the edge of the plate
     #versions <0.16 do not allow for a mask
     #colonies = clear_border(pl_th, buffer_size = 1, mask = plate_mask)
-
-    colonies = label(plate)
 
     # Exclude objects that are too eccentric
     rps = regionprops(colonies, coordinates = "rc")
@@ -136,6 +138,43 @@ def segment_image(plate, plate_mask, plate_noise_mask, area_min = 5):
             colonies[colonies == rp.label] = 0
 
     return colonies
+
+
+def image_file_to_timepoints(image_path, plate_coordinates, plate_images_mask, time_point, elapsed_minutes, plot_path = None):
+    """
+    Get Timepoint object data from a plate image
+
+    Lists the results in a dict with the plate number as the key
+
+    :param image_path: a Path object representing an image
+    :param plate_coordinates: a list of (row, column) tuple plate centres
+    :param plate_images_mask: a list of plate images to use as noise masks
+    :param time_point: a Datetime object
+    :param elapsed_minutes: the number of integer minutes since starting
+    :param plot_path: a Path directory to save the segmented image plot
+    :returns: a Dict of lists, each containing Timepoint objects
+    """
+    from collections import defaultdict
+
+    plate_timepoints = defaultdict(list)
+
+    # Load image
+    img = imread(str(image_path), as_gray = True)
+
+    # Split image into individual plates
+    plate_images = get_plate_images(img, plate_coordinates, edge_cut = 60)
+
+    for j, plate_image in enumerate(plate_images):
+        # Segment each image
+        plate_images[j] = segment_image(plate_image, plate_image > 0, plate_images_mask[j], area_min = 8)
+        # Create Timepoint objects for each plate
+        plate_timepoints[j + 1].extend(timepoints_from_image(plate_images[j], time_point, elapsed_minutes))
+
+        # Save segmented image plot, if required
+        if plot_path is not None:
+            plots.plot_plate_segmented(plate_image, plate_images[j], time_point, plot_path)
+
+    return plate_timepoints
     
 
 def main():
@@ -158,6 +197,8 @@ def main():
                         help = "The detail level of plot images to store on disk")
     parser.add_argument("--use_saved", type = strtobool, default = True,
                         help = "Allow or prevent use of previously calculated data")
+    parser.add_argument("-mp", "--multiprocessing", type = strtobool, default = True,
+                        help = "Enables use of more CPU cores, faster but more resource intensive")
 
     args = parser.parse_args()
     BASE_PATH = args.path
@@ -166,6 +207,9 @@ def main():
     PLATE_LATTICE = tuple(args.plate_lattice)
     SAVE_PLOTS = args.save_plots
     USE_SAVED = args.use_saved
+    POOL_MAX = 1
+    if args.multiprocessing:
+        POOL_MAX = cpu_count()
 
     if VERBOSE >= 1:
         print("Starting ColonyScanalyser analysis")
@@ -221,9 +265,10 @@ def main():
         plate_timepoints = defaultdict(list)
 
         if VERBOSE >= 1:
-            print("Processing plate colony images")
+            print("Preprocessing images to locate plates")
 
-        for i, image_file in enumerate(image_files):
+        # Load the first image to get plate coordinate and mask
+        with image_files[0] as image_file:
             # Load image
             img = imread(str(image_file), as_gray = True)
 
@@ -247,27 +292,36 @@ def main():
             # Use the first plate images as a noise mask
             if plate_images_mask is None:
                 plate_images_mask = plate_images
-                
-            for j, plate_image in enumerate(plate_images):
-                # Segment each image
-                plate_images[j] = segment_image(plate_image, plate_image > 0, plate_images_mask[j], area_min = 8)
-                # Create Timepoint objects for each plate
-                plate_timepoints[j + 1].extend(timepoints_from_image(plate_images[j], time_points[i], time_points_elapsed[i]))
 
-                # Save segmented image plot, if required
-                if SAVE_PLOTS >= 2:
-                    save_path = get_plate_directory(
-                        file_access.create_subdirectory(BASE_PATH, "plots"),
-                        *utilities.index_number_to_coordinate(j + 1, PLATE_LATTICE),
-                        create_dir = True
-                        )
-                    save_path = file_access.create_subdirectory(save_path, "segmented_images")
-                    plots.plot_plate_segmented(plate_image, plate_images[j], time_points[i], save_path)
-            
-            # Display a progress bar
-            utilities.progress_bar(((i + 1) / len(image_files)) * 100, message = "Processing images")
+        if VERBOSE >= 1:
+            print("Processing colony data from all images")
+
+        # Thin wrapper to display a progress bar
+        def progress_update(result, progress):
+            utilities.progress_bar(progress, message = "Processing images")
+        
+        processes = list()
+        with Pool(processes = POOL_MAX) as pool:
+            for i, image_file in enumerate(image_files):
+                # Allow args to be passed to callback function
+                callback_function = partial(progress_update, progress = ((i + 1) / len(image_files)) * 100)
+
+                # Create processes
+                processes.append(pool.apply_async(
+                    image_file_to_timepoints,
+                    args = (image_file, plate_coordinates, plate_images_mask, time_points[i], time_points_elapsed[i]),
+                    kwds = {"plot_path" : None},
+                    callback = callback_function
+                    ))
+                    
+            # Consolidate the results to a single dict
+            for process in processes:
+                result = process.get()
+                for plate_id, timepoints in result.items():
+                    plate_timepoints[plate_id].extend(timepoints)
 
         # Clear objects to free up memory
+        processes = None
         plate_images = None
         plate_images_mask = None
         img = None
