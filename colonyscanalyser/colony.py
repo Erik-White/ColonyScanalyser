@@ -171,7 +171,7 @@ def timepoints_from_image(image, time_point, elapsed_minutes):
 
     colonies = list()
 
-    for rp in regionprops(image, coordinates = "rc"):
+    for rp in regionprops(image):
         # Create a new time point object to store colony data
         timepoint_data = Colony.Timepoint(
             date_time = time_point,

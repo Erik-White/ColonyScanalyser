@@ -128,7 +128,7 @@ def segment_image(plate_image, plate_mask, plate_noise_mask, area_min = 5):
     #colonies = clear_border(pl_th, buffer_size = 1, mask = plate_mask)
 
     # Exclude objects that are too eccentric
-    rps = regionprops(colonies, coordinates = "rc")
+    rps = regionprops(colonies)
     for rp in rps:
         # Eccentricity of zero is a perfect circle
         # Circularity of 1 is a perfect circle

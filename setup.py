@@ -6,7 +6,7 @@ with open("README.md", 'r') as f:
 setup(
     python_requires = ">3.7",
     name = "colonyscanalyser",
-    version = "0.2.0",
+    version = "0.2.1",
     description = "An image analysis tool for measuring microorganism colony growth",
     long_description = long_description,
     url = "https://github.com/Erik-White/ColonyScanalyser/",
@@ -18,7 +18,7 @@ setup(
     install_requires = [
         "numpy",
         "matplotlib",
-        "scikit-image >= 0.15"
+        "scikit-image >= 0.16"
     ],
     extras_require = {
         "dev": [
