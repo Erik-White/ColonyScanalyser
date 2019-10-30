@@ -203,7 +203,7 @@ def main():
     args = parser.parse_args()
     BASE_PATH = args.path
     VERBOSE = args.verbose
-    PLATE_SIZE = imaging.mm_to_pixels(args.plate_size - 5, dots_per_inch = args.dots_per_inch)
+    PLATE_SIZE = imaging.mm_to_pixels(args.plate_size, dots_per_inch = args.dots_per_inch)
     PLATE_LATTICE = tuple(args.plate_lattice)
     SAVE_PLOTS = args.save_plots
     USE_SAVED = args.use_saved
