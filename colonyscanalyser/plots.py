@@ -1,5 +1,4 @@
 import matplotlib
-matplotlib.use("TkAgg") # Required for OSX
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 
