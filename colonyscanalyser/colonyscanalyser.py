@@ -348,6 +348,12 @@ def main():
             if VERBOSE >= 1:
                 print(f"Colony data stored for {len(plate_colonies[plate_id])} colonies on plate {plate_id}")
 
+        if not any([len(plate) for plate in plate_colonies.values()]):
+            if VERBOSE >= 1:
+                print("Unable to locate any colonies in the images provided")
+                print(f"ColonyScanalyser analysis completed for: {BASE_PATH}")
+            sys.exit()
+
     # Store pickled data to allow quick re-use
     save_path = file_access.create_subdirectory(BASE_PATH, "data")
     save_path = save_path.joinpath(segmented_image_data_filename)
