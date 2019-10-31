@@ -1,5 +1,4 @@
 import matplotlib
-matplotlib.use("TkAgg") # Required for OSX
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 
@@ -25,7 +24,7 @@ def plot_plate_segmented(plate_image, segmented_image, date_time, save_path):
     ax[1].imshow(segmented_image, vmax = 1)
             
     # Place maker labels on colonies
-    for rp in regionprops(segmented_image, coordinates = "rc"):
+    for rp in regionprops(segmented_image):
         ax[1].annotate("+",
             rc_to_xy(rp.centroid),
             xycoords = "data",

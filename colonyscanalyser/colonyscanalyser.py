@@ -128,7 +128,7 @@ def segment_image(plate_image, plate_mask, plate_noise_mask, area_min = 5):
     #colonies = clear_border(pl_th, buffer_size = 1, mask = plate_mask)
 
     # Exclude objects that are too eccentric
-    rps = regionprops(colonies, coordinates = "rc")
+    rps = regionprops(colonies)
     for rp in rps:
         # Eccentricity of zero is a perfect circle
         # Circularity of 1 is a perfect circle
@@ -203,7 +203,7 @@ def main():
     args = parser.parse_args()
     BASE_PATH = args.path
     VERBOSE = args.verbose
-    PLATE_SIZE = imaging.mm_to_pixels(args.plate_size - 5, dots_per_inch = args.dots_per_inch)
+    PLATE_SIZE = imaging.mm_to_pixels(args.plate_size, dots_per_inch = args.dots_per_inch)
     PLATE_LATTICE = tuple(args.plate_lattice)
     SAVE_PLOTS = args.save_plots
     USE_SAVED = args.use_saved
@@ -347,6 +347,12 @@ def main():
 
             if VERBOSE >= 1:
                 print(f"Colony data stored for {len(plate_colonies[plate_id])} colonies on plate {plate_id}")
+
+        if not any([len(plate) for plate in plate_colonies.values()]):
+            if VERBOSE >= 1:
+                print("Unable to locate any colonies in the images provided")
+                print(f"ColonyScanalyser analysis completed for: {BASE_PATH}")
+            sys.exit()
 
     # Store pickled data to allow quick re-use
     save_path = file_access.create_subdirectory(BASE_PATH, "data")

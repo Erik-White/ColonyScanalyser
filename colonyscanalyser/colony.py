@@ -171,7 +171,7 @@ def timepoints_from_image(image, time_point, elapsed_minutes):
 
     colonies = list()
 
-    for rp in regionprops(image, coordinates = "rc"):
+    for rp in regionprops(image):
         # Create a new time point object to store colony data
         timepoint_data = Colony.Timepoint(
             date_time = time_point,
@@ -187,27 +187,67 @@ def timepoints_from_image(image, time_point, elapsed_minutes):
     return colonies
 
 
-def colonies_from_timepoints(timepoints):
+def colonies_from_timepoints(timepoints, distance_tolerance = 1):
     """
     Create a dictionary of Colony objects from Timepoint data
 
     :param timepoints: a list of Timepoint data objects
+    :param distance_tolerance: the difference allowed between centre values
     :returns: a list of Colony objects containing Timepoint data
     """
-    from collections import defaultdict
 
-    colony_centers = defaultdict(list)
+    colony_centers = list()
     colonies = list()
 
-    # Build lists of Timepoints, grouped by centres as dict keys
-    for timepoint in timepoints:
-        colony_centers[round_tuple_floats(timepoint.center, 0)].append(timepoint)
-        
+    # First group by row values
+    center_groups = group_timepoints_by_center_dict(
+        timepoints,
+        max_distance = distance_tolerance,
+        axis = 0
+        )
+
+    # Then split the groups further by column values
+    for timepoint_group in center_groups:
+        group = group_timepoints_by_center_dict(
+            timepoint_group,
+            max_distance = distance_tolerance,
+            axis = 1
+            )
+        colony_centers.extend(group)
+
     # Create a colony object for each group of centres
-    for i, timepoint_objects in enumerate(colony_centers.values(), start = 1):
+    for i, timepoint_objects in enumerate(colony_centers, start = 1):
         # Create a Dict of timepoints with date_time as the keys
         timepoints_dict = {timepoint.date_time : timepoint for timepoint in timepoint_objects}
         # Create the Colony object with the Timepoints
         colonies.append(Colony(i, timepoints_dict))
-
+        
     return colonies
+    
+
+def group_timepoints_by_center_dict(timepoints, max_distance = 1, axis = 0):
+    """
+    Split a list of Timepoint objects into sub groups
+    Compares difference in values along a specified axis
+
+    :param timepoints: a list of Timepoint objects
+    :param max_distance: the difference allowed between centre values
+    :param axis: the axis index to compare values along
+    :returns: a list of lists of Colony objects containing Timepoint objects
+    """
+    from collections import defaultdict
+
+    center_groups = defaultdict(list)
+    group_count = 0
+    timepoint_prev = None
+
+    # Sort the list of timepoints along the specified axis
+    for timepoint in sorted(timepoints, key = lambda k: k.center[axis]):
+        # Create a new group each time the tolerance limit is reached
+        if (timepoint_prev is None or
+            abs(timepoint.center[axis] - timepoint_prev.center[axis]) > max_distance):
+            group_count += 1
+            timepoint_prev = timepoint
+        center_groups[group_count].append(timepoint)
+    
+    return [list(centers) for centers in center_groups.values()]
