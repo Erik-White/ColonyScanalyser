@@ -174,11 +174,11 @@ class TestGetImageCircles():
     @pytest.mark.parametrize(
         "radius, count, search_radius, expected",
         [
-        (80, 1, 10, ((102, 102), 80)),
-        (80, None, 20, ((102, 102), 80)),
-        (40, 4, 40, ((154, 150), 10)),
-        (80, 2, 20, ((102, 102), 80)),
-        (40, 4, 10, ((62, 62), 30)),
+            (80, 1, 10, ((102, 102), 80)),
+            (80, None, 20, ((102, 102), 80)),
+            (40, 4, 40, ((154, 150), 10)),
+            (80, 2, 20, ((102, 102), 80)),
+            (40, 4, 10, ((62, 62), 30))
         ])
     def test_get_circles_with_params(self, image_circle, radius, count, search_radius, expected):
         result = get_image_circles(

@@ -60,9 +60,9 @@ class TestIndexNumberToCoordinate():
     @pytest.mark.parametrize(
         "index, lattice, expected",
         [
-        (3, (3, 2), (2, 1)),
-        (5, (1, 8), (1, 5)),
-        (10, (5, 5), (2, 5)),
+            (3, (3, 2), (2, 1)),
+            (5, (1, 8), (1, 5)),
+            (10, (5, 5), (2, 5)),
         ])
     def test_index_valid(self, index, lattice, expected):
         result = index_number_to_coordinate(index, lattice)
@@ -85,9 +85,9 @@ class TestCoordinateToIndexNumber():
     @pytest.mark.parametrize(
         "coordinate, expected",
         [
-        ((3, 2), 6),
-        ((1, 8), 8),
-        ((5, 5), 25),
+            ((3, 2), 6),
+            ((1, 8), 8),
+            ((5, 5), 25),
         ])
     def test_index_valid(self, coordinate, expected):
         result = coordinate_to_index_number(coordinate)
@@ -194,8 +194,8 @@ class TestIsOutlier():
     @pytest.mark.parametrize(
         "points, expected",
         [
-        ([1, 1, 10, 1], [False, False, True, False]),
-        ([-100, 4.5, 10, 0], [True, False, False, False]),
+            ([1, 1, 10, 1], [False, False, True, False]),
+            ([-100, 4.5, 10, 0], [True, False, False, False]),
         ])
     def test_return_outlier(self, points, expected):
         assert is_outlier(np.array(points)).all() == np.array(expected).all()

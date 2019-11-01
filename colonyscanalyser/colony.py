@@ -35,8 +35,8 @@ class Colony:
         self.timepoints = timepoints
 
     def __iter__(self):
-        return iter(
-            [self.id,
+        return iter([
+            self.id,
             self.time_of_appearance,
             self.timepoint_first.elapsed_minutes,
             round_tuple_floats(self.center, 2),
@@ -245,8 +245,8 @@ def group_timepoints_by_center_dict(timepoints, max_distance = 1, axis = 0):
     # Sort the list of timepoints along the specified axis
     for timepoint in sorted(timepoints, key = lambda k: k.center[axis]):
         # Create a new group each time the tolerance limit is reached
-        if (timepoint_prev is None
-                or abs(timepoint.center[axis] - timepoint_prev.center[axis]) > max_distance):
+        if (timepoint_prev is None or
+                abs(timepoint.center[axis] - timepoint_prev.center[axis]) > max_distance):
             group_count += 1
             timepoint_prev = timepoint
         center_groups[group_count].append(timepoint)
