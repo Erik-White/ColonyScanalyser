@@ -76,7 +76,7 @@ def average_dicts_values_by_key(dicts):
         sums.update(itemset)
         counters.update(itemset.keys())
 
-    return {x: float(sums[x])/counters[x] for x in sums.keys()}
+    return {x: float(sums[x]) / counters[x] for x in sums.keys()}
 
 
 def average_median_dicts_values_by_key(dicts):

@@ -13,7 +13,7 @@ from colonyscanalyser.utilities import (
 
 
 class TestRoundTupleFloats():
-    @pytest.fixture(params=[
+    @pytest.fixture(params = [
         (1.3285, 1.00001),
         (-95840.3567, 0.0),
         (43.94387678, "string.", 2.567)
@@ -21,7 +21,7 @@ class TestRoundTupleFloats():
     def tuples(self, request):
         yield request.param
 
-    @pytest.fixture(params=[1, 3, 5])
+    @pytest.fixture(params = [1, 3, 5])
     def rounding(self, request):
         yield request.param
 
@@ -41,15 +41,15 @@ class TestRoundTupleFloats():
 
 
 class TestIndexNumberToCoordinate():
-    @pytest.fixture(params=[1, 2, 4, 10])
+    @pytest.fixture(params = [1, 2, 4, 10])
     def index_number(self, request):
         yield request.param
 
-    @pytest.fixture(params=[-1, 0])
+    @pytest.fixture(params = [-1, 0])
     def index_number_invalid(self, request):
         yield request.param
 
-    @pytest.fixture(params=[(1, 1), (10, 1), (3, 2), (5, 5)])
+    @pytest.fixture(params = [(1, 1), (10, 1), (3, 2), (5, 5)])
     def lattice(self, request):
         yield request.param
 
@@ -57,7 +57,9 @@ class TestIndexNumberToCoordinate():
     def lattice_invalid(self, request):
         yield request.param
 
-    @pytest.mark.parametrize("index, lattice, expected", [
+    @pytest.mark.parametrize(
+        "index, lattice, expected",
+        [
         (3, (3, 2), (2, 1)),
         (5, (1, 8), (1, 5)),
         (10, (5, 5), (2, 5)),
@@ -80,7 +82,9 @@ class TestIndexNumberToCoordinate():
 
 
 class TestCoordinateToIndexNumber():
-    @pytest.mark.parametrize("coordinate, expected", [
+    @pytest.mark.parametrize(
+        "coordinate, expected",
+        [
         ((3, 2), 6),
         ((1, 8), 8),
         ((5, 5), 25),
@@ -116,7 +120,8 @@ class TestProgressBar():
 
 
 class TestAverageDictsByKeys():
-    @pytest.fixture(params=[[{
+    @pytest.fixture(
+        params = [[{
             "key1": 5,
             "key2": 1,
             "key3": 0,
@@ -131,7 +136,8 @@ class TestAverageDictsByKeys():
     def dicts(self, request):
         yield request.param
 
-    @pytest.fixture(params=[{
+    @pytest.fixture(
+        params = [{
             "key1": 7.5,
             "key2": 1.5,
             "key3": 0,
@@ -150,7 +156,8 @@ class TestAverageDictsByKeys():
 
 
 class TestAverageMedianDictsByKeys():
-    @pytest.fixture(params=[[{
+    @pytest.fixture(
+        params = [[{
             "key1": 5,
             "key2": 1,
             "key3": 0,
@@ -165,7 +172,8 @@ class TestAverageMedianDictsByKeys():
     def dicts(self, request):
         yield request.param
 
-    @pytest.fixture(params=[{
+    @pytest.fixture(
+        params = [{
             "key1": 7.5,
             "key2": 1.5,
             "key3": 0,
@@ -183,7 +191,9 @@ class TestAverageMedianDictsByKeys():
 
 
 class TestIsOutlier():
-    @pytest.mark.parametrize("points, expected", [
+    @pytest.mark.parametrize(
+        "points, expected",
+        [
         ([1, 1, 10, 1], [False, False, True, False]),
         ([-100, 4.5, 10, 0], [True, False, False, False]),
         ])

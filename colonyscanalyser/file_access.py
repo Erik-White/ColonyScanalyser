@@ -1,5 +1,6 @@
 ﻿from enum import Enum
 
+
 def file_exists(file_path):
     """
     Check whether a file exists and contains data
@@ -72,8 +73,6 @@ def move_to_subdirectory(file_list, subdirectory):
     :param subdirectory: a string or path object representing a new or existing folder
     :returns: an updated list of path objects
     """
-    from pathlib import Path
-
     if not len(file_list) > 0:
         raise ValueError("The supplied list of path objects is empty")
     if not len(str(subdirectory)) > 0:
@@ -90,7 +89,7 @@ def move_to_subdirectory(file_list, subdirectory):
         for file in file_list:
             file.replace(sub_dir.joinpath(file.name))
             files.append(sub_dir.joinpath(file.name))
-    except:
+    except Exception:
         raise EnvironmentError(f"Unable to move files to subdirectory: {sub_dir}")
 
     return files
@@ -169,7 +168,7 @@ def save_file(file_path, data, compression):
     import pickle
 
     completed = None
-    
+
     try:
         with file_compression(file_path, compression, "wb") as outfile:
             pickle.dump(data, outfile, pickle.HIGHEST_PROTOCOL)

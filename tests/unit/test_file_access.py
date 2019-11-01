@@ -154,10 +154,10 @@ class TestLoadFile():
     def test_return_file(self, tmp_path, data):
         for method in CompressionMethod:
             with save_file(
-                tmp_path.joinpath(method.name).with_suffix(method.value),
-                data,
-                method
-                ) as temp_file:
+                    tmp_path.joinpath(method.name).with_suffix(method.value),
+                    data,
+                    method
+                    ) as temp_file:
                 assert load_file(temp_file, method) is not None
 
 
@@ -169,10 +169,10 @@ class TestSaveFile():
     def test_save_compressed(self, tmp_path, data):
         for method in CompressionMethod:
             with save_file(
-                tmp_path.joinpath(method.name).with_suffix(method.value),
-                data,
-                method
-                ) as temp_file:
+                    tmp_path.joinpath(method.name).with_suffix(method.value),
+                    data,
+                    method
+                    ) as temp_file:
                 assert file_exists(temp_file) is True
 
 

@@ -25,7 +25,7 @@ setup(
             "check-manifest"
             "pytest",
             "pytest-cov"
-            ],
+        ],
         "test": [
             "pytest",
             "pytest-cov"

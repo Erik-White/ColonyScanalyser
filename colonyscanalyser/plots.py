@@ -24,13 +24,14 @@ def plot_plate_segmented(plate_image, segmented_image, date_time, save_path):
 
     # Place maker labels on colonies
     for rp in regionprops(segmented_image):
-        ax[1].annotate("+",
-        rc_to_xy(rp.centroid),
-        xycoords = "data",
-        color = "red",
-        horizontalalignment = "center",
-        verticalalignment = "center"
-        )
+        ax[1].annotate(
+            "+",
+            rc_to_xy(rp.centroid),
+            xycoords = "data",
+            color = "red",
+            horizontalalignment = "center",
+            verticalalignment = "center"
+            )
 
     plt.suptitle(f"Plate time point {date_time.strftime('%Y/%m/%d %H:%M')}")
     image_path = f"time_point_{date_time.strftime('%Y%m%d')}_{date_time.strftime('%H%M')}.png"
@@ -64,7 +65,8 @@ def plot_growth_curve(plates_dict, time_points_elapsed, save_path):
         growth_curve(ax, plate_item, time_points_elapsed, cm_scatter, cm_line)
 
     lgd = ax.legend(loc = 'center right', fontsize = 8, bbox_to_anchor = (1.25, 0.5))
-    save_params = {"format": "png",
+    save_params = {
+        "format": "png",
         "bbox_extra_artists": (lgd,),
         "bbox_inches": "tight"
         }
