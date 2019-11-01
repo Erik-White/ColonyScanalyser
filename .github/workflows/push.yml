@@ -1,4 +1,4 @@
-name: Run tests and linter on Push
+name: Test
 
 on: [push]
 
