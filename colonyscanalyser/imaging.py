@@ -33,7 +33,8 @@ def crop_image(image, crop_shape, center = None):
     img = image.copy()
 
     if any(x < 0 for x in crop_shape) or len(image.shape) < len(crop_shape):
-        raise ValueError(f"The crop shape ({crop_shape}) must be positive integers and the same dimensions as the image to crop")
+        raise ValueError(f"The crop shape ({crop_shape}) must be positive integers and"
+            "the same dimensions as the image to crop")
     if crop_shape > img.shape:
         raise ValueError(f"The crop shape ({crop_shape}) cannot be larger than the image ({image.shape}) to crop")
 
@@ -45,13 +46,14 @@ def crop_image(image, crop_shape, center = None):
         start = tuple(map(lambda a, da: a - da // 2, center, crop_shape))
 
     end = tuple(map(operator.add, start, crop_shape))
-    
+
     if any(x < 0 for x in start) or end > img.shape:
         raise ValueError("The crop area cannot be outside the original image")
 
     slices = tuple(map(slice, start, end))
 
     return img[slices]
+
 
 def cut_image_circle(image, center = None, radius = None, inverse = False):
     """
@@ -78,14 +80,14 @@ def cut_image_circle(image, center = None, radius = None, inverse = False):
         # Crop the image around the center point (if provided)
         crop_area = (radius * 2) + 1
         img = crop_image(img, (crop_area, crop_area), center)
-        
+
     (cy, cx) = map(lambda x: x // 2, img.shape)
-        
+
     # Calculate distances from center
     dist_x = np.vstack([(np.arange(img.shape[1]) - cx)] * (img.shape[0]))
     dist_y = np.vstack([(np.arange(img.shape[0]) - cy)] * (img.shape[1])).T
     dist = np.sqrt(dist_x ** 2 + dist_y ** 2)
-    
+
     if inverse:
         # Remove image information in area inside boundary
         img[dist <= radius] = 0
@@ -109,7 +111,7 @@ def get_image_circles(image, circle_radius, circle_count = -1, search_radius = 0
     from skimage.transform import hough_circle, hough_circle_peaks
     from skimage.feature import canny
     from skimage.filters import threshold_otsu
-    
+
     if image.size == 0:
         raise ValueError("The supplied image cannot be empty")
     img = image.copy()
@@ -128,12 +130,12 @@ def get_image_circles(image, circle_radius, circle_count = -1, search_radius = 0
         radii,
         min_xdistance = circle_radius,
         min_ydistance = circle_radius
-        #total_num_peaks = circle_count
+        # total_num_peaks = circle_count
         )
-    
+
     # Temporary helper function until hough_circle_peaks respects min distances
     cx, cy, radii = circles_radius_median(cx, cy, radii, circle_count)
-    
+
     # Create a Dict with y values as keys and row numbers as values
     # Allows a quick lookup of the row values for sorting
     row_groups = dict()
@@ -142,7 +144,7 @@ def get_image_circles(image, circle_radius, circle_count = -1, search_radius = 0
         if i == 0 or abs((sorted(cy)[i - 1]) - x) > circle_radius:
             row_count += 1
         row_groups[x] = row_count
-    
+
     # Group and order coordinates in rows from top left
     coordinates = sorted(zip(cy, cx), key = lambda k: (row_groups[k[0]], 0, k[1]))
     radii = [max(radii, key = radii.tolist().count) for x in radii]
@@ -175,24 +177,24 @@ def remove_background_mask(image, mask, smoothing = 0.5, **filter_args):
     Process an image by removing a background mask
     """
     from skimage.filters import gaussian
-    
+
     if image.size == 0 or mask.size == 0:
         raise ValueError("The supplied image or mask cannot be empty")
     if image.shape != mask.shape:
         raise ValueError(f"The supplied image ({image.shape}) and mask ({mask.shape}) must be the same shape")
     image = image.copy()
     mask = mask.copy()
-    
+
     # Do not process the image if it is empty
     if not image.any():
         return image
 
     # Get background mask intensity
     background = image[mask & (image > 0.05)].mean()
-    
+
     # Determine image foreground
     ind = gaussian(image, smoothing, preserve_range = True, **filter_args) > background + 0.03
-    
+
     # Subtract the mask, returning only the foreground
     return mask & ind
 
@@ -215,7 +217,7 @@ def watershed_separation(image, smoothing = 0.5):
     # Estimate smoothed distance from peaks to background
     distance = ndimage.distance_transform_edt(img)
     distance = gaussian(distance, smoothing)
-    
+
     # Find image peaks, returned as a boolean array (indices = False)
     local_maxi = peak_local_max(distance, indices = False, footprint = np.ones((3, 3)), labels = img)
 

@@ -1,14 +1,15 @@
 import pytest
 import numpy as np
 
-from colonyscanalyser.utilities import (round_tuple_floats,
-                                index_number_to_coordinate,
-                                coordinate_to_index_number,
-                                progress_bar,
-                                average_dicts_values_by_key,
-                                average_median_dicts_values_by_key,
-                                is_outlier
-                                )
+from colonyscanalyser.utilities import (
+    round_tuple_floats,
+    index_number_to_coordinate,
+    coordinate_to_index_number,
+    progress_bar,
+    average_dicts_values_by_key,
+    average_median_dicts_values_by_key,
+    is_outlier
+    )
 
 
 class TestRoundTupleFloats():
@@ -30,7 +31,7 @@ class TestRoundTupleFloats():
 
     def test_rounding(self, tuples, rounding):
         result = round_tuple_floats(tuples, rounding)
-        
+
         for value in result:
             assert self.float_precision(value) <= rounding
 
@@ -55,7 +56,7 @@ class TestIndexNumberToCoordinate():
     @pytest.fixture(params=[(0, 0), (-1, 1), (0, 1)])
     def lattice_invalid(self, request):
         yield request.param
-        
+
     @pytest.mark.parametrize("index, lattice, expected", [
         (3, (3, 2), (2, 1)),
         (5, (1, 8), (1, 5)),
@@ -76,7 +77,7 @@ class TestIndexNumberToCoordinate():
     def test_index_error(self, lattice):
         with pytest.raises(IndexError):
             index_number_to_coordinate(100, lattice)
-    
+
 
 class TestCoordinateToIndexNumber():
     @pytest.mark.parametrize("coordinate, expected", [
@@ -103,9 +104,9 @@ class TestProgressBar():
     def test_linecount_finished(self, capsys):
         progress_bar(100)
         captured = capsys.readouterr()
-        
+
         assert self.count_lines(captured.out) == 2
-    
+
     def test_message(self, capsys):
         message = "Test message"
         progress_bar(100, message = message)
@@ -120,7 +121,7 @@ class TestAverageDictsByKeys():
             "key2": 1,
             "key3": 0,
             "key4": -1
-        },{
+        }, {
             "key1": 10,
             "key2": 2,
             "key3": 0,
@@ -145,7 +146,7 @@ class TestAverageDictsByKeys():
         assert average_dicts_values_by_key(dicts) == dicts_averaged
 
     def test_empty_dicts(self):
-        assert average_dicts_values_by_key([{},{}]) == {}
+        assert average_dicts_values_by_key([{}, {}]) == {}
 
 
 class TestAverageMedianDictsByKeys():
@@ -154,7 +155,7 @@ class TestAverageMedianDictsByKeys():
             "key2": 1,
             "key3": 0,
             "key4": -1
-        },{
+        }, {
             "key1": 10,
             "key2": 2,
             "key3": 0,
@@ -178,7 +179,7 @@ class TestAverageMedianDictsByKeys():
         assert average_median_dicts_values_by_key(dicts) == dicts_averaged
 
     def test_empty_dicts(self):
-        assert average_median_dicts_values_by_key([{},{}]) == {}
+        assert average_median_dicts_values_by_key([{}, {}]) == {}
 
 
 class TestIsOutlier():

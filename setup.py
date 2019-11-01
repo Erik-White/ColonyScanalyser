@@ -13,7 +13,7 @@ setup(
     author = "Erik White",
     author_email = "",
     license = "GPL-3.0",
-    packages =  find_packages(),
+    packages = find_packages(),
     zip_safe = False,
     install_requires = [
         "numpy",

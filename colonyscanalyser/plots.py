@@ -1,4 +1,3 @@
-import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 
@@ -22,23 +21,23 @@ def plot_plate_segmented(plate_image, segmented_image, date_time, save_path):
     ax[0].imshow(plate_image)
     # Set colour range so all colonies are clearly visible and the same colour
     ax[1].imshow(segmented_image, vmax = 1)
-            
+
     # Place maker labels on colonies
     for rp in regionprops(segmented_image):
         ax[1].annotate("+",
-            rc_to_xy(rp.centroid),
-            xycoords = "data",
-            color = "red",
-            horizontalalignment = "center",
-            verticalalignment = "center"
-            )
+        rc_to_xy(rp.centroid),
+        xycoords = "data",
+        color = "red",
+        horizontalalignment = "center",
+        verticalalignment = "center"
+        )
 
     plt.suptitle(f"Plate time point {date_time.strftime('%Y/%m/%d %H:%M')}")
     image_path = f"time_point_{date_time.strftime('%Y%m%d')}_{date_time.strftime('%H%M')}.png"
     save_path = save_path.joinpath(image_path)
     try:
         plt.savefig(str(save_path), format = "png")
-    except:
+    except Exception:
         save_path = None
     finally:
         plt.close()
@@ -51,7 +50,7 @@ def plot_growth_curve(plates_dict, time_points_elapsed, save_path):
     """
     _, ax = plt.subplots()
     colormap = cm.get_cmap("plasma")
-    
+
     for plate_item in plates_dict.items():
         if len(plates_dict) > 1:
             # Get a color from the colourmap
@@ -66,10 +65,10 @@ def plot_growth_curve(plates_dict, time_points_elapsed, save_path):
 
     lgd = ax.legend(loc = 'center right', fontsize = 8, bbox_to_anchor = (1.25, 0.5))
     save_params = {"format": "png",
-          "bbox_extra_artists": (lgd,),
-          "bbox_inches": "tight"
-          }
-    
+        "bbox_extra_artists": (lgd,),
+        "bbox_inches": "tight"
+        }
+
     plt.ylim(ymin = 0)
     plt.title("Colony growth")
     plt.savefig(str(save_path.joinpath("growth_curve.png")), **save_params)
@@ -92,21 +91,23 @@ def growth_curve(ax, plate_item, time_points_elapsed, scatter_color, line_color 
         time_points_dict = dict.fromkeys(time_points_elapsed)
         for timepoint in colony.timepoints.values():
             time_points_dict[timepoint.elapsed_minutes] = timepoint.area
-        
+
         # Store dictionary for averaging, keeping only elements with a value
         areas_average.append(dict(filter(lambda elem: elem[1] is not None, time_points_dict.items())))
-            
+
         # Use zip to return a sorted list of tuples (key, value) from the dictionary
-        ax.scatter(*zip(*sorted(time_points_dict.items())),
+        ax.scatter(
+            *zip(*sorted(time_points_dict.items())),
             color = scatter_color,
             marker = "o",
             s = 1,
-            alpha = 0.25,
+            alpha = 0.25
             )
 
     # Plot the mean
     areas_averages = average_dicts_values_by_key(areas_average)
-    ax.plot(*zip(*sorted(areas_averages.items())),
+    ax.plot(
+        *zip(*sorted(areas_averages.items())),
         color = line_color,
         label = f"Plate {plate_id}",
         linewidth = 2
@@ -124,7 +125,7 @@ def plot_appearance_frequency(plates_dict, time_points_elapsed, save_path, bar =
     """
     _, ax = plt.subplots()
     colormap = cm.get_cmap("plasma")
-    
+
     for plate_id, plate_item in plates_dict.items():
         if len(plates_dict) > 1:
             # Get a color from the colourmap
@@ -133,17 +134,18 @@ def plot_appearance_frequency(plates_dict, time_points_elapsed, save_path, bar =
         else:
             cm_plate = "Purple"
             plot_total = None
-        
+
         if not len(plate_item) < 1:
             # Plot frequency for each time point
             time_of_appearance_frequency(ax, (plate_id, plate_item), time_points_elapsed, cm_plate, plot_total, bar = bar)
-    
+
     lgd = ax.legend(loc = 'center right', fontsize = 8, bbox_to_anchor = (1.25, 0.5))
-    save_params = {"format": "png",
-          "bbox_extra_artists": (lgd,),
-          "bbox_inches": "tight"
-          }
-    
+    save_params = {
+        "format": "png",
+        "bbox_extra_artists": (lgd,),
+        "bbox_inches": "tight"
+        }
+
     plt.ylim(ymin = 0)
     plt.title("Time of appearance")
     if bar:
@@ -172,7 +174,8 @@ def time_of_appearance_frequency(ax, plate_item, time_points_elapsed, plot_color
     time_points_dict = {key: value / len(time_points_dict) for key, value in time_points_dict.items()}
 
     if not bar:
-        ax.plot(*zip(*sorted(time_points_dict.items())),
+        ax.plot(
+            *zip(*sorted(time_points_dict.items())),
             color = plot_color,
             label = f"Plate {plate_id}",
             alpha = 0.9
@@ -187,7 +190,7 @@ def time_of_appearance_frequency(ax, plate_item, time_points_elapsed, plot_color
             x = [x for x in sorted(time_points_dict.keys())]
 
         y = [time_points_dict[key] for key in sorted(time_points_dict.keys())]
-        
+
         ax.bar(
             x,
             y,
@@ -218,12 +221,12 @@ def plot_doubling_map(plates_dict, time_points_elapsed, save_path):
         for colony in plate.values():
             x.append(colony.timepoint_first.elapsed_minutes)
             y.append(colony.get_doubling_time_average(elapsed_minutes = True))
-    
+
     # Normalise
     weights = zeros_like(x) + 1. / len(x)
     heatmap, xedges, yedges = histogram2d(x, y, bins = 50, weights = weights)
     extent = [xedges[0], xedges[-1], yedges[0], yedges[-1]]
-    
+
     # Mask out background values
     heatmap = masked_where(heatmap.T == 0, heatmap.T)
 

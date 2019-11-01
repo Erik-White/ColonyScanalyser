@@ -3,6 +3,7 @@ from math import pi, log
 from dataclasses import dataclass
 from .utilities import round_tuple_floats
 
+
 class Colony:
     """
     An object to hold information on a single colony over time
@@ -15,7 +16,7 @@ class Colony:
         center: tuple
         diameter: float
         perimeter: float
-        
+
         def __iter__(self):
             return iter([
                 self.date_time,
@@ -32,7 +33,7 @@ class Colony:
         if timepoints is None:
             timepoints = dict()
         self.timepoints = timepoints
-    
+
     def __iter__(self):
         return iter([
             self.id,
@@ -107,7 +108,7 @@ class Colony:
             self.__timepoints[time_point] = timepointdata
         else:
             raise ValueError(f"This time point ({time_point})  already exists")
-        
+
     def update_timepoint(self, time_point, timepointdata):
         self.timepoints[time_point] = timepointdata
 
@@ -144,7 +145,7 @@ class Colony:
 
     def __circularity(self, area, perimeter):
         return (4 * pi * area) / (perimeter * perimeter)
-    
+
     def __local_doubling_time(self, index, x_pts, y_pts, window = 10):
 
         x1 = x_pts[index]
@@ -181,9 +182,9 @@ def timepoints_from_image(image, time_point, elapsed_minutes):
             diameter = rp.equivalent_diameter,
             perimeter = rp.perimeter
         )
-        
+
         colonies.append(timepoint_data)
-    
+
     return colonies
 
 
@@ -221,9 +222,9 @@ def colonies_from_timepoints(timepoints, distance_tolerance = 1):
         timepoints_dict = {timepoint.date_time : timepoint for timepoint in timepoint_objects}
         # Create the Colony object with the Timepoints
         colonies.append(Colony(i, timepoints_dict))
-        
+
     return colonies
-    
+
 
 def group_timepoints_by_center_dict(timepoints, max_distance = 1, axis = 0):
     """
@@ -249,5 +250,5 @@ def group_timepoints_by_center_dict(timepoints, max_distance = 1, axis = 0):
             group_count += 1
             timepoint_prev = timepoint
         center_groups[group_count].append(timepoint)
-    
+
     return [list(centers) for centers in center_groups.values()]
