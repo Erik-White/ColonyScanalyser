@@ -33,8 +33,9 @@ def crop_image(image, crop_shape, center = None):
     img = image.copy()
 
     if any(x < 0 for x in crop_shape) or len(image.shape) < len(crop_shape):
-        raise ValueError(f"The crop shape ({crop_shape}) must be positive integers and"
-            "the same dimensions as the image to crop")
+        raise ValueError(
+            f"The crop shape ({crop_shape}) must be positive integers and the same dimensions as the image to crop"
+            )
     if crop_shape > img.shape:
         raise ValueError(f"The crop shape ({crop_shape}) cannot be larger than the image ({image.shape}) to crop")
 
