@@ -219,7 +219,7 @@ def colonies_from_timepoints(timepoints, distance_tolerance = 1):
     # Create a colony object for each group of centres
     for i, timepoint_objects in enumerate(colony_centers, start = 1):
         # Create a Dict of timepoints with date_time as the keys
-        timepoints_dict = {timepoint.date_time : timepoint for timepoint in timepoint_objects}
+        timepoints_dict = {timepoint.date_time: timepoint for timepoint in timepoint_objects}
         # Create the Colony object with the Timepoints
         colonies.append(Colony(i, timepoints_dict))
 

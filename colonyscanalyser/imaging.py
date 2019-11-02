@@ -109,9 +109,13 @@ def get_image_circles(image, circle_radius, circle_count = -1, search_radius = 0
     :param search_radius: an additional area around the expected circle size to search
     :returns: a list of center co-ordinate tuples and radii
     """
+    from numpy import inf
     from skimage.transform import hough_circle, hough_circle_peaks
     from skimage.feature import canny
     from skimage.filters import threshold_otsu
+
+    if circle_count == -1:
+        circle_count = inf
 
     if image.size == 0:
         raise ValueError("The supplied image cannot be empty")
@@ -160,6 +164,10 @@ def circles_radius_median(cx, cy, radii, circle_count):
     hough_circle_peaks currently ignores min_xdistance and min_ydistance
     See: https://github.com/Erik-White/ColonyScanalyser/issues/10
     """
+    from numpy import inf
+
+    if circle_count == inf:
+        circle_count = len(radii) + 1
 
     # hough_circle_peaks are returned sorted by peak intensity
     # Find the most common radius from the 'best' circles

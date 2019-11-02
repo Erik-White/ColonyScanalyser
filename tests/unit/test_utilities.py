@@ -1,5 +1,4 @@
 import pytest
-import numpy as np
 
 from colonyscanalyser.utilities import (
     round_tuple_floats,
@@ -7,8 +6,7 @@ from colonyscanalyser.utilities import (
     coordinate_to_index_number,
     progress_bar,
     average_dicts_values_by_key,
-    average_median_dicts_values_by_key,
-    is_outlier
+    average_median_dicts_values_by_key
     )
 
 
@@ -188,17 +186,3 @@ class TestAverageMedianDictsByKeys():
 
     def test_empty_dicts(self):
         assert average_median_dicts_values_by_key([{}, {}]) == {}
-
-
-class TestIsOutlier():
-    @pytest.mark.parametrize(
-        "points, expected",
-        [
-            ([1, 1, 10, 1], [False, False, True, False]),
-            ([-100, 4.5, 10, 0], [True, False, False, False]),
-        ])
-    def test_return_outlier(self, points, expected):
-        assert is_outlier(np.array(points)).all() == np.array(expected).all()
-
-    def test_empty_array(self):
-        assert is_outlier(np.array([])).size == 0
