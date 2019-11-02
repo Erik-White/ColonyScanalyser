@@ -1,4 +1,7 @@
-﻿def file_exists(file_path):
+﻿from enum import Enum
+
+
+def file_exists(file_path):
     """
     Check whether a file exists and contains data
 
@@ -6,13 +9,13 @@
     :returns: True if the file exists and contains data
     """
     from pathlib import Path
-    
+
     if not isinstance(file_path, Path):
         file_path = Path(file_path)
 
     if Path.exists(file_path) and Path.is_file(file_path) and Path.stat(file_path).st_size > 0:
         return True
-    
+
     return False
 
 
@@ -25,14 +28,13 @@ def get_files_by_type(path, file_extensions = ["*"]):
     :returns: a list of matching path objects, sorted by filename
     """
     from pathlib import Path
-    import glob
 
     if not isinstance(path, Path):
         path = Path(path)
-    
+
     # Remove separator if passed in argument
     file_extensions = [x.replace(".", "") for x in file_extensions]
-    
+
     path_list = []
     for file_extension in file_extensions:
         path_list.extend([x for x in path.glob("*." + file_extension) if not str(x.name).startswith(".")])
@@ -48,12 +50,11 @@ def create_subdirectory(parent_path, subdirectory):
     :param subdirectory: a string or path object representing a new or existing folder
     :returns: the new directory path object
     """
-    from pathlib import Path
-
     subdir_path = parent_path.joinpath(subdirectory)
+
     try:
         subdir_path.mkdir(exist_ok = True)
-    except:
+    except Exception:
         # There are many reasons creating a directory may fail
         # Invalid filename, permissions, etc
         raise EnvironmentError(f"Unable to create new subfolder: {subdirectory}")
@@ -72,8 +73,6 @@ def move_to_subdirectory(file_list, subdirectory):
     :param subdirectory: a string or path object representing a new or existing folder
     :returns: an updated list of path objects
     """
-    from pathlib import Path
-
     if not len(file_list) > 0:
         raise ValueError("The supplied list of path objects is empty")
     if not len(str(subdirectory)) > 0:
@@ -84,19 +83,18 @@ def move_to_subdirectory(file_list, subdirectory):
 
     # Create a subdirectory relative to the parent path, if needed
     sub_dir = create_subdirectory(parent_path, subdirectory)
-    
+
     try:
         # Move files to subdirectory and build a new list of files
         for file in file_list:
             file.replace(sub_dir.joinpath(file.name))
             files.append(sub_dir.joinpath(file.name))
-    except:
+    except Exception:
         raise EnvironmentError(f"Unable to move files to subdirectory: {sub_dir}")
 
     return files
 
 
-from enum import Enum, auto
 class CompressionMethod(Enum):
     """
     An Enum representing different types of data compression
@@ -119,8 +117,6 @@ def file_compression(file_path, compression, access_mode = "r"):
     :param access_mode: the access mode for opening the file
     :returns: a file object or datastream, if successful, or None
     """
-    from pathlib import Path
-
     if compression == CompressionMethod.BZ2:
         import bz2
         return bz2.BZ2File(file_path.with_suffix(CompressionMethod.BZ2.value), mode = access_mode)
@@ -134,7 +130,7 @@ def file_compression(file_path, compression, access_mode = "r"):
         return open(file_path.with_suffix(CompressionMethod.PICKLE.value), mode = access_mode)
     elif compression == CompressionMethod.NONE:
         return open(file_path, mode = access_mode)
-    
+
     return None
 
 
@@ -149,12 +145,12 @@ def load_file(file_path, compression, access_mode = "rb", pickle = True):
     :returns: the loaded data object, if successful, or None
     """
     from numpy import load
-    
+
     try:
         file_open = file_compression(file_path, compression, access_mode)
-    except:
+    except Exception:
         return None
-    
+
     return load(file_open, allow_pickle = pickle)
 
 
@@ -172,7 +168,7 @@ def save_file(file_path, data, compression):
     import pickle
 
     completed = None
-    
+
     try:
         with file_compression(file_path, compression, "wb") as outfile:
             pickle.dump(data, outfile, pickle.HIGHEST_PROTOCOL)
@@ -195,7 +191,7 @@ def save_to_csv(data, headers, save_path, delimiter = ","):
     import csv
     from pathlib import Path
     from collections.abc import Collection, Iterable, MappingView
-    
+
     if not isinstance(data, Iterable):
         raise ValueError("The data object must be iterable e.g. a list")
 
@@ -217,14 +213,14 @@ def save_to_csv(data, headers, save_path, delimiter = ","):
             else:
                 writer = csv.writer(outfile, delimiter = delimiter)
                 writer.writerow(headers)
-            
+
             # Check if iterable contains objects that need unpacking
             unpack = False
             for row in data:
                 if isinstance(row, Iterable) and not isinstance(row, Collection):
                     unpack = True
                 break
-            
+
             # View objects are not iterable and need wrapping
             if isinstance(data, MappingView) or unpack:
                 data = [data]
@@ -234,8 +230,8 @@ def save_to_csv(data, headers, save_path, delimiter = ","):
                 writer.writerows(*data)
             else:
                 writer.writerows(data)
-    
-    except:
+
+    except Exception:
         raise IOError(f"Unable to save data to CSV file at {save_path}")
 
     return save_path

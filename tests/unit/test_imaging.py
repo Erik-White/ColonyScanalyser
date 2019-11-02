@@ -1,16 +1,17 @@
 import pytest
 import numpy as np
 
-from colonyscanalyser.imaging import (mm_to_pixels,
-                            crop_image,
-                            cut_image_circle,
-                            get_image_circles,
-                            remove_background_mask,
-                            watershed_separation
-                            )
+from colonyscanalyser.imaging import (
+    mm_to_pixels,
+    crop_image,
+    cut_image_circle,
+    get_image_circles,
+    remove_background_mask,
+    watershed_separation
+    )
 
-image_ref = np.array(
-    [[0, 0, 0, 0, 0, 0, 0, 1, 0],
+image_ref = np.array([
+    [0, 0, 0, 0, 0, 0, 0, 1, 0],
     [1, 1, 0, 0, 1, 0, 0, 1, 0],
     [1, 1, 0, 1, 0, 1, 0, 0, 0],
     [0, 0, 0, 1, 1, 1, 1, 0, 0],
@@ -24,17 +25,21 @@ image_ref_segmented[1:3, 0:2] = 2
 image_ref_segmented[0:2, 7] = 3
 image_ref_segmented[6, 8] = 4
 
+
 @pytest.fixture(params = [image_ref])
 def image(request):
     yield request.param
+
 
 @pytest.fixture(params = [image_ref_segmented])
 def image_segmented(request):
     yield request.param
 
+
 @pytest.fixture(params = [True, False])
 def boolean(request):
     yield request.param
+
 
 class TestCropImage():
     @pytest.fixture(params = [(1, 1), (2, 4), (1, 4)])
@@ -50,22 +55,22 @@ class TestCropImage():
         yield request.param
 
     def test_crop_shape(self, image, crop_shape):
-        image_ref = np.array(
-            [[0, 1, 1, 1],
+        image_ref = np.array([
+            [0, 1, 1, 1],
             [1, 0, 1, 1]])
 
         result = crop_image(image, crop_shape)
-        
+
         assert result.shape == crop_shape
         if crop_shape == (2, 4):
             assert (result == image_ref).all()
 
     def test_crop_center(self, image, crop_shape, center):
-        image_ref = np.array(
-            [[1, 1, 1, 1],
+        image_ref = np.array([
+            [1, 1, 1, 1],
             [0, 1, 0, 1]])
         result = crop_image(image, crop_shape, center)
-        
+
         assert result.shape == crop_shape
         if crop_shape == (2, 4) and center == (6, 3):
             assert (result == image_ref).all()
@@ -118,33 +123,33 @@ class TestCutImageCircle():
         else:
             image_ref[0:-1, 2:7] = 0
             image_ref[2:7, 1:-1] = 0
-            
+
         result = cut_image_circle(image, inverse = boolean)
-        
+
         assert result.shape == image_ref.shape
         assert (result == image_ref).all()
 
     def test_circle_with_params(self, image, boolean):
         if not boolean:
-            image_ref = np.array(
-                [[0, 1, 0],
+            image_ref = np.array([
+                [0, 1, 0],
                 [1, 0, 1],
                 [0, 1, 0]])
         else:
-            image_ref = np.array(
-                [[0, 0, 0],
+            image_ref = np.array([
+                [0, 0, 0],
                 [0, 0, 0],
                 [1, 0, 1]])
 
         result = cut_image_circle(image, center = (2, 4), radius = 1, inverse = boolean)
-        
+
         assert result.shape == image_ref.shape
         assert (result == image_ref).all()
-        
+
     def test_exceed_shape(self, image):
         with pytest.raises(ValueError):
             image_radius = image.shape[0] // 2
-            cut_image_circle(image, radius = image_radius +1)
+            cut_image_circle(image, radius = image_radius + 1)
 
     def test_exceed_bounds(self, image):
         with pytest.raises(ValueError):
@@ -154,24 +159,28 @@ class TestCutImageCircle():
 class TestGetImageCircles():
     @pytest.fixture
     def image_circle(self, request):
-        # Create a 200x200 array with a donut around the centre
+        # Create a 200x200 array with a donut shaped circle around the centre
         xx, yy = np.mgrid[:200, :200]
         circle = (xx - 100) ** 2 + (yy - 100) ** 2
-        img = (circle < (6400 + 60)) & (circle > (6400 - 60))
+        img = ((circle < (6400 + 60)) & (circle > (6400 - 60))).astype(np.uint8)
+        img[img == circle] = 255
+
         yield img
 
     def test_get_circles(self, image_circle):
         result = get_image_circles(image_circle, 80, search_radius = 50)
-        
-        assert len(result) == 9
+
+        assert len(result) == 1
         assert result[0] == ((102, 102), 80)
 
-    @pytest.mark.parametrize("radius, count, search_radius, expected", [
-        (80, 1, 10, ((102, 102), 80)),
-        (80, None, 20, ((102, 102), 80)),
-        (40, 4, 40, ((154, 150), 10)),
-        (80, 2, 20, ((102, 102), 80)),
-        (40, 4, 10, ((62, 62), 30)),
+    @pytest.mark.parametrize(
+        "radius, count, search_radius, expected",
+        [
+            (80, 1, 10, ((102, 102), 80)),
+            (80, None, 20, ((102, 102), 80)),
+            (40, 4, 40, ((50, 46), 10)),
+            (80, 1, 20, ((102, 102), 80)),
+            (40, 4, 10, ((62, 62), 30))
         ])
     def test_get_circles_with_params(self, image_circle, radius, count, search_radius, expected):
         result = get_image_circles(
@@ -180,9 +189,10 @@ class TestGetImageCircles():
             circle_count = count,
             search_radius = search_radius
             )
-            
-        if count == None and expected == ((102, 102), 80):
-            count = 4
+
+        if count is None and expected == ((102, 102), 80):
+            count = 1
+
         assert len(result) == count
         assert result[0] == expected
 
@@ -205,8 +215,8 @@ class TestRemoveBackgroundMask():
         yield image_mask
 
     def test_remove_background(self, image_segmented_local, image_mask):
-        image_ref = np.array(
-            [[0, 0, 0, 0, 0, 0, 0, 0, 0],
+        image_ref = np.array([
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
             [0, 0, 0, 0, 1, 0, 0, 0, 0],
             [0, 0, 0, 1, 0, 1, 0, 0, 0],
             [0, 0, 0, 1, 1, 1, 1, 0, 0],
@@ -214,7 +224,7 @@ class TestRemoveBackgroundMask():
             [0, 0, 0, 0, 0, 0, 0, 0, 0],
             [0, 0, 0, 0, 0, 0, 0, 0, 0],
             [0, 0, 0, 0, 0, 0, 0, 0, 0]])
-        
+
         result = remove_background_mask(image_segmented_local, image_mask)
 
         assert result.shape == image_segmented_local.shape
@@ -228,7 +238,7 @@ class TestRemoveBackgroundMask():
                 )
 
     def test_image_blank(self):
-        image_blank = np.zeros((3,3))
+        image_blank = np.zeros((3, 3))
         result = remove_background_mask(image_blank, image_blank > 0)
         assert (result == image_blank).all()
 

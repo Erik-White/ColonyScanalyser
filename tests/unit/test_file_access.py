@@ -2,16 +2,17 @@ import pytest
 import tempfile
 from pathlib import Path
 
-from colonyscanalyser.file_access import (file_exists,
-                                get_files_by_type,
-                                create_subdirectory,
-                                move_to_subdirectory,
-                                CompressionMethod,
-                                file_compression,
-                                load_file,
-                                save_file,
-                                save_to_csv
-                                )
+from colonyscanalyser.file_access import (
+    file_exists,
+    get_files_by_type,
+    create_subdirectory,
+    move_to_subdirectory,
+    CompressionMethod,
+    file_compression,
+    load_file,
+    save_file,
+    save_to_csv
+    )
 
 FILE_NON_EXISTANT = Path("")
 SUB_DIR = Path("test_subdir")
@@ -23,13 +24,13 @@ def create_temp_file(dir, extension = None):
 
 class TestFileExists():
     def test_file_exists(self):
-        assert file_exists(Path(__file__)) == True
-    
+        assert file_exists(Path(__file__)) is True
+
     def test_file_does_not_exist(self):
-        assert file_exists(FILE_NON_EXISTANT) == False
+        assert file_exists(FILE_NON_EXISTANT) is False
 
     def test_file_string(self):
-        assert file_exists("") == False
+        assert file_exists("") is False
 
 
 class TestGetFilesByType():
@@ -58,7 +59,7 @@ class TestGetFilesByType():
 
     def test_file_string(self):
         result = get_files_by_type("")
-        assert all(result) == True
+        assert all(result) is True
 
 
 class TestCreateSubdirectory():
@@ -130,7 +131,7 @@ class TestFileCompression():
         yield request.param
 
     def test_return_file_none(self):
-        assert file_compression(FILE_NON_EXISTANT, "") == None
+        assert file_compression(FILE_NON_EXISTANT, "") is None
 
     def test_compression_readable(self, tmp_path, file_access_modes):
         for method in CompressionMethod:
@@ -148,14 +149,15 @@ class TestLoadFile():
         return [0, 1, 2, 3, 4]
 
     def test_return_none(self):
-        assert load_file(FILE_NON_EXISTANT, CompressionMethod.NONE) == None
+        assert load_file(FILE_NON_EXISTANT, CompressionMethod.NONE) is None
 
     def test_return_file(self, tmp_path, data):
         for method in CompressionMethod:
-            with save_file(tmp_path.joinpath(method.name).with_suffix(method.value),
-                            data,
-                            method
-                            ) as temp_file:
+            with save_file(
+                    tmp_path.joinpath(method.name).with_suffix(method.value),
+                    data,
+                    method
+                    ) as temp_file:
                 assert load_file(temp_file, method) is not None
 
 
@@ -166,10 +168,11 @@ class TestSaveFile():
 
     def test_save_compressed(self, tmp_path, data):
         for method in CompressionMethod:
-            with save_file(tmp_path.joinpath(method.name).with_suffix(method.value),
-                            data,
-                            method
-                            ) as temp_file:
+            with save_file(
+                    tmp_path.joinpath(method.name).with_suffix(method.value),
+                    data,
+                    method
+                    ) as temp_file:
                 assert file_exists(temp_file) is True
 
 
@@ -195,7 +198,7 @@ class TestSaveToCSV():
         result = save_to_csv(data_list, headers, tmp_path.joinpath("csv_list"))
         # Add headers to data
         data_list.insert(0, headers)
-        
+
         # Check all rows were written correctly
         with open(result, 'r') as csvfile:
             reader = csv.reader(csvfile)
@@ -204,10 +207,10 @@ class TestSaveToCSV():
 
     def test_dict(self, tmp_path, headers, data_dict):
         import csv
-        
+
         result = save_to_csv(data_dict, headers, tmp_path.joinpath("csv_dict"))
         result_dict = dict.fromkeys(headers)
-        
+
         with open(result, 'r') as csvfile:
             reader = csv.DictReader(csvfile)
             for row in reader:
@@ -222,7 +225,7 @@ class TestSaveToCSV():
         result = save_to_csv(data_dict.values(), headers, tmp_path.joinpath("csv_dict_view"))
         # Add headers to data
         data_list.insert(0, headers)
-        
+
         # Check all rows were written correctly
         with open(result, 'r') as csvfile:
             reader = csv.reader(csvfile)
@@ -231,12 +234,12 @@ class TestSaveToCSV():
 
     def test_iterable_unpack(self, tmp_path, headers, data_list):
         import csv
-        
+
         # Create a generic object that will require unpacking
         class TestIterator:
             def __init__(self, prop):
                 self.prop = prop
-            
+
             def __iter__(self):
                 return iter([
                     self.prop
@@ -248,7 +251,7 @@ class TestSaveToCSV():
 
         result = save_to_csv(data_iters, headers, tmp_path.joinpath("csv_unpack"))
         data_iters.insert(0, TestIterator(headers))
-        
+
         # Check all rows were written correctly
         with open(result, 'r') as csvfile:
             reader = csv.reader(csvfile)
