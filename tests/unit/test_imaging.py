@@ -159,10 +159,12 @@ class TestCutImageCircle():
 class TestGetImageCircles():
     @pytest.fixture
     def image_circle(self, request):
-        # Create a 200x200 array with a donut around the centre
+        # Create a 200x200 array with a donut shaped circle around the centre
         xx, yy = np.mgrid[:200, :200]
         circle = (xx - 100) ** 2 + (yy - 100) ** 2
-        img = (circle < (6400 + 60)) & (circle > (6400 - 60))
+        img = ((circle < (6400 + 60)) & (circle > (6400 - 60))).astype(np.uint8)
+        img[img == circle] = 255
+
         yield img
 
     def test_get_circles(self, image_circle):
@@ -190,6 +192,7 @@ class TestGetImageCircles():
 
         if count is None and expected == ((102, 102), 80):
             count = 1
+
         assert len(result) == count
         assert result[0] == expected
 
