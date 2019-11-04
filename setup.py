@@ -15,7 +15,7 @@ def read(*names, **kwargs):
 setup(
     python_requires = ">=3.7, <3.8",
     name = "colonyscanalyser",
-    version = "0.2.2",
+    version = "0.3.0",
     description = "An image analysis tool for measuring microorganism colony growth",
     long_description = "%s\n%s" % (
         re.compile("^.. start-badges.*^.. end-badges", re.M | re.S).sub("", read("README.md")),
