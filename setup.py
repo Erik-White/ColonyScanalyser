@@ -36,7 +36,7 @@ setup(
     ],
     extras_require = {
         "dev": [
-            "check-manifest"
+            "check-manifest",
             "pytest",
             "pytest-cov"
         ],
