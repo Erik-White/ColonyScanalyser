@@ -1,19 +1,33 @@
+import io
+import re
+from pathlib import Path
 from setuptools import setup, find_packages
 
-with open("README.md", 'r') as f:
-    long_description = f.read()
+
+def read(*names, **kwargs):
+    with io.open(
+        Path.joinpath(Path(__file__).parent, *names),
+        encoding = kwargs.get("encoding", "utf8")
+    ) as fh:
+        return fh.read()
+
 
 setup(
-    python_requires = ">3.7",
+    python_requires = ">=3.7, <3.8",
     name = "colonyscanalyser",
     version = "0.2.2",
     description = "An image analysis tool for measuring microorganism colony growth",
-    long_description = long_description,
+    long_description = "%s\n%s" % (
+        re.compile("^.. start-badges.*^.. end-badges", re.M | re.S).sub("", read("README.md")),
+        re.sub(":[a-z]+:`~?(.*?)`", r"``\1``", read("CHANGELOG.md"))
+    ),
+    long_description_content_type = "text/markdown",
     url = "https://github.com/Erik-White/ColonyScanalyser/",
     author = "Erik White",
     author_email = "",
     license = "GPL-3.0",
-    packages = find_packages(),
+    packages = find_packages(where = "src", exclude = ["tests", "tests.*"]),
+    package_dir = {"": "src"},
     zip_safe = False,
     install_requires = [
         "numpy",
@@ -33,8 +47,8 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'colonyscanalyser = colonyscanalyser.colonyscanalyser:main',
-            'scanalyser = colonyscanalyser.colonyscanalyser:main',
+            'colonyscanalyser = colonyscanalyser.main:main',
+            'scanalyser = colonyscanalyser.main:main',
         ],
     },
 )
