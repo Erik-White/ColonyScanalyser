@@ -1,7 +1,7 @@
 import io
 import re
 from pathlib import Path
-from setuptools import setup, find_packages
+from setuptools import setup, find_namespace_packages
 
 
 def read(*names, **kwargs):
@@ -15,7 +15,7 @@ def read(*names, **kwargs):
 setup(
     python_requires = ">=3.7, <3.8",
     name = "colonyscanalyser",
-    version = "0.3.0",
+    version = "0.3.1",
     description = "An image analysis tool for measuring microorganism colony growth",
     long_description = "%s\n%s" % (
         re.compile("^.. start-badges.*^.. end-badges", re.M | re.S).sub("", read("README.md")),
@@ -26,7 +26,7 @@ setup(
     author = "Erik White",
     author_email = "",
     license = "GPL-3.0",
-    packages = find_packages(where = "src", exclude = ["tests", "tests.*"]),
+    packages = find_namespace_packages(where = "src", exclude = ["tests", "tests.*"]),
     package_dir = {"": "src"},
     zip_safe = False,
     install_requires = [

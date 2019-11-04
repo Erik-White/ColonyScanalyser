@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Full unit test coverage
 - Type annotations on all functions
 
+## [0.3.1] - 2019-11-04
+### Fixed
+- Adjust setup to correctly find packages in implicit namespaces
+
 ## [0.3.0] - 2019-11-04
 ### Added
 - Added changelog
