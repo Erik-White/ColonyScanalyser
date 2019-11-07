@@ -1,4 +1,3 @@
--e git+https://github.com/Erik-White/ColonyScanalyser.git@5c65ee30d66d9a70a9894d1755d9a8551243d964#egg=colonyscanalyser
 astroid==2.2.5
 atomicwrites==1.3.0
 attrs==19.1.0
