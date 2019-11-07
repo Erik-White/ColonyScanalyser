@@ -66,7 +66,7 @@ class Colony:
     def timepoints(self, val):
         if isinstance(val, dict):
             self.__timepoints = val
-        elif isinstance(val, Iterable):
+        elif isinstance(val, Iterable) and not isinstance(val, str):
             self.__timepoints = {timepoint.date_time: timepoint for timepoint in val}
         else:
             raise ValueError("Timepoints must be supplied as a Dict or other iterable")

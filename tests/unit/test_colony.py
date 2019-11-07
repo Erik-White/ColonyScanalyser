@@ -20,7 +20,6 @@ centers = [
     (3, 10),
     (0, 4.4)
     ]
-distances = [0, 0.5, 1, 2, 3]
 
 
 @pytest.fixture(params = [centers])
@@ -34,14 +33,14 @@ def timepoints(request):
             elapsed_minutes = i,
             area = i,
             center = center,
-            diameter = i,
-            perimeter = i
+            diameter = i * 1.0,
+            perimeter = i * 1.0
         ))
 
     yield timepoints
 
 
-@pytest.fixture(params = [distances])
+@pytest.fixture(params = [[0, 0.5, 1, 2, 3]])
 def distance(request):
     yield request.param
 
@@ -68,7 +67,7 @@ class TestTimepointsFromImage():
 
 class TestColony():
     @pytest.fixture
-    def timepoints(self, request, timepoints):
+    def timepoints_iter(self, request, timepoints):
         if request.param == list:
             yield timepoints
         elif request.param == dict:
@@ -76,102 +75,174 @@ class TestColony():
         else:
             yield request.param
 
-    @pytest.mark.parametrize("timepoints", [list, dict, int], indirect = True)
-    def test_init(self, timepoints):
-        if isinstance(timepoints, list) or isinstance(timepoints, dict):
-            colony = Colony(1, timepoints)
+    @pytest.fixture
+    def colony(self, timepoints):
+        yield Colony(1, timepoints)
+
+    @pytest.fixture
+    def timepoint_empty(self):
+        yield Colony.Timepoint(datetime.now(), 0, 0, (0, 0), 0, 0)
+
+    class TestInitialize():
+        @pytest.mark.parametrize("timepoints_iter", [list, dict], indirect = True)
+        def test_init(self, timepoints_iter):
+            colony = Colony(1, timepoints_iter)
 
             assert isinstance(colony.timepoints, dict)
+            assert len(colony.timepoints) == len(timepoints_iter)
+
+        @pytest.mark.parametrize("timepoints_iter", [int, str], indirect = True)
+        def test_iterable(self, timepoints_iter):
+            with pytest.raises(ValueError):
+                Colony(1, timepoints_iter)
+
+        def test_empty(self):
+            colony = Colony(1)
+
+            assert colony.id == 1
+            with pytest.raises(ValueError):
+                colony.timepoints
+
+    class TestProperties():
+        @pytest.mark.parametrize("timepoints_iter", [list, None], indirect = True)
+        @pytest.mark.parametrize("id", [-1, 0, 2, 3.4, 1000000, "1"])
+        def test_id(self, timepoints_iter, id):
+            colony = Colony(id, timepoints_iter)
+
+            assert colony.id == id
+
+        def test_iterable(self, colony):
+            assert len([*colony.__iter__()]) == 16
+
+        def test_timepoints(self, timepoints, colony):
             assert len(colony.timepoints) == len(timepoints)
-        else:
+            assert colony.timepoint_first == timepoints[0]
+            assert colony.timepoint_last == timepoints[-1]
+
+        def test_center(self, timepoints):
+            from statistics import mean
+
+            colony = Colony(id, timepoints)
+
+            for i, coord in enumerate(colony.center):
+                assert round(coord, 4) == round(mean([t.center[i] for t in timepoints]), 4)
+
+        def test_growth_rate(self, timepoints, timepoint_empty):
+            colony = Colony(1, timepoints)
+            colony_empty = Colony(1, [timepoint_empty])
+
+            assert colony.growth_rate == len(timepoints) - 1
+            assert colony_empty.growth_rate == 0
+
+        def test_growth_rate_average(self, timepoints, timepoint_empty):
+            colony = Colony(id, timepoints)
+            colony_empty = Colony(1, [timepoint_empty])
+
+            assert colony.growth_rate_average == ((timepoints[-1].area - timepoints[0].area) ** (1 / len(timepoints))) - 1
+            assert colony_empty.growth_rate_average == 0
+
+    class TestTimepoint():
+        def test_iterable(self, timepoints):
+            from dataclasses import fields
+
+            assert len([*timepoints[0].__iter__()]) == 6
+            for value, field in zip([*timepoints[0].__iter__()], fields(Colony.Timepoint)):
+                assert isinstance(value, field.type)
+
+    class TestMethods():
+        def test_get_timepoint(self, timepoints):
+            colony = Colony(1, timepoints)
+
+            # Get timepoint
+            assert colony.get_timepoint(timepoints[0].date_time) == timepoints[0]
             with pytest.raises(ValueError):
-                Colony(1, timepoints)
+                colony.get_timepoint(None)
 
-    @pytest.mark.parametrize("timepoints", [list], indirect = True)
-    def test_properties(self, timepoints):
-        from statistics import mean
+        def test_append_timepoint(self, timepoints, timepoint_empty):
+            colony = Colony(1, timepoints)
+            colony.append_timepoint(timepoint_empty)
 
-        colony = Colony(1, timepoints)
-
-        assert colony.id == 1
-        assert [*colony.timepoint_first.__iter__()] == [*timepoints[0]]
-        assert len([*colony.__iter__()]) == 16
-        assert len(colony.timepoints) == len(timepoints)
-        assert colony.timepoint_first == timepoints[0]
-        assert colony.timepoint_last == timepoints[-1]
-        for i, coord in enumerate(colony.center):
-            assert round(coord, 4) == round(mean([t.center[i] for t in timepoints]), 4)
-        assert colony.growth_rate == len(timepoints) - 1
-
-    @pytest.mark.parametrize("timepoints", [list], indirect = True)
-    def test_timepoint_methods(self, timepoints):
-        colony = Colony(1, timepoints)
-
-        # Get timepoint
-        assert colony.get_timepoint(timepoints[0].date_time) == timepoints[0]
-        with pytest.raises(ValueError):
-            colony.get_timepoint(None)
-        # Append timepoint
-        timepoint = Colony.Timepoint(datetime.now(), 0, 0, (0, 0), 0, 0)
-        colony.append_timepoint(timepoint)
-        assert timepoint.date_time in colony.timepoints
-        with pytest.raises(ValueError):
-            colony.append_timepoint(timepoints[0])
-        # Update timepoint
-        colony.update_timepoint(timepoints[0], timepoint)
-        assert colony.timepoint_first == timepoint
-        # Remove timepoint
-        colony.remove_timepoint(timepoint.date_time)
-        assert timepoint.date_time not in colony.timepoints
-
-    @pytest.mark.parametrize("timepoints", [list], indirect = True)
-    @pytest.mark.parametrize("timepoint_index, expected", [(0, 12.57), (-1, 1.4)])
-    def test_circularity(self, timepoints, timepoint_index, expected):
-        colony = Colony(1, timepoints)
-        circularity = colony.circularity_at_timepoint(timepoints[timepoint_index].date_time)
-
-        assert round(circularity, 2) == expected
-
-    @pytest.mark.parametrize("timepoints", [list, None], indirect = True)
-    @pytest.mark.parametrize(
-        "window, elapsed_minutes, expected, expected_avg",
-        [
-            (1, True, 5.88, 3.45),
-            (3, True, 5.13, 3.34),
-            (5, False, timedelta(seconds = 4, microseconds = 273778), timedelta(seconds = 3, microseconds = 126998))
-        ])
-    def test_doubling_time(self, timepoints, window, elapsed_minutes, expected, expected_avg):
-        colony = Colony(1, timepoints)
-
-        if timepoints is not None:
-            doubling_times = colony.get_doubling_times(window = window, elapsed_minutes = elapsed_minutes)
-            doubling_time_average = colony.get_doubling_time_average(window = window, elapsed_minutes = elapsed_minutes)
-
-            if elapsed_minutes:
-                doubling_times = [round(t, 2) for t in doubling_times]
-                doubling_time_average = round(doubling_time_average, 2)
-
-            assert max(doubling_times) == expected
-            assert doubling_time_average == expected_avg
-
-        else:
+            assert timepoint_empty.date_time in colony.timepoints
             with pytest.raises(ValueError):
-                colony.get_doubling_times(window = window, elapsed_minutes = elapsed_minutes)
+                colony.append_timepoint(timepoints[0])
 
-    def test_zero_division(self):
-        colony = Colony(1, [Colony.Timepoint(datetime.now(), 0, 0, (0, 0), 0, 0)])
+        def test_update_timepoint(self, timepoints, timepoint_empty):
+            colony = Colony(1, timepoints)
 
-        assert colony.growth_rate == 0
-        assert colony.growth_rate_average == 0
-        assert colony.get_doubling_times() == list()
-        assert colony.get_doubling_time_average() == 0
-        assert colony._Colony__local_doubling_time(0, [0], [0], window = 0) == 0
+            colony.update_timepoint(timepoints[0], timepoint_empty)
+            assert colony.timepoint_first == timepoint_empty
 
-    def test_empty(self):
-        colony = Colony(1)
+        def test_remove_timepoint(self, timepoints,):
+            colony = Colony(1, timepoints)
+            colony.remove_timepoint(timepoints[0].date_time)
 
-        with pytest.raises(ValueError):
-            colony.timepoints
+            assert timepoints[0].date_time not in colony.timepoints
+
+        @pytest.mark.parametrize("timepoint_index, expected", [(0, 12.57), (-1, 1.4)])
+        def test_circularity(self, timepoints, timepoint_index, expected):
+            colony = Colony(1, timepoints)
+            circularity = colony.circularity_at_timepoint(timepoints[timepoint_index].date_time)
+
+            assert round(circularity, 2) == expected
+
+        @pytest.mark.parametrize("timepoints_iter", [list, None], indirect = True)
+        @pytest.mark.parametrize("elapsed_minutes", [True, False])
+        @pytest.mark.parametrize(
+            "window, expected, expected_minutes",
+            [
+                (1, timedelta(seconds = 5, microseconds = 884948), 5.88),
+                (3, timedelta(seconds = 5, microseconds = 128535), 5.13),
+                (5, timedelta(seconds = 4, microseconds = 273778), 4.27)
+            ])
+        def test_doubling_time(self, timepoints_iter, timepoint_empty, window, elapsed_minutes, expected, expected_minutes):
+            colony = Colony(1, timepoints_iter)
+            colony_empty = Colony(1, [timepoint_empty])
+
+            if timepoints_iter is not None:
+                doubling_times = colony.get_doubling_times(window = window, elapsed_minutes = elapsed_minutes)
+
+                if elapsed_minutes:
+                    doubling_times = [round(t, 2) for t in doubling_times]
+                    expected = expected_minutes
+
+                assert max(doubling_times) == expected
+                assert colony_empty.get_doubling_times() == list()
+
+            else:
+                with pytest.raises(ValueError):
+                    colony.get_doubling_times(window = window, elapsed_minutes = elapsed_minutes)
+
+        @pytest.mark.parametrize("timepoints_iter", [list, None], indirect = True)
+        @pytest.mark.parametrize("elapsed_minutes", [True, False])
+        @pytest.mark.parametrize(
+            "window, expected, expected_minutes",
+            [
+                (1, timedelta(seconds = 3, microseconds = 449924), 3.45),
+                (3, timedelta(seconds = 3, microseconds = 339683), 3.34),
+                (5, timedelta(seconds = 3, microseconds = 126998), 3.13)
+            ])
+        def test_doubling_time_average(self, timepoints_iter, timepoint_empty, window, elapsed_minutes, expected, expected_minutes):
+            colony = Colony(1, timepoints_iter)
+            colony_empty = Colony(1, [timepoint_empty])
+
+            if timepoints_iter is not None:
+                doubling_time_average = colony.get_doubling_time_average(window = window, elapsed_minutes = elapsed_minutes)
+
+                if elapsed_minutes:
+                    doubling_time_average = round(doubling_time_average, 2)
+                    expected = expected_minutes
+
+                assert doubling_time_average == expected
+                assert colony_empty.get_doubling_time_average() == 0
+
+            else:
+                with pytest.raises(ValueError):
+                    colony.get_doubling_time_average(window = window, elapsed_minutes = elapsed_minutes)
+
+        def test_local_doubling_time(self, timepoint_empty):
+            colony = Colony(1, [timepoint_empty])
+
+            assert colony._Colony__local_doubling_time(0, [0], [0], window = 0) == 0
 
 
 class TestColoniesFromTimepoints():
