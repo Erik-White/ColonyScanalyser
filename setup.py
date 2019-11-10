@@ -36,11 +36,13 @@ setup(
     ],
     extras_require = {
         "dev": [
+            "flake8",
             "check-manifest",
             "pytest",
             "pytest-cov"
         ],
         "test": [
+            "flake8",
             "pytest",
             "pytest-cov"
         ],

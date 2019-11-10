@@ -1,0 +1,4 @@
+[flake8]
+extend-ignore = E251,W292
+max-line-length = 127
+max-complexity = 10
