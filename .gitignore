@@ -16,6 +16,7 @@ __pycache__/
 
 # Distribution / packaging
 .Python
+site/
 build/
 develop-eggs/
 dist/

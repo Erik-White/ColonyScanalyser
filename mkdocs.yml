@@ -1,0 +1,13 @@
+site_name: ColonyScanalyser
+repo_url: https://github.com/Erik-White/ColonyScanalyser/
+site_description: Documentation for ColonyScanalyser - An image analysis tool for measuring microorganism colony growth
+nav:
+    - Home: index.md
+    - User guide:
+        - "Quick Start Guide": "quick_start.md"
+        - "Command Line Arguments": "command_line_arguments.md"
+        - "Image Specifications": "image_specifications.md"
+    - About:
+        - "Contributing": "CONTRIBUTING.md"
+        - "Release Notes": "CHANGELOG.md"
+        - "License": "LICENSE.md"
