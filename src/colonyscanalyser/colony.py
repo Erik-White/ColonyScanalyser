@@ -1,6 +1,7 @@
-﻿import datetime
+﻿from datetime import datetime, timedelta
 from math import pi, log
 from dataclasses import dataclass
+from collections.abc import Iterable
 from .utilities import round_tuple_floats
 
 
@@ -10,7 +11,7 @@ class Colony:
     """
     @dataclass
     class Timepoint:
-        date_time: datetime.datetime
+        date_time: datetime
         elapsed_minutes: int
         area: int
         center: tuple
@@ -63,7 +64,12 @@ class Colony:
 
     @timepoints.setter
     def timepoints(self, val):
-        self.__timepoints = val
+        if isinstance(val, dict):
+            self.__timepoints = val
+        elif isinstance(val, Iterable) and not isinstance(val, str):
+            self.__timepoints = {timepoint.date_time: timepoint for timepoint in val}
+        else:
+            raise ValueError("Timepoints must be supplied as a Dict or other iterable")
 
     @property
     def timepoint_first(self):
@@ -74,21 +80,20 @@ class Colony:
         return self.get_timepoint(max(self.timepoints.keys()))
 
     @property
-    def areas(self):
-        return [value.area for key, value in self.timepoints.items()]
-
-    @property
     def center(self):
         centers = [x.center for x in self.timepoints.values()]
         return tuple(sum(x) / len(self.timepoints) for x in zip(*centers))
 
     @property
     def growth_rate(self):
-        return (self.timepoint_last.area - self.timepoint_first.area) / self.timepoint_first.area
+        try:
+            return (self.timepoint_last.area - self.timepoint_first.area) / self.timepoint_first.area
+        except ZeroDivisionError:
+            return 0
 
     @property
     def growth_rate_average(self):
-        if (self.timepoint_last.area - self.timepoint_first.area) / self.timepoint_first.area <= 0:
+        if self.growth_rate == 0:
             return 0
         else:
             return ((self.timepoint_last.area - self.timepoint_first.area) ** (1 / len(self.timepoints))) - 1
@@ -97,51 +102,55 @@ class Colony:
     def time_of_appearance(self):
         return self.timepoint_first.date_time
 
-    def get_timepoint(self, time_point):
-        if time_point in self.__timepoints:
-            return self.timepoints[time_point]
+    def get_timepoint(self, date_time):
+        if date_time in self.__timepoints:
+            return self.timepoints[date_time]
         else:
-            raise ValueError(f"The requested time point ({time_point}) does not exist")
+            raise ValueError(f"The requested time point ({date_time}) does not exist")
 
-    def append_timepoint(self, time_point, timepointdata):
-        if time_point not in self.__timepoints:
-            self.__timepoints[time_point] = timepointdata
+    def append_timepoint(self, timepoint):
+        if timepoint.date_time not in self.__timepoints:
+            self.__timepoints[timepoint.date_time] = timepoint
         else:
-            raise ValueError(f"This time point ({time_point})  already exists")
+            raise ValueError(f"This time point ({timepoint.date_time})  already exists")
 
-    def update_timepoint(self, time_point, timepointdata):
-        self.timepoints[time_point] = timepointdata
+    def update_timepoint(self, timepoint_original, timepoint_new):
+        self.timepoints[timepoint_original.date_time] = timepoint_new
+
+    def remove_timepoint(self, date_time):
+        del self.timepoints[date_time]
+
+    def circularity_at_timepoint(self, date_time):
+        return self.__circularity(self.get_timepoint(date_time).area, self.get_timepoint(date_time).perimeter)
 
     def get_doubling_times(self, window = 10, elapsed_minutes = False):
+        timepoint_count = len(self.timepoints)
+        if timepoint_count <= 1:
+            return list()
+
+        if window > timepoint_count:
+            window = timepoint_count - 1
+
         if elapsed_minutes:
             x_pts = [value.elapsed_minutes for key, value in self.timepoints.items()]
         else:
             x_pts = [value.date_time for key, value in self.timepoints.items()]
         y_pts = [value.area for key, value in self.timepoints.items()]
 
-        if not len(x_pts) > 0 or not len(y_pts) > 0:
-            return []
-
         return [self.__local_doubling_time(i, x_pts, y_pts, window) for i in range(len(x_pts) - window)]
 
     def get_doubling_time_average(self, window = 10, elapsed_minutes = False):
         doubling_times = self.get_doubling_times(window, elapsed_minutes)
+
         if not len(doubling_times) > 0:
             return 0
 
-        return sum(doubling_times) / len(doubling_times)
+        if elapsed_minutes:
+            time_sum = sum(doubling_times)
+        else:
+            time_sum = sum(doubling_times, timedelta())
 
-    def remove_timepoint(self, time_point):
-        del self.timepoints[time_point]
-
-    def area_at_timepoint(self, time_point):
-        return self.get_timepoint(time_point).area
-
-    def center_at_timepoint(self, time_point):
-        return self.get_timepoint(time_point).center
-
-    def circularity_at_timepoint(self, time_point):
-        return self.__circularity(self.get_timepoint(time_point).area, self.get_timepoint(time_point).perimiter)
+        return time_sum / len(doubling_times)
 
     def __circularity(self, area, perimeter):
         return (4 * pi * area) / (perimeter * perimeter)
@@ -201,7 +210,7 @@ def colonies_from_timepoints(timepoints, distance_tolerance = 1):
     colonies = list()
 
     # First group by row values
-    center_groups = group_timepoints_by_center_dict(
+    center_groups = group_timepoints_by_center(
         timepoints,
         max_distance = distance_tolerance,
         axis = 0
@@ -209,7 +218,7 @@ def colonies_from_timepoints(timepoints, distance_tolerance = 1):
 
     # Then split the groups further by column values
     for timepoint_group in center_groups:
-        group = group_timepoints_by_center_dict(
+        group = group_timepoints_by_center(
             timepoint_group,
             max_distance = distance_tolerance,
             axis = 1
@@ -226,7 +235,7 @@ def colonies_from_timepoints(timepoints, distance_tolerance = 1):
     return colonies
 
 
-def group_timepoints_by_center_dict(timepoints, max_distance = 1, axis = 0):
+def group_timepoints_by_center(timepoints, max_distance = 1, axis = 0):
     """
     Split a list of Timepoint objects into sub groups
     Compares difference in values along a specified axis
@@ -237,6 +246,11 @@ def group_timepoints_by_center_dict(timepoints, max_distance = 1, axis = 0):
     :returns: a list of lists of Colony objects containing Timepoint objects
     """
     from collections import defaultdict
+
+    # Check that the specified axis exists
+    axes = range(len(timepoints[0].center))
+    if type(axis) is not int or axis < 0 or axis > max(axes):
+        raise ValueError(f"The specified axis ({axis}) is not available. Available axes: {[*axes]}")
 
     center_groups = defaultdict(list)
     group_count = 0
