@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Full unit test coverage
 - Type annotations on all functions
 
+## [0.3.2] - 2019-11-11
+- Added documentation
+- Published documentation to GitHub pages (https://erik-white.github.io/ColonyScanalyser/)
+- Add unit tests for the colony module
+
 ## [0.3.1] - 2019-11-04
 ### Fixed
 - Adjust setup to correctly find packages in implicit namespaces
