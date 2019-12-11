@@ -99,10 +99,6 @@ class Colony:
         return rgb_to_name(self.color, color_spec = "css3")
 
     @property
-    def color_distance(self):
-        return color_distance(self.color)
-
-    @property
     def growth_rate(self):
         try:
             return (self.timepoint_last.area - self.timepoint_first.area) / self.timepoint_first.area
