@@ -17,6 +17,44 @@ def mm_to_pixels(millimeters, dots_per_inch = 300, pixels_per_mm = None):
     return int(millimeters * factor)
 
 
+def rgb_to_name(color_rgb, color_spec = "css3"):
+    """
+    Convert an RGB tuple to the closest named web colour
+
+    For a full list of colours, see: https://www.w3.org/TR/css-color-3/
+
+    :param color_rgb: a red, green, blue colour value tuple
+    :param color_spec: a color spec from the webcolors module
+    :returns: a named colour string
+    """
+    from webcolors import hex_to_rgb
+
+    # Default to CSS3 color spec if none specified
+    color_spec = str.lower(color_spec)
+    if color_spec == "html4":
+        from webcolors import html4_hex_to_names
+        color_dict = html4_hex_to_names
+    elif color_spec == "css2":
+        from webcolors import css2_hex_to_names
+        color_dict = css2_hex_to_names
+    elif color_spec == "css21":
+        from webcolors import css21_hex_to_names
+        color_dict = css21_hex_to_names
+    else:
+        from webcolors import css3_hex_to_names
+        color_dict = css3_hex_to_names
+
+    min_colours = {}
+    for key, name in color_dict.items():
+        r_c, g_c, b_c = hex_to_rgb(key)
+        rd = (r_c - color_rgb[0]) ** 2
+        gd = (g_c - color_rgb[1]) ** 2
+        bd = (b_c - color_rgb[2]) ** 2
+        min_colours[(rd + gd + bd)] = name
+
+    return min_colours[min(min_colours.keys())]
+
+
 def crop_image(image, crop_shape, center = None):
     """
     Get a subsection of an image
@@ -32,7 +70,7 @@ def crop_image(image, crop_shape, center = None):
 
     img = image.copy()
 
-    if any(x < 0 for x in crop_shape) or len(image.shape) < len(crop_shape):
+    if any(x < 0 for x in crop_shape) or any(not isinstance(x, int) for x in crop_shape) or len(image.shape) < len(crop_shape):
         raise ValueError(
             f"The crop shape ({crop_shape}) must be positive integers and the same dimensions as the image to crop"
             )
@@ -76,13 +114,13 @@ def cut_image_circle(image, center = None, radius = None, inverse = False):
     if radius is None:
         radius = image.shape[0] // 2
     else:
-        if any(radius * 2 > x for x in img.shape):
+        if any(radius * 2 > x for x in img.shape[:2]):
             raise ValueError("The circle radius cannot be larger than the supplied image")
-        # Crop the image around the center point (if provided)
-        crop_area = (radius * 2) + 1
+        # Crop the image around the center point
+        crop_area = (int(radius) * 2) + 1
         img = crop_image(img, (crop_area, crop_area), center)
 
-    (cy, cx) = map(lambda x: x // 2, img.shape)
+    (cy, cx) = map(lambda x: x // 2, img.shape[:2])
 
     # Calculate distances from center
     dist_x = np.vstack([(np.arange(img.shape[1]) - cx)] * (img.shape[0]))
