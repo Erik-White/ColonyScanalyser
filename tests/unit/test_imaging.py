@@ -3,6 +3,7 @@ import numpy as np
 
 from colonyscanalyser.imaging import (
     mm_to_pixels,
+    rgb_to_name,
     crop_image,
     cut_image_circle,
     get_image_circles,
@@ -109,6 +110,24 @@ class TestMMToPixels():
     def test_arg_invalid(self, arg_invalid):
         with pytest.raises(ValueError):
             mm_to_pixels(arg_invalid, arg_invalid, pixels_per_mm = arg_invalid)
+
+
+class TestRGBToName():
+    @pytest.fixture(params = ["html4", "css2", "css21", "css3"])
+    def color_spec(self, request):
+        yield request.param
+
+    @pytest.fixture(params = [(255, 255, 255), (240, 240, 240), (255, 230, 240), (230, 230, 230), (255, 230, 220)])
+    def colors(self, request):
+        yield request.param
+
+    def test_color_spec(self, color_spec):
+        result = rgb_to_name((0, 0, 0), color_spec)
+        assert result == "black"
+
+    def test_colors(self, colors):
+        result = rgb_to_name(colors, "css21")
+        assert result == "white"
 
 
 class TestCutImageCircle():
