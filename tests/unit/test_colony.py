@@ -34,7 +34,8 @@ def timepoints(request):
             area = i,
             center = center,
             diameter = i * 1.0,
-            perimeter = i * 1.0
+            perimeter = i * 1.0,
+            color_average = (0, 0, 0)
         ))
 
     yield timepoints
@@ -81,7 +82,7 @@ class TestColony():
 
     @pytest.fixture
     def timepoint_empty(self):
-        yield Colony.Timepoint(datetime.now(), 0, 0, (0, 0), 0, 0)
+        yield Colony.Timepoint(datetime.now(), 0, 0, (0, 0), 0, 0, (0, 0, 0))
 
     class TestInitialize():
         @pytest.mark.parametrize("timepoints_iter", [list, dict], indirect = True)
@@ -112,7 +113,7 @@ class TestColony():
             assert colony.id == id
 
         def test_iterable(self, colony):
-            assert len([*colony.__iter__()]) == 16
+            assert len([*colony.__iter__()]) == 18
 
         def test_timepoints(self, timepoints, colony):
             assert len(colony.timepoints) == len(timepoints)
@@ -145,7 +146,7 @@ class TestColony():
         def test_iterable(self, timepoints):
             from dataclasses import fields
 
-            assert len([*timepoints[0].__iter__()]) == 6
+            assert len([*timepoints[0].__iter__()]) == 7
             for value, field in zip([*timepoints[0].__iter__()], fields(Colony.Timepoint)):
                 assert isinstance(value, field.type)
 
