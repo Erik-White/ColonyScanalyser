@@ -210,8 +210,12 @@ def timepoints_from_image(image_segmented, time_point, elapsed_minutes, image = 
             radius = (rp.equivalent_diameter / 2) - ((rp.equivalent_diameter / 2) * 0.15)
             # Calculate the average colour values by column over the colony area
             mean_circle = cut_image_circle(image[rp.slice], radius - 1).mean(axis = 0)
-            # Filter out fringe values and removed alpha from return value
-            color_average = tuple(mean_circle[mean_circle[:, 3] > 200].mean(axis = 0)[:3])
+            # Filter out fringe values and remove alpha channel (if present)
+            if mean_circle.shape[1] > 3:
+                limit = 3
+            else:
+                limit = -1
+            color_average = tuple(mean_circle[mean_circle[:, limit] > 200].mean(axis = 0)[:limit])
 
         # Create a new time point object to store colony data
         timepoint_data = Colony.Timepoint(
