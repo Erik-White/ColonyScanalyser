@@ -137,7 +137,7 @@ def segment_image(plate_image, plate_mask, plate_noise_mask, area_min = 5):
     return colonies
 
 
-def image_file_to_timepoints_color(image_path, plate_coordinates, plate_images_mask, time_point, elapsed_minutes, plot_path = None):
+def image_file_to_timepoints(image_path, plate_coordinates, plate_images_mask, time_point, elapsed_minutes, plot_path = None):
     """
     Get Timepoint object data from a plate image
 
@@ -310,7 +310,7 @@ def main():
 
                 # Create processes
                 processes.append(pool.apply_async(
-                    image_file_to_timepoints_color,
+                    image_file_to_timepoints,
                     args = (image_file, plate_coordinates, plate_images_mask, time_points[i], time_points_elapsed[i]),
                     kwds = {"plot_path" : None},
                     callback = callback_function
