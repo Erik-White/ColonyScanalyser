@@ -8,10 +8,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Full unit test coverage
 - Type annotations on all functions
 
+## [0.3.3] - 2019-12-19
+### Added
+- Colony colour identification and grouping
+- Webcolors package and rgb_to_name function to provide CSS colour groupings
+### Fixed
+- crop_image will now correctly handle images without an alpha channel
+
 ## [0.3.2] - 2019-11-11
-- Added documentation
+### Added
+- Documentation
 - Published documentation to GitHub pages (https://erik-white.github.io/ColonyScanalyser/)
-- Add unit tests for the colony module
+- Unit tests for the colony module
 
 ## [0.3.1] - 2019-11-04
 ### Fixed
