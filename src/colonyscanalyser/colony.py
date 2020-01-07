@@ -207,7 +207,8 @@ def timepoints_from_image(image_segmented, time_point, elapsed_minutes, image = 
         color_average = (0, 0, 0)
         if image is not None:
             # Select an area of the colony slightly smaller than its full radius
-            radius = (rp.equivalent_diameter / 2) - ((rp.equivalent_diameter / 2) * 0.15)
+            # This avoids the edge halo of the image which may contain background pixels
+            radius = (rp.equivalent_diameter / 2) - ((rp.equivalent_diameter / 2) * 0.10)
             # Calculate the average colour values by column over the colony area
             mean_circle = cut_image_circle(image[rp.slice], radius - 1).mean(axis = 0)
             # Filter out fringe values and remove alpha channel (if present)
