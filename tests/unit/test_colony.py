@@ -34,7 +34,8 @@ def timepoints(request):
             area = i,
             center = center,
             diameter = i * 1.0,
-            perimeter = i * 1.0
+            perimeter = i * 1.0,
+            color_average = (0, 0, 0)
         ))
 
     yield timepoints
@@ -48,7 +49,7 @@ def distance(request):
 class TestTimepointsFromImage():
     from numpy import array
 
-    image = array([
+    @pytest.fixture(params = [array([
         [0, 0, 0, 0, 0, 0, 0, 1, 0],
         [2, 2, 0, 0, 1, 0, 0, 1, 0],
         [2, 2, 0, 1, 0, 1, 0, 0, 0],
@@ -56,13 +57,41 @@ class TestTimepointsFromImage():
         [0, 1, 1, 0, 1, 1, 1, 1, 0],
         [0, 1, 1, 1, 1, 0, 1, 0, 0],
         [0, 0, 1, 0, 1, 1, 1, 0, 3],
-        [0, 1, 0, 0, 0, 0, 0, 0, 0]])
-    centers_expected = [(3.9, 4.12), (1.5, 0.5), (6.0, 8.0)]
+        [0, 1, 0, 0, 0, 0, 0, 0, 0]])])
+    def image(self, request):
+        yield request.param
 
-    def test_image(self):
-        timepoints = timepoints_from_image(self.image, datetime.now(), 0)
+    @pytest.fixture(params = ["rgb", "rgba"])
+    def image_rgb(self, request, image):
+        from numpy import broadcast_to, newaxis
+
+        array_z = 4
+        if request.param == "rgb":
+            array_z = 3
+
+        image_rgb = image.copy()
+        # Reshape the array to 3 dimensions and fill with the existing values
+        image_rgb = broadcast_to(image_rgb[..., newaxis], (image_rgb.shape[0], image_rgb.shape[1], array_z))
+
+        yield image_rgb
+
+    @pytest.fixture(params = [(3.9, 4.12), (1.5, 0.5), (6.0, 8.0)])
+    def centers_expected(self, request):
+        yield request.param
+
+    def test_image_grayscale(self, image, centers_expected):
+        timepoints = timepoints_from_image(image, datetime.now(), 0)
         assert len(timepoints) == 3
-        assert [timepoint.center in self.centers_expected for timepoint in timepoints]
+        assert [timepoint.center in centers_expected for timepoint in timepoints]
+
+    def test_image_rgb(self, image, image_rgb, centers_expected):
+        timepoints = timepoints_from_image(image, datetime.now(), 0, image = image_rgb)
+        assert len(timepoints) == 3
+        assert [timepoint.center in centers_expected for timepoint in timepoints]
+
+    def test_image_shape(self, image):
+        with pytest.raises(ValueError):
+            timepoints_from_image(image, datetime.now(), 0, image[:1])
 
 
 class TestColony():
@@ -81,7 +110,7 @@ class TestColony():
 
     @pytest.fixture
     def timepoint_empty(self):
-        yield Colony.Timepoint(datetime.now(), 0, 0, (0, 0), 0, 0)
+        yield Colony.Timepoint(datetime.now(), 0, 0, (0, 0), 0, 0, (0, 0, 0))
 
     class TestInitialize():
         @pytest.mark.parametrize("timepoints_iter", [list, dict], indirect = True)
@@ -112,7 +141,7 @@ class TestColony():
             assert colony.id == id
 
         def test_iterable(self, colony):
-            assert len([*colony.__iter__()]) == 16
+            assert len([*colony.__iter__()]) == 18
 
         def test_timepoints(self, timepoints, colony):
             assert len(colony.timepoints) == len(timepoints)
@@ -145,7 +174,7 @@ class TestColony():
         def test_iterable(self, timepoints):
             from dataclasses import fields
 
-            assert len([*timepoints[0].__iter__()]) == 6
+            assert len([*timepoints[0].__iter__()]) == 7
             for value, field in zip([*timepoints[0].__iter__()], fields(Colony.Timepoint)):
                 assert isinstance(value, field.type)
 
@@ -221,7 +250,8 @@ class TestColony():
                 (3, timedelta(seconds = 3, microseconds = 339683), 3.34),
                 (5, timedelta(seconds = 3, microseconds = 126998), 3.13)
             ])
-        def test_doubling_time_average(self, timepoints_iter, timepoint_empty, window, elapsed_minutes, expected, expected_minutes):
+        def test_doubling_time_average(
+                self, timepoints_iter, timepoint_empty, window, elapsed_minutes, expected, expected_minutes):
             colony = Colony(1, timepoints_iter)
             colony_empty = Colony(1, [timepoint_empty])
 
@@ -259,6 +289,10 @@ class TestColoniesFromTimepoints():
             result = colonies_from_timepoints(timepoints, distance)
 
             assert len(result) == expected
+
+    def test_timepoints_empty(self):
+        with pytest.raises(ValueError):
+            colonies_from_timepoints([])
 
 
 class TestGroupTimepointsByCenter():

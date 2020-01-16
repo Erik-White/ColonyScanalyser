@@ -18,7 +18,7 @@ from colonyscanalyser import (
     imaging,
     plots
 )
-from .colony import Colony, timepoints_from_image, colonies_from_timepoints
+from .colony import Colony, timepoints_from_image, colonies_from_timepoints, timepoints_from_image
 
 
 def get_plate_directory(parent_path, row, col, create_dir = True):
@@ -152,24 +152,25 @@ def image_file_to_timepoints(image_path, plate_coordinates, plate_images_mask, t
     :returns: a Dict of lists, each containing Timepoint objects
     """
     from collections import defaultdict
+    from skimage.color import rgb2gray
 
     plate_timepoints = defaultdict(list)
 
     # Load image
-    img = imread(str(image_path), as_gray = True)
+    img = imread(str(image_path), as_gray = False)
 
     # Split image into individual plates
     plate_images = get_plate_images(img, plate_coordinates, edge_cut = 60)
 
     for j, plate_image in enumerate(plate_images):
+        plate_image_gray = rgb2gray(plate_image)
         # Segment each image
-        plate_images[j] = segment_image(plate_image, plate_image > 0, plate_images_mask[j], area_min = 8)
+        plate_images[j] = segment_image(plate_image_gray, plate_image_gray > 0, plate_images_mask[j], area_min = 8)
         # Create Timepoint objects for each plate
-        plate_timepoints[j + 1].extend(timepoints_from_image(plate_images[j], time_point, elapsed_minutes))
-
+        plate_timepoints[j + 1].extend(timepoints_from_image(plate_images[j], time_point, elapsed_minutes, image = plate_image))
         # Save segmented image plot, if required
         if plot_path is not None:
-            plots.plot_plate_segmented(plate_image, plate_images[j], time_point, plot_path)
+            plots.plot_plate_segmented(plate_image_gray, plate_images[j], time_point, plot_path)
 
     return plate_timepoints
 
@@ -376,6 +377,8 @@ def main():
             "Time of appearance",
             "Time of appearance (elapsed minutes)",
             "Center point averaged (row, column)",
+            "Colour averaged name",
+            "Colour averaged (R,G,B)",
             "Growth rate average",
             "Growth rate",
             "Doubling time average (minutes)",
@@ -405,7 +408,8 @@ def main():
             "Area (pixels)",
             "Center (row, column)",
             "Diameter (pixels)",
-            "Perimeter (pixels)"
+            "Perimeter (pixels)",
+            "Color average (R,G,B)"
         ]
         colony_timepoints = list()
         for colony_id, colony in plate.items():

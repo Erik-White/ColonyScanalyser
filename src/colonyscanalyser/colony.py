@@ -3,6 +3,7 @@ from math import pi, log
 from dataclasses import dataclass
 from collections.abc import Iterable
 from .utilities import round_tuple_floats
+from.imaging import rgb_to_name
 
 
 class Colony:
@@ -17,6 +18,7 @@ class Colony:
         center: tuple
         diameter: float
         perimeter: float
+        color_average: tuple
 
         def __iter__(self):
             return iter([
@@ -25,7 +27,8 @@ class Colony:
                 self.area,
                 round_tuple_floats(self.center, 2),
                 round(self.diameter, 2),
-                round(self.perimeter, 2)
+                round(self.perimeter, 2),
+                round_tuple_floats(self.color_average, 2),
                 ])
 
     def __init__(self, id, timepoints = None):
@@ -41,6 +44,8 @@ class Colony:
             self.time_of_appearance,
             self.timepoint_first.elapsed_minutes,
             round_tuple_floats(self.center, 2),
+            self.color_name,
+            round_tuple_floats(self.color, 2),
             round(self.growth_rate_average, 2),
             round(self.growth_rate, 2),
             round(self.get_doubling_time_average(elapsed_minutes = True), 2),
@@ -83,6 +88,15 @@ class Colony:
     def center(self):
         centers = [x.center for x in self.timepoints.values()]
         return tuple(sum(x) / len(self.timepoints) for x in zip(*centers))
+
+    @property
+    def color(self):
+        color_averages = [x.color_average for x in self.timepoints.values()]
+        return tuple(sum(x) / len(self.timepoints) for x in zip(*color_averages))
+
+    @property
+    def color_name(self):
+        return rgb_to_name(self.color, color_spec = "css3")
 
     @property
     def growth_rate(self):
@@ -168,20 +182,42 @@ class Colony:
             return 0
 
 
-def timepoints_from_image(image, time_point, elapsed_minutes):
+def timepoints_from_image(image_segmented, time_point, elapsed_minutes, image = None):
     """
     Create Timepoint objects from a segemented image
 
-    :param image: a segmented and labelled image as a numpy array
+    Optionally include the original un-segmented image to provide colony colour information
+
+    :param image_segmented: a segmented and labelled image as a numpy array
     :param time_point: a datetime object corresponding to the image
     :param elapsed_minutes: an integer representing the number of minutes since starting
+    :param image: a colour image that image_segmented is derived from
     :returns: a list of colony objects
     """
+    from .imaging import cut_image_circle
     from skimage.measure import regionprops
 
     colonies = list()
 
-    for rp in regionprops(image):
+    if image is not None:
+        if image.shape[:2] != image_segmented.shape[:2]:
+            raise ValueError("The image and its segmented image must be the same size")
+
+    for rp in regionprops(image_segmented):
+        color_average = (0, 0, 0)
+        if image is not None:
+            # Select an area of the colony slightly smaller than its full radius
+            # This avoids the edge halo of the image which may contain background pixels
+            radius = (rp.equivalent_diameter / 2) - ((rp.equivalent_diameter / 2) * 0.10)
+            image_circle = cut_image_circle(image[rp.slice], radius - 1)
+            # Filter out fringe alpha values and empty pixels
+            limit = 0
+            if image_circle.shape[2] > 3:
+                limit = 200
+            image_circle = image_circle[image_circle[:, :, -1] > limit]
+            # Calculate the average colour values by column over the colony area and remove alpha channel (if present)
+            color_average = tuple(image_circle.mean(axis = 0)[:3])
+
         # Create a new time point object to store colony data
         timepoint_data = Colony.Timepoint(
             date_time = time_point,
@@ -189,7 +225,8 @@ def timepoints_from_image(image, time_point, elapsed_minutes):
             area = rp.area,
             center = rp.centroid,
             diameter = rp.equivalent_diameter,
-            perimeter = rp.perimeter
+            perimeter = rp.perimeter,
+            color_average = color_average
         )
 
         colonies.append(timepoint_data)
@@ -208,6 +245,9 @@ def colonies_from_timepoints(timepoints, distance_tolerance = 1):
 
     colony_centers = list()
     colonies = list()
+
+    if not len(timepoints) > 0:
+        raise ValueError("No timepoints were supplied")
 
     # First group by row values
     center_groups = group_timepoints_by_center(

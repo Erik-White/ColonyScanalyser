@@ -11,7 +11,8 @@ ColonyScanalyser will analyse and collate statistical data from cell-culture pla
 ColonyScanalyser can provide information on:
 * Colony appearance time
 * Colony growth over time
-* Growth and appearance time distribution (comparing colonies under different conditions)
+* Growth and appearance time distribution
+* Colony colour (e.g. staining or other visual indicators)
 
 ColonyScanalyser is suitable for analysing series of images from a fixed point that show the development of microorganism colonies over time.
 
