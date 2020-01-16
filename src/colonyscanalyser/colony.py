@@ -209,14 +209,14 @@ def timepoints_from_image(image_segmented, time_point, elapsed_minutes, image = 
             # Select an area of the colony slightly smaller than its full radius
             # This avoids the edge halo of the image which may contain background pixels
             radius = (rp.equivalent_diameter / 2) - ((rp.equivalent_diameter / 2) * 0.10)
-            # Calculate the average colour values by column over the colony area
-            mean_circle = cut_image_circle(image[rp.slice], radius - 1).mean(axis = 0)
-            # Filter out fringe values and remove alpha channel (if present)
-            if mean_circle.shape[1] > 3:
-                limit = 3
-            else:
-                limit = -1
-            color_average = tuple(mean_circle[mean_circle[:, limit] > 200].mean(axis = 0)[:limit])
+            image_circle = cut_image_circle(image[rp.slice], radius - 1)
+            # Filter out fringe alpha values and empty pixels
+            limit = 0
+            if image_circle.shape[2] > 3:
+                limit = 200
+            image_circle = image_circle[image_circle[:, :, -1] > limit]
+            # Calculate the average colour values by column over the colony area and remove alpha channel (if present)
+            color_average = tuple(image_circle.mean(axis = 0)[:3])
 
         # Create a new time point object to store colony data
         timepoint_data = Colony.Timepoint(
