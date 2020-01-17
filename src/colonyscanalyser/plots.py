@@ -5,6 +5,134 @@ from .utilities import average_dicts_values_by_key
 from .plotting import rc_to_xy, axis_minutes_to_hours
 
 
+def plot_colony_map(plate_image, plate_coordinates, plate_colonies, save_path, edge_cut = 0):
+    """
+    Saves original plate image with overlaid plate and colony IDs
+
+    :param plate_image: the final timepoint image of all plates
+    :param plate_coordinates: a dictionary of centre and radii tuples
+    :param plate_colonies: a dictionary of Colony objects
+    :param save_path: a path object
+    :returns: a file path object if the plot was saved sucessfully
+    """
+    from matplotlib import rcParams
+
+    # Calculate the image size in inches
+    dpi = rcParams['figure.dpi']
+    height, width, depth = plate_image.shape
+    figsize = width / float(dpi), height / float(dpi)
+
+    # Create a figure that takes up the full size of the image
+    fig = plt.figure(figsize = figsize)
+    ax = fig.add_axes([0, 0, 1, 1])
+    ax.axis('off')
+    ax.imshow(plate_image)
+
+    for plate_id, plate in plate_colonies.items():
+        (center_y, center_x), plate_radius = plate_coordinates[plate_id]
+
+        # Colony coordinates are relative to individual plate images
+        # Calculate a correction factor to allow plotting on the original image
+        offset_y = center_y - plate_radius + edge_cut
+        offset_x = center_x - plate_radius + edge_cut
+
+        # Label plates
+        ax.annotate(
+            f"Plate #{plate_id}".upper(),
+            (center_x, center_y - plate_radius - (edge_cut * 1.4)),
+            xycoords = "data",
+            horizontalalignment = "center",
+            verticalalignment = "center",
+            fontsize = "40",
+            backgroundcolor = "black",
+            color = "white"
+        )
+
+        # Mark the detected boundary of the plate
+        plate_circle = plt.Circle(
+            (center_x, center_y),
+            radius = plate_radius,
+            facecolor = "none",
+            edgecolor = "purple",
+            linewidth = "2.5",
+            linestyle = "-",
+            label = "Detected plate boundary"
+        )
+        ax.add_artist(plate_circle)
+
+        # Mark the measured area of the plate
+        plate_circle_measured = plt.Circle(
+            (center_x, center_y),
+            radius = plate_radius - edge_cut,
+            facecolor = "none",
+            edgecolor = "white",
+            linewidth = "1.5",
+            linestyle = "--",
+            label = "Colony detection area"
+        )
+        ax.add_artist(plate_circle_measured)
+
+        # Mark colony centres and ID numbers
+        for colony in plate.values():
+            x, y = rc_to_xy(colony.center)
+            x = offset_x + x
+            y = offset_y + y
+            radius = colony.timepoint_last.diameter / 2
+
+            ax.annotate(
+                "+",
+                (x, y),
+                xycoords = "data",
+                color = "red",
+                horizontalalignment = "center",
+                verticalalignment = "center",
+                fontsize = "x-small"
+            )
+            ax.annotate(
+                colony.id,
+                (x, y),
+                xycoords = "data",
+                xytext = (radius * 0.7, -radius * 0.9),
+                textcoords = "offset pixels",
+                horizontalalignment = "left",
+                verticalalignment = "top",
+                alpha = 0.85,
+                backgroundcolor = "black",
+                color = "white",
+                fontsize = "small"
+            )
+            # Mark the calculated radius of the colony
+            colony_circle = plt.Circle(
+                (x, y),
+                radius = radius,
+                facecolor = "none",
+                edgecolor = "red",
+                alpha = 0.75,
+                linewidth = "0.65",
+                linestyle = "-",
+                label = "Colony area at final measurement"
+            )
+            ax.add_artist(colony_circle)
+
+    plt.legend(
+        handles = [plate_circle, plate_circle_measured, colony_circle],
+        loc = "lower center",
+        facecolor = "lightgray",
+        shadow = "true",
+        fontsize = "18"
+    )
+
+    image_path = "plate_map.png"
+    save_path = save_path.joinpath(image_path)
+    try:
+        plt.savefig(str(save_path), format = "png")
+    except Exception:
+        save_path = None
+    finally:
+        plt.close()
+        return save_path
+
+
 def plot_plate_segmented(plate_image, segmented_image, date_time, save_path):
     """
     Saves processed plate images and corresponding segmented data plots
