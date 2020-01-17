@@ -265,7 +265,7 @@ def watershed_separation(image, smoothing = 0.5):
     distance = ndimage.distance_transform_edt(img)
     distance = gaussian(distance, smoothing)
 
-    # Find image peaks, returned as a boolean array (indices = False)
+    # Find image peaks, returned as a boolean array
     local_maxi = peak_local_max(distance, indices = False, footprint = np.ones((3, 3)), labels = img)
 
     # Find the borders around the peaks
