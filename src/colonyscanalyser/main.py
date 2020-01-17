@@ -92,19 +92,19 @@ def get_plate_images(image, plate_coordinates, edge_cut = 100):
 
 def segment_image(plate_image, plate_mask, plate_noise_mask, area_min = 5):
     """
-    Finds all colonies on a plate and returns an array of co-ordinates
-
-    If a co-ordinate is occupied by a colony, it contains that colonies labelled number
+    Attempts to find and label all colonies on a plate
 
     :param plate_image: a black and white image as a numpy array
-    :param mask: a black and white image as a numpy array
+    :param plate_mask: a black and white image as a numpy array
     :param plate_noise_mask: a black and white image as a numpy array
+    :param area_min: the minimum area for a colony, in pixels
     :returns: a segmented and labelled image as a numpy array
     """
     from math import pi
     from scipy.ndimage.morphology import binary_fill_holes
     from skimage.morphology import remove_small_objects
     from skimage.measure import regionprops, label
+    from skimage.segmentation import clear_border
 
     plate_image = imaging.remove_background_mask(plate_image, plate_mask)
     plate_noise_mask = imaging.remove_background_mask(plate_noise_mask, plate_mask)
@@ -120,9 +120,8 @@ def segment_image(plate_image, plate_mask, plate_noise_mask, area_min = 5):
 
     colonies = label(plate_image)
 
-    # Remove colonies that are on the edge of the plate
-    # versions <0.16 do not allow for a mask
-    # colonies = clear_border(pl_th, buffer_size = 1, mask = plate_mask)
+    # Remove colonies that are on the edge of the plate image
+    colonies = clear_border(colonies, buffer_size = 1, mask = plate_mask)
 
     # Exclude objects that are too eccentric
     rps = regionprops(colonies)
@@ -131,7 +130,7 @@ def segment_image(plate_image, plate_mask, plate_noise_mask, area_min = 5):
         # Circularity of 1 is a perfect circle
         circularity = (4 * pi * rp.area) / (rp.perimeter * rp.perimeter)
 
-        if rp.eccentricity > 0.6 or circularity < 0.85:
+        if rp.eccentricity > 0.5 or circularity < 0.65:
             colonies[colonies == rp.label] = 0
 
     return colonies
