@@ -6,7 +6,7 @@ An image analysis tool for measuring microorganism colony growth.
 
 ColonyScanalyser will analyse and collate statistical data from agar plate images. It provides fast, high-throughput image processing.
 
-<img align="right" src="docs/images/plate_map_small.png">
+<img align="right" src="docs/images/growth_curve_small.png">
 
 ColonyScanalyser can provide information on:
 * Colony appearance time
@@ -40,9 +40,9 @@ ColonyScanalyser requires Python version 3.7, and the Pip package manager. Pip i
 
 The remaining Python package dependencies are automatically handled by Pip when installing the Colonyscanalyser package.
 
-Optionally use a virtual environment, such as [Pipenv](https://github.com/pypa/pipenv).
+<img align="right" src="docs/images/plate_map_small.png">
 
-<img align="right" src="docs/images/growth_curve_small.png">
+Optionally use a virtual environment, such as [Pipenv](https://github.com/pypa/pipenv).
 
 For testing:
 * [Pytest](https://pytest.org/)
