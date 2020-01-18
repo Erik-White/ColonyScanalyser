@@ -4,7 +4,7 @@
 
 An image analysis tool for measuring microorganism colony growth.
 
-ColonyScanalyser will analyse and collate statistical data from cell-culture plate images. It provides fast, high-throughput image processing.
+ColonyScanalyser will analyse and collate statistical data from agar plate images. It provides fast, high-throughput image processing.
 
 <img align="right" src="docs/images/growth_curve_small.png">
 
