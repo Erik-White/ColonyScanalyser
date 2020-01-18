@@ -195,8 +195,8 @@ def main():
                         help = "The row and column co-ordinate layout of plates. Example usage: --plate_lattice 3 3")
     parser.add_argument("--save_plots", type = int, default = 1,
                         help = "The detail level of plot images to store on disk")
-    parser.add_argument("--use_saved", type = strtobool, default = True,
-                        help = "Allow or prevent use of previously calculated data")
+    parser.add_argument("--use_cached_data", type = strtobool, default = False,
+                        help = "Allow use of previously calculated data")
     parser.add_argument("-mp", "--multiprocessing", type = strtobool, default = True,
                         help = "Enables use of more CPU cores, faster but more resource intensive")
 
@@ -207,7 +207,7 @@ def main():
     PLATE_LATTICE = tuple(args.plate_lattice)
     PLATE_EDGE_CUT = args.plate_edge_cut
     SAVE_PLOTS = args.save_plots
-    USE_SAVED = args.use_saved
+    USE_CACHED = args.use_cached_data
     POOL_MAX = 1
     if args.multiprocessing:
         POOL_MAX = cpu_count()
@@ -245,8 +245,8 @@ def main():
         " Please check that images have a filename with YYYYMMDD_HHMM timestamps")
 
     # Check if processed image data is already stored and can be loaded
-    segmented_image_data_filename = "processed_data"
-    if USE_SAVED:
+    segmented_image_data_filename = "cached_data"
+    if USE_CACHED:
         if VERBOSE >= 1:
             print("Attempting to load cached data")
         plate_colonies = file_access.load_file(
@@ -264,7 +264,7 @@ def main():
 
     # Process images to Timepoint data objects
     plate_coordinates = None
-    if not USE_SAVED or plate_colonies is None:
+    if not USE_CACHED or plate_colonies is None:
         plate_coordinates = None
         plate_images_mask = None
         plate_timepoints = defaultdict(list)

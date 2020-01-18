@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Full unit test coverage
 - Type annotations on all functions
 
+## [0.4.0] - 2020-01-19
+### Changed
+- Cached data is now not used by default
+- `use_saved` command line argument renamed to `use_cached_data`
+- Compressed serialised data filename changed to `cached_data`
+
 ## [0.3.4] - 2020-01-18
 ### Added
 - plate_edge_cut command line argument
