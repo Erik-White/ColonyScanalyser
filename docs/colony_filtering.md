@@ -1,5 +1,5 @@
 # Filtering criteria
-<img align="right" src="/images/plate_timelapse_tiny.gif">
+<img align="right" src="images/plate_timelapse_tiny.gif">
 Images are first segmented to find objects in the image that appear to be colonies. Objects are assessed on three initial criteria:
 
 - Size: objects smaller than 5 pixels are ignored. This is to reduce the level of background noise that would otherwise be picked up

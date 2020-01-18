@@ -2,6 +2,9 @@
 A few simple plots are saved to allow quick comparison of the different plates. Increasing the `save_plots` argument will increase the number and detail of plots that are output, see the [command line arguments](command_line_arguments.md) for more detail.
 
 Data such as colony area, growth rate, time of appearance etc is output to a set of CSV files.
+
+<img align="right" src="images/plate_map_small.png">
+
 ## Plate identification
 Plates are numbered sequentially, starting from the top left and proceeding in rows. On a 3 x 2 lattice the plate numbers will be:
 ```
@@ -11,8 +14,9 @@ Plates are numbered sequentially, starting from the top left and proceeding in r
 
 5   6
 ```
+A 'map' of the identified plates and colonies will be output to show how they have been identified. This can be useful for correlating data from individual colonies with the specific colony on the plate. Note that colonies are shown at their final measurement size, which may be smaller than the colony in the image. Measurements are stopped if colonies merge, or if they do not meet other criteria e.g. they display low circularity.
 
-<img align="right" src="/images/time_of_appearance_small.png">
+<img align="right" src="images/time_of_appearance_small.png">
 
 ## Plots
 At the default level, a few comparison plots are output to the `plots` folder in your image folder. Theses allow quick verification and comparison of the data.

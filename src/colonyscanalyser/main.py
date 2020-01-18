@@ -136,7 +136,7 @@ def segment_image(plate_image, plate_mask, plate_noise_mask, area_min = 5):
     return colonies
 
 
-def image_file_to_timepoints(image_path, plate_coordinates, plate_images_mask, time_point, elapsed_minutes, plot_path = None):
+def image_file_to_timepoints(image_path, plate_coordinates, plate_images_mask, time_point, elapsed_minutes, edge_cut, plot_path = None):
     """
     Get Timepoint object data from a plate image
 
@@ -159,7 +159,7 @@ def image_file_to_timepoints(image_path, plate_coordinates, plate_images_mask, t
     img = imread(str(image_path), as_gray = False)
 
     # Split image into individual plates
-    plate_images = get_plate_images(img, plate_coordinates, edge_cut = 60)
+    plate_images = get_plate_images(img, plate_coordinates, edge_cut = edge_cut)
 
     for j, plate_image in enumerate(plate_images):
         plate_image_gray = rgb2gray(plate_image)
@@ -188,6 +188,8 @@ def main():
                         help = "The image DPI (dots per inch) setting")
     parser.add_argument("--plate_size", type = int, default = 100,
                         help = "The plate diameter, in millimetres")
+    parser.add_argument("--plate_edge_cut", type = int, default = 60,
+                        help = "The radius from the plate edge to remove, in pixels")
     parser.add_argument("--plate_lattice", type = int, nargs = 2, default = (3, 2),
                         metavar = ("ROW", "COL"),
                         help = "The row and column co-ordinate layout of plates. Example usage: --plate_lattice 3 3")
@@ -203,6 +205,7 @@ def main():
     VERBOSE = args.verbose
     PLATE_SIZE = imaging.mm_to_pixels(args.plate_size, dots_per_inch = args.dots_per_inch)
     PLATE_LATTICE = tuple(args.plate_lattice)
+    PLATE_EDGE_CUT = args.plate_edge_cut
     SAVE_PLOTS = args.save_plots
     USE_SAVED = args.use_saved
     POOL_MAX = 1
@@ -260,6 +263,7 @@ def main():
             plate_colonies = None
 
     # Process images to Timepoint data objects
+    plate_coordinates = None
     if not USE_SAVED or plate_colonies is None:
         plate_coordinates = None
         plate_images_mask = None
@@ -288,9 +292,9 @@ def main():
                         print(f"Plate {k} center: {center[0]}")
 
             # Split image into individual plates
-            plate_images = get_plate_images(img, plate_coordinates, edge_cut = 60)
+            plate_images = get_plate_images(img, plate_coordinates, edge_cut = PLATE_EDGE_CUT)
 
-            # Use the first plate images as a noise mask
+            # Use the first plate image as a noise mask
             if plate_images_mask is None:
                 plate_images_mask = plate_images
 
@@ -310,7 +314,7 @@ def main():
                 # Create processes
                 processes.append(pool.apply_async(
                     image_file_to_timepoints,
-                    args = (image_file, plate_coordinates, plate_images_mask, time_points[i], time_points_elapsed[i]),
+                    args = (image_file, plate_coordinates, plate_images_mask, time_points[i], time_points_elapsed[i], PLATE_EDGE_CUT),
                     kwds = {"plot_path" : None},
                     callback = callback_function
                     ))
@@ -422,26 +426,30 @@ def main():
             save_path.joinpath(f"plate{plate_id}_colony_timepoints")
             )
 
-    if VERBOSE >= 1:
-        print("Saving plots")
-
-    # Plot colony growth curves and time of appearance for the plate
-    if SAVE_PLOTS >= 2:
-        for plate_id, plate in plate_colonies.items():
-            row, col = utilities.index_number_to_coordinate(plate_id, PLATE_LATTICE)
-            save_path = get_plate_directory(BASE_PATH.joinpath("plots"), row, col, create_dir = True)
-            plate_item = {plate_id : plate}
-            plots.plot_growth_curve(plate_item, time_points_elapsed, save_path)
-            plots.plot_appearance_frequency(plate_item, time_points_elapsed, save_path)
-            plots.plot_appearance_frequency(plate_item, time_points_elapsed, save_path, bar = True)
-
     # Plot colony growth curves for all plates
     if SAVE_PLOTS >= 1:
+        if VERBOSE >= 1:
+            print("Saving plots")
         save_path = file_access.create_subdirectory(BASE_PATH, "plots")
         plots.plot_growth_curve(plate_colonies, time_points_elapsed, save_path)
         plots.plot_appearance_frequency(plate_colonies, time_points_elapsed, save_path)
         plots.plot_appearance_frequency(plate_colonies, time_points_elapsed, save_path, bar = True)
         plots.plot_doubling_map(plate_colonies, time_points_elapsed, save_path)
+
+        # Only generate plate map when working with original images
+        # Can't guarantee that the original image will be available when using cached data
+        if plate_coordinates is not None:
+            plots.plot_colony_map(imread(image_files[-1], as_gray = False), {k: v for k, v in enumerate(plate_coordinates, start = 1)}, plate_colonies, save_path, edge_cut = PLATE_EDGE_CUT )
+
+    # Plot colony growth curves, ID map and time of appearance for each plate
+    if SAVE_PLOTS >= 2:
+        for plate_id, plate in plate_colonies.items():
+            row, col = utilities.index_number_to_coordinate(plate_id, PLATE_LATTICE)
+            save_path_plate = get_plate_directory(save_path, row, col, create_dir = True)
+            plate_item = {plate_id : plate}
+            plots.plot_growth_curve(plate_item, time_points_elapsed, save_path_plate)
+            plots.plot_appearance_frequency(plate_item, time_points_elapsed, save_path_plate)
+            plots.plot_appearance_frequency(plate_item, time_points_elapsed, save_path_plate, bar = True)
 
     if VERBOSE >= 1:
         print(f"ColonyScanalyser analysis completed for: {BASE_PATH}")
