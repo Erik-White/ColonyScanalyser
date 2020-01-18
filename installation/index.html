@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        
+        
+        <link rel="shortcut icon" href="../img/favicon.ico">
+        <title>Installation - ColonyScanalyser</title>
+        <link href="../css/bootstrap-custom.min.css" rel="stylesheet">
+        <link href="../css/font-awesome.min.css" rel="stylesheet">
+        <link href="../css/base.css" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
+        <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+        <!--[if lt IE 9]>
+            <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+            <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+        <![endif]-->
+
+        <script src="../js/jquery-1.10.2.min.js" defer></script>
+        <script src="../js/bootstrap-3.0.3.min.js" defer></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+        <script>hljs.initHighlightingOnLoad();</script> 
+    </head>
+
+    <body>
+
+        <div class="navbar navbar-default navbar-fixed-top" role="navigation">
+            <div class="container">
+
+                <!-- Collapsed navigation -->
+                <div class="navbar-header">
+                    <!-- Expander button -->
+                    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                        <span class="sr-only">Toggle navigation</span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                    <a class="navbar-brand" href="..">ColonyScanalyser</a>
+                </div>
+
+                <!-- Expanded navigation -->
+                <div class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li >
+                                <a href="..">Home</a>
+                            </li>
+                            <li class="dropdown active">
+                                <a href="#" class="dropdown-toggle" data-toggle="dropdown">User guide <b class="caret"></b></a>
+                                <ul class="dropdown-menu">
+                                    
+<li >
+    <a href="../quick_start/">Quick Start Guide</a>
+</li>
+                                    
+<li class="active">
+    <a href="./">Installation</a>
+</li>
+                                    
+<li >
+    <a href="../command_line_arguments/">Command Line Arguments</a>
+</li>
+                                    
+<li >
+    <a href="../image_specifications/">Image Specifications</a>
+</li>
+                                    
+<li >
+    <a href="../colony_filtering/">Colony Filtering Criteria</a>
+</li>
+                                    
+<li >
+    <a href="../example_output/">Example Output</a>
+</li>
+                                </ul>
+                            </li>
+                            <li class="dropdown">
+                                <a href="#" class="dropdown-toggle" data-toggle="dropdown">About <b class="caret"></b></a>
+                                <ul class="dropdown-menu">
+                                    
+<li >
+    <a href="../CONTRIBUTING/">Contributing</a>
+</li>
+                                    
+<li >
+    <a href="../CHANGELOG/">Release Notes</a>
+</li>
+                                    
+<li >
+    <a href="../LICENSE/">License</a>
+</li>
+                                </ul>
+                            </li>
+                        </ul>
+
+                    <ul class="nav navbar-nav navbar-right">
+                        <li>
+                            <a href="#" data-toggle="modal" data-target="#mkdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                            <li >
+                                <a rel="next" href="../quick_start/">
+                                    <i class="fa fa-arrow-left"></i> Previous
+                                </a>
+                            </li>
+                            <li >
+                                <a rel="prev" href="../command_line_arguments/">
+                                    Next <i class="fa fa-arrow-right"></i>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="https://github.com/Erik-White/ColonyScanalyser/edit/master/docs/installation.md"><i class="fa fa-github"></i> Edit on GitHub</a>
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+                <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
+    <ul class="nav bs-sidenav">
+        <li class="main active"><a href="#installation">Installation</a></li>
+            <li><a href="#python">Python</a></li>
+            <li><a href="#colonyscanalyser">ColonyScanalyser</a></li>
+            <li><a href="#virtual-environments">Virtual environments</a></li>
+    </ul>
+</div></div>
+                <div class="col-md-9" role="main">
+
+<h1 id="installation">Installation</h1>
+<h2 id="python">Python</h2>
+<p>ColonyScanalyser requires Python version 3.7, and the Pip package manager. Pip is included with Python version 3.4 and up.</p>
+<p>There are many <a href="https://docs.python-guide.org/starting/installation/">detailed guides on the web</a> so I will only cover the most basic cases here.</p>
+<h4 id="on-mac">On Mac</h4>
+<p>The <a href="https://brew.sh/">Homebrew package manager</a> is recommended for managing your Python installation.</p>
+<p>Once Homebrew is installed, simply open terminal and run the command</p>
+<pre><code>brew install python
+</code></pre>
+
+<h4 id="on-linux">On Linux</h4>
+<p>Python may come bundled with your distribution, otherwise it will be available through your package manager e.g.</p>
+<pre><code>sudo apt-get install python3.7
+</code></pre>
+
+<h4 id="on-windows">On Windows</h4>
+<p>Go to the <a href="https://www.python.org/downloads/windows/">Python downloads site</a> and grab the latest Python 3.7 installer (currently 3.7.5). Run the installer once it has downloaded and follow the setup instructions.</p>
+<h2 id="colonyscanalyser">ColonyScanalyser</h2>
+<p>Use the Python package manager, Pip, to install the <a href="https://pypi.org/project/colonyscanalyser/">ColonyScanalyser package</a>:</p>
+<pre><code>pip3 install colonyscanalyser
+</code></pre>
+
+<p>A message should hopefully indicate that the ColonyScanalyser package was downloaded and installed successfully.</p>
+<p>Note: We use the command <code>pip3</code> in case both Python 2 &amp; 3 are installed on the system. In which case <code>pip</code> will usually default to installing packages for Python 2</p>
+<h2 id="virtual-environments">Virtual environments</h2>
+<p>There are a number of benefits to setting up self-contained virtual environments instead of installing system-wide packages:</p>
+<ul>
+<li>Creates a separate and controlled work environment</li>
+<li>Easily manages complex interdependencies</li>
+</ul>
+<p>We use Pipenv which is a combined environment and package manager. Install it with Homebrew:</p>
+<pre><code>brew install pipenv
+</code></pre>
+
+<p>Then create a new Python 3 environment in a workspace folder and install the ColonyScanalyser package:</p>
+<pre><code>cd /my/example/workspace
+pipenv --three
+pipenv install colonyscanalyser
+</code></pre>
+
+<p>Then run the ColonyScanalyser package:</p>
+<pre><code>pipenv run scanalyser /path/to/images
+</code></pre>
+
+<p><a href="https://packaging.python.org/tutorials/managing-dependencies/">More detailed instructions</a> can be found on the Python packaging site.</p></div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+        </footer>
+        <script>
+            var base_url = "..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="../js/base.js" defer></script>
+        <script src="../search/main.js" defer></script>
+
+        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="Search Modal" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="exampleModalLabel">Search</h4>
+            </div>
+            <div class="modal-body">
+                <p>
+                    From here you can search these documents. Enter
+                    your search terms below.
+                </p>
+                <form role="form">
+                    <div class="form-group">
+                        <input type="text" class="form-control" placeholder="Search..." id="mkdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="mkdocs-search-results"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="Keyboard Shortcuts Modal" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="exampleModalLabel">Keyboard Shortcuts</h4>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>

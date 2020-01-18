@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        
+        
+        <link rel="shortcut icon" href="../img/favicon.ico">
+        <title>Command Line Arguments - ColonyScanalyser</title>
+        <link href="../css/bootstrap-custom.min.css" rel="stylesheet">
+        <link href="../css/font-awesome.min.css" rel="stylesheet">
+        <link href="../css/base.css" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
+        <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+        <!--[if lt IE 9]>
+            <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+            <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+        <![endif]-->
+
+        <script src="../js/jquery-1.10.2.min.js" defer></script>
+        <script src="../js/bootstrap-3.0.3.min.js" defer></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+        <script>hljs.initHighlightingOnLoad();</script> 
+    </head>
+
+    <body>
+
+        <div class="navbar navbar-default navbar-fixed-top" role="navigation">
+            <div class="container">
+
+                <!-- Collapsed navigation -->
+                <div class="navbar-header">
+                    <!-- Expander button -->
+                    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                        <span class="sr-only">Toggle navigation</span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                    <a class="navbar-brand" href="..">ColonyScanalyser</a>
+                </div>
+
+                <!-- Expanded navigation -->
+                <div class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li >
+                                <a href="..">Home</a>
+                            </li>
+                            <li class="dropdown active">
+                                <a href="#" class="dropdown-toggle" data-toggle="dropdown">User guide <b class="caret"></b></a>
+                                <ul class="dropdown-menu">
+                                    
+<li >
+    <a href="../quick_start/">Quick Start Guide</a>
+</li>
+                                    
+<li >
+    <a href="../installation/">Installation</a>
+</li>
+                                    
+<li class="active">
+    <a href="./">Command Line Arguments</a>
+</li>
+                                    
+<li >
+    <a href="../image_specifications/">Image Specifications</a>
+</li>
+                                    
+<li >
+    <a href="../colony_filtering/">Colony Filtering Criteria</a>
+</li>
+                                    
+<li >
+    <a href="../example_output/">Example Output</a>
+</li>
+                                </ul>
+                            </li>
+                            <li class="dropdown">
+                                <a href="#" class="dropdown-toggle" data-toggle="dropdown">About <b class="caret"></b></a>
+                                <ul class="dropdown-menu">
+                                    
+<li >
+    <a href="../CONTRIBUTING/">Contributing</a>
+</li>
+                                    
+<li >
+    <a href="../CHANGELOG/">Release Notes</a>
+</li>
+                                    
+<li >
+    <a href="../LICENSE/">License</a>
+</li>
+                                </ul>
+                            </li>
+                        </ul>
+
+                    <ul class="nav navbar-nav navbar-right">
+                        <li>
+                            <a href="#" data-toggle="modal" data-target="#mkdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                            <li >
+                                <a rel="next" href="../installation/">
+                                    <i class="fa fa-arrow-left"></i> Previous
+                                </a>
+                            </li>
+                            <li >
+                                <a rel="prev" href="../image_specifications/">
+                                    Next <i class="fa fa-arrow-right"></i>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="https://github.com/Erik-White/ColonyScanalyser/edit/master/docs/command_line_arguments.md"><i class="fa fa-github"></i> Edit on GitHub</a>
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+                <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
+    <ul class="nav bs-sidenav">
+        <li class="main active"><a href="#command-line-arguments">Command Line Arguments</a></li>
+            <li><a href="#help">Help</a></li>
+            <li><a href="#information-output">Information output</a></li>
+            <li><a href="#image-density">Image density</a></li>
+            <li><a href="#plate-size">Plate size</a></li>
+            <li><a href="#plate-edge-cut">Plate edge cut</a></li>
+            <li><a href="#plate-holder-shape">Plate holder shape</a></li>
+            <li><a href="#plot-images-output">Plot images output</a></li>
+            <li><a href="#cached-data">Cached data</a></li>
+            <li><a href="#multiprocessing">Multiprocessing</a></li>
+    </ul>
+</div></div>
+                <div class="col-md-9" role="main">
+
+<h1 id="command-line-arguments">Command Line Arguments</h1>
+<p>A list of optional arguments, and their default values, that affect the way ColonyScanalyser is run. Some arguments have a 'shorthand' version that saves having to type the full command. Shorthand arguments are prefixed by a single dash <code>-</code>, while normal arguments are prefixed by two dashes <code>--</code></p>
+<p>The only required argument is the path to the folder containing the image files you wish to analyse. Optional arguments can be added after the folder path e.g.</p>
+<pre><code>scanalyser /path/to/images --use_saved false
+</code></pre>
+
+<p>You can add as many optional arguments as you like:</p>
+<pre><code>scanalyser /path/to/images --use_saved false -mp true -dpi 2540 --plate_lattice 2 3
+</code></pre>
+
+<h3 id="help">Help</h3>
+<p>A full list of available arguments, along with their default values</p>
+<pre><code>-h
+--help
+</code></pre>
+
+<h3 id="information-output">Information output</h3>
+<p>The level of information output to the command line. Default level is <code>1</code>, increase to see more information. Output can be silenced with <code>0</code></p>
+<ul>
+<li>input: integer</li>
+</ul>
+<pre><code>-v
+--verbose
+</code></pre>
+
+<h3 id="image-density">Image density</h3>
+<p>The image density your scanner uses, this can usually be found in your scanner settings. It is important to set this correctly as it enables the program to acurately convert the plate size in millimeters to pixels.</p>
+<ul>
+<li>input: integer</li>
+</ul>
+<pre><code>-dpi
+--dots_per_inch
+</code></pre>
+
+<h3 id="plate-size">Plate size</h3>
+<p>The diameter of the plates used, in millimeters. It is important to set this correctly otherwise the plates may be located incorrectly in the images.</p>
+<ul>
+<li>input: integer</li>
+</ul>
+<pre><code>--plate_size
+</code></pre>
+
+<h3 id="plate-edge-cut">Plate edge cut</h3>
+<p>The radius, in pixels, to remove from the edge of the plate image. This ensures that the image is clear of reflections, shadows and writing that are typically present near the edge of the plate image.</p>
+<ul>
+<li>input: integer</li>
+</ul>
+<pre><code>--plate_edge_cut
+</code></pre>
+
+<h3 id="plate-holder-shape">Plate holder shape</h3>
+<p>The layout of the plates in the image in rows and columns. The default is <code>3</code> rows and <code>2</code> columns.</p>
+<p>A square grid of 9 plates would be entered as <code>--plate_lattice 3 3</code></p>
+<ul>
+<li>input: integer</li>
+</ul>
+<pre><code>--plate_lattice
+</code></pre>
+
+<h3 id="plot-images-output">Plot images output</h3>
+<p>The level of detail required when saving plot images after analysis. At the default level (<code>1</code>), a few summary plots are saved to give a quick overview of the data. If the output level is increased, individual plots for each plate will be saved.</p>
+<p>Warning: increasing the number of plots can greatly increase the time taken for the image analysis</p>
+<ul>
+<li>input: boolean</li>
+</ul>
+<pre><code>--save_plots
+</code></pre>
+
+<h3 id="cached-data">Cached data</h3>
+<p>The package saves a compressed serialised version of its output, along with the uncompressed CSV data. This allows it to quickly generate the CSV files and plot images again, without the need for reanalysing the original images. This is disabled by default to prevent confusing situation where outdated information is output from new or altered image sets.</p>
+<ul>
+<li>input: boolean</li>
+</ul>
+<pre><code>--use_cached_data
+</code></pre>
+
+<h3 id="multiprocessing">Multiprocessing</h3>
+<p>This technique utilises all of the available processors that your computer has to analyse images in parallel. Since most computers now have at least 2 or 4 processors, this can greatly reduce the time needed to process a set of images.</p>
+<p>This technique is however quite resource intensive for your computer so you may wish to disable it.</p>
+<ul>
+<li>input: boolean</li>
+</ul>
+<pre><code>-mp
+--multiprocessing
+</code></pre></div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+        </footer>
+        <script>
+            var base_url = "..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="../js/base.js" defer></script>
+        <script src="../search/main.js" defer></script>
+
+        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="Search Modal" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="exampleModalLabel">Search</h4>
+            </div>
+            <div class="modal-body">
+                <p>
+                    From here you can search these documents. Enter
+                    your search terms below.
+                </p>
+                <form role="form">
+                    <div class="form-group">
+                        <input type="text" class="form-control" placeholder="Search..." id="mkdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="mkdocs-search-results"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="Keyboard Shortcuts Modal" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="exampleModalLabel">Keyboard Shortcuts</h4>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>
