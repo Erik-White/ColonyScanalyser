@@ -64,11 +64,11 @@ Warning: increasing the number of plots can greatly increase the time taken for 
 --save_plots
 ```
 ### Cached data
-The package saves a compressed version of its output, along with the uncompressed CSV data. This allows it to quickly generate the CSV files and plot images again, without the need for analysing all the original images again. If you would prefer to start the analysis from the beginning, this can be disabled.
+The package saves a compressed serialised version of its output, along with the uncompressed CSV data. This allows it to quickly generate the CSV files and plot images again, without the need for reanalysing the original images. This is disabled by default to prevent confusing situation where outdated information is output from new or altered image sets.
 
 - input: boolean
 ```
---use_saved
+--use_cached_data
 ```
 ### Multiprocessing
 This technique utilises all of the available processors that your computer has to analyse images in parallel. Since most computers now have at least 2 or 4 processors, this can greatly reduce the time needed to process a set of images.
