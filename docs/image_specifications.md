@@ -24,4 +24,4 @@ The image below shows the same set of plates at the start (left), and the end (r
 
 The plates on the bottom row are empty, but show the importance of a high contrast background.
 
-<img align="left" src="images/plate_example.png">
+<img align="left" src="../images/plate_example.png">
