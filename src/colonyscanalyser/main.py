@@ -245,7 +245,7 @@ def main():
         " Please check that images have a filename with YYYYMMDD_HHMM timestamps")
 
     # Check if processed image data is already stored and can be loaded
-    segmented_image_data_filename = "processed_data"
+    segmented_image_data_filename = "cached_data"
     if USE_CACHED:
         if VERBOSE >= 1:
             print("Attempting to load cached data")
