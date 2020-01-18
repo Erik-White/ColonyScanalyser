@@ -38,6 +38,13 @@ The diameter of the plates used, in millimeters. It is important to set this cor
 ```
 --plate_size
 ```
+### Plate edge cut
+The radius, in pixels, to remove from the edge of the plate image. This ensures that the image is clear of reflections, shadows and writing that are typically present near the edge of the plate image.
+
+- input: integer
+```
+--plate_edge_cut
+```
 ### Plate holder shape
 The layout of the plates in the image in rows and columns. The default is `3` rows and `2` columns.
 

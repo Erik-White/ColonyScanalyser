@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Full unit test coverage
 - Type annotations on all functions
 
+## [0.3.4] - 2020-01-18
+### Added
+- plate_edge_cut command line argument
+- Plate and colony ID map to show how they have been identified
+### Changed
+- Add border exclusion and slightly relax colony circularity filtering in segment_image
+
 ## [0.3.3] - 2019-12-19
 ### Added
 - Colony colour identification and grouping
