@@ -7,11 +7,11 @@ from colonyscanalyser.geometry import (
 
 
 class TestCircle():
-    @pytest.fixture(params = [0.1, 1, 1.5, 1000])
+    @pytest.fixture(params = [0, 0.1, 1, 1.5, 1000])
     def diameter(self, request):
         yield request.param
 
-    @pytest.fixture(params = [-1, 0, "1", "one"])
+    @pytest.fixture(params = [-1, "1", "one"])
     def diameter_invalid(self, request):
         yield request.param
 

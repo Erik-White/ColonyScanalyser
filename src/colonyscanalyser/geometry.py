@@ -22,7 +22,7 @@ class Circle:
 
     @diameter.setter
     def diameter(self, val: float):
-        if val <= 0:
+        if val < 0:
             raise ValueError("The diameter must be a number greater than zero")
 
         self.__diameter = val
