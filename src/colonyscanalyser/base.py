@@ -48,13 +48,9 @@ class Unique(Identified):
     id_count = 0
 
     def __init__(self):
-        self.__id = self.id_increment()
+        self._Identified__id = self.id_increment()
 
-    @property
-    def id(self):
-        return self.__id
-
-    @id.setter
+    @Identified.id.setter
     def id(self, val: int):
         """
         Overrides base method to prevent setting id
