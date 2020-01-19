@@ -4,7 +4,7 @@ from .geometry import Circle
 
 class Plate(Circle):
     """
-    An object to hold a collection of Colony objects and information about an agar plate
+    An object to hold information about an agar plate and a collection of Colony objects
     """
     def __init__(self, id: int, diameter: float, colonies: list = None):
         self.id = id
@@ -96,15 +96,31 @@ class Plate(Circle):
         self.__name = val
 
     def append_colony(self, colony: object):
+        """
+        Add a Colony object to the plate colony collection
+
+        :param colony: a Colony object
+        """
         if not self.colony_exists(colony):
             self.colonies.append(colony)
         else:
             raise ValueError(f"A colony with ID #{colony.id} already exists")
 
     def colony_exists(self, colony: object):
+        """
+        Check if a colony exists in the plate colony collection
+
+        :param colony: a Colony object
+        :returns: True if a colony is found with matching ID
+        """
         return self.__id_exists(self, self.colonies, colony.id)
 
     def colonies_rename_sequential(self, start: int = 1):
+        """
+        Update the ID numbers of all colonies in the plate colony collection
+
+        :param start: the new initial ID number
+        """
         for i, colony in enumerate(self.colonies, start = start):
             colony.id = i
 
