@@ -6,6 +6,7 @@ from colonyscanalyser.plate import (
 
 invalid = [-1, -1.1, "one", None]
 
+
 @pytest.fixture(params = [0, 1, 123456789])
 def id(request):
     yield request.param
@@ -53,27 +54,23 @@ class TestPlate():
 
     class TestProperties():
         def test_iterable(self, plate):
-            assert len([*plate.__iter__()]) == 10
+            assert len([*plate.__iter__()]) == 7
 
         @pytest.mark.parametrize(
-            "colonies, center, description, edge_cut, name",
+            "colonies, edge_cut, name",
             [
-                (list(), (0, 0), "", 0, ""),
-                (list(), (1, 1.1), "Test description", 1.0, "Test name"),
-                (list(), (0, -1), "1", -1, "1")
+                (list(), 0, ""),
+                (list(), 1.0, "Test name"),
+                (list(), -1, "1")
             ]
         )
-        def test_properties(self, plate, colonies, center, description, edge_cut, name):
+        def test_properties(self, plate, colonies, edge_cut, name):
 
             plate.colonies = colonies
-            plate.center = center
-            plate.description = description
             plate.edge_cut = edge_cut
             plate.name = name
 
             assert plate.colonies == colonies
-            assert plate.center == center
-            assert plate.description == description
             assert plate.edge_cut == edge_cut
             assert plate.name == name
 

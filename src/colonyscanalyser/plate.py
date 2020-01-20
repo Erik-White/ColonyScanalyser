@@ -1,8 +1,9 @@
 from collections.abc import Iterable
+from .base import Identified, Named
 from .geometry import Circle
 
 
-class Plate(Circle):
+class Plate(Identified, Named, Circle):
     """
     An object to hold information about an agar plate and a collection of Colony objects
     """
@@ -16,7 +17,6 @@ class Plate(Circle):
 
         # Set property defaults
         self.colonies = colonies
-        self.center = None
         self.description = ""
         self.edge_cut = 0
         self.name = ""
@@ -25,23 +25,12 @@ class Plate(Circle):
         return iter([
             self.id,
             self.name,
-            self.description,
             self.center,
             self.diameter,
-            self.radius,
-            self.circumference,
             self.area,
             self.edge_cut,
             self.colony_count
         ])
-
-    @property
-    def center(self):
-        return self.__center
-
-    @center.setter
-    def center(self, val: tuple):
-        self.__center = val
 
     @property
     def colonies(self):
@@ -61,39 +50,12 @@ class Plate(Circle):
         return len(self.colonies)
 
     @property
-    def description(self):
-        return self.__description
-
-    @description.setter
-    def description(self, val: str):
-        self.__description = val
-
-    @property
     def edge_cut(self):
         return self.__edge_cut
 
     @edge_cut.setter
     def edge_cut(self, val: float):
         self.__edge_cut = val
-
-    @property
-    def id(self):
-        return self.__id
-
-    @id.setter
-    def id(self, val: float):
-        if isinstance(val, int) and val >= 0:
-            self.__id = val
-        else:
-            raise ValueError(f"'{val}' is not a valid id. An id must be a non-negative integer'")
-
-    @property
-    def name(self):
-        return self.__name
-
-    @name.setter
-    def name(self, val: str):
-        self.__name = val
 
     def append_colony(self, colony: object):
         """
@@ -113,17 +75,16 @@ class Plate(Circle):
         :param colony: a Colony object
         :returns: True if a colony is found with matching ID
         """
-        return self.__id_exists(self, self.colonies, colony.id)
+        return self._Identified__id_exists(self, self.colonies, colony.id)
 
     def colonies_rename_sequential(self, start: int = 1):
         """
         Update the ID numbers of all colonies in the plate colony collection
 
         :param start: the new initial ID number
+        :returns: the final ID number of the renamed sequence
         """
         for i, colony in enumerate(self.colonies, start = start):
             colony.id = i
 
-    @staticmethod
-    def __id_exists(self, collection: list, id: int):
-        return any(id == existing.id for existing in collection)
+        return i
