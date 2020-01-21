@@ -25,10 +25,16 @@ def plate(request, id, diameter):
 @pytest.fixture(scope="function")
 def colonies(request):
     colonies = list()
-    for i in range(10):
+    for i in range(1, 10):
         colonies.append(Colony(i))
 
     yield colonies
+
+@pytest.fixture(scope="function")
+def colony_rand_id(request, colonies):
+    from random import randint
+
+    yield randint(1, len(colonies))
 
 
 class Colony():
@@ -87,16 +93,22 @@ class TestPlate():
                 plate.colonies = colonies
 
     class TestMethods():
-        def test_append_colony(self, plate):
+        def test_add_colony(self, plate):
             colony = Colony(1)
-            plate.append_colony(colony)
+            plate.add_colony(colony)
 
             assert plate.colony_count == 1
             assert any(colony.id == item.id for item in plate.colonies)
             with pytest.raises(ValueError):
-                plate.append_colony(colony)
+                plate.add_colony(colony)
 
         def test_colony_exists(self, plate):
+            colony = Colony(1)
+            plate.colonies = [colony]
+
+            assert plate.colony_exists(colony)
+
+        def test_colony_id_exists(self, plate):
             colony = Colony(1)
             plate.colonies = [colony]
 
@@ -110,3 +122,27 @@ class TestPlate():
             assert plate.colony_count == len(colonies)
             for i in range(seq_start, seq_start + len(colonies)):
                 assert any(colony.id == i for colony in plate.colonies)
+
+        def test_get_colony(self, plate, colonies, colony_rand_id):
+            plate.colonies = colonies
+
+            colony = plate.get_colony(colony_rand_id)
+
+            assert colony is not None
+            assert colony.id == colony_rand_id
+
+        def test_remove_colony(self, plate, colonies, colony_rand_id):
+            plate.colonies = colonies
+
+            colony = plate.get_colony(colony_rand_id)
+            assert colony is not None
+
+            plate.remove_colony(colony_rand_id)
+            colony = plate.get_colony(colony_rand_id)
+            assert colony is None
+
+        def test_remove_colony_error(self, plate, colonies):
+            plate.colonies = colonies
+
+            with pytest.raises(KeyError):
+                plate.remove_colony(-1)

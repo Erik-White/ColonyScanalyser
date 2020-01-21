@@ -57,9 +57,9 @@ class Plate(Identified, Named, Circle):
     def edge_cut(self, val: float):
         self.__edge_cut = val
 
-    def append_colony(self, colony: object):
+    def add_colony(self, colony: object):
         """
-        Add a Colony object to the plate colony collection
+        Append a Colony object to the plate colony collection
 
         :param colony: a Colony object
         """
@@ -75,7 +75,16 @@ class Plate(Identified, Named, Circle):
         :param colony: a Colony object
         :returns: True if a colony is found with matching ID
         """
-        return self._Identified__id_exists(self, self.colonies, colony.id)
+        return self.colony_id_exists(colony.id)
+
+    def colony_id_exists(self, colony_id: int):
+        """
+        Check if a colony with the specified ID number exists in the plate colony collection
+
+        :param colony_id: a Colony object id number
+        :returns: True if a colony is found with matching ID
+        """
+        return self._Identified__id_exists(self, self.colonies, colony_id)
 
     def colonies_rename_sequential(self, start: int = 1):
         """
@@ -88,3 +97,29 @@ class Plate(Identified, Named, Circle):
             colony.id = i
 
         return i
+
+    def get_colony(self, colony_id: int):
+        """
+        Returns a colony with the specified ID number from the plate colony collection
+
+        :param colony_id: a Colony ID number
+        :returns: a Colony object, if found
+        """
+        for colony in self.colonies:
+            if colony.id == colony_id:
+                return colony
+
+        return None
+
+    def remove_colony(self, colony_id: int):
+        """
+        Remove a Colony object from the plate colony collection
+
+        :param colony_id: a Colony object ID
+        """
+        if self.colony_id_exists(colony_id):
+            for i, colony in enumerate(self.colonies):
+                if colony.id == colony_id:
+                    self.colonies.remove(colony)
+        else:
+            raise KeyError(f"No colony with ID #{colony_id} could be found")
