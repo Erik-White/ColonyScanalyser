@@ -62,30 +62,6 @@ class Colony(Identified, Named):
             ])
 
     @property
-    def timepoints(self):
-        if len(self.__timepoints) > 0:
-            return self.__timepoints
-        else:
-            raise ValueError("No time points are stored for this colony")
-
-    @timepoints.setter
-    def timepoints(self, val: Collection):
-        if isinstance(val, dict):
-            self.__timepoints = val
-        elif isinstance(val, Collection) and not isinstance(val, str):
-            self.__timepoints = {timepoint.date_time: timepoint for timepoint in val}
-        else:
-            raise ValueError("Timepoints must be supplied as a Dict or other Collection")
-
-    @property
-    def timepoint_first(self):
-        return self.get_timepoint(min(self.timepoints.keys()))
-
-    @property
-    def timepoint_last(self):
-        return self.get_timepoint(max(self.timepoints.keys()))
-
-    @property
     def center(self):
         centers = [x.center for x in self.timepoints.values()]
         return tuple(sum(x) / len(self.timepoints) for x in zip(*centers))
@@ -114,20 +90,32 @@ class Colony(Identified, Named):
             return ((self.timepoint_last.area - self.timepoint_first.area) ** (1 / len(self.timepoints))) - 1
 
     @property
+    def timepoints(self):
+        if len(self.__timepoints) > 0:
+            return self.__timepoints
+        else:
+            raise ValueError("No time points are stored for this colony")
+
+    @timepoints.setter
+    def timepoints(self, val: Collection):
+        if isinstance(val, dict):
+            self.__timepoints = val
+        elif isinstance(val, Collection) and not isinstance(val, str):
+            self.__timepoints = {timepoint.date_time: timepoint for timepoint in val}
+        else:
+            raise ValueError("Timepoints must be supplied as a Dict or other Collection")
+
+    @property
+    def timepoint_first(self):
+        return self.get_timepoint(min(self.timepoints.keys()))
+
+    @property
+    def timepoint_last(self):
+        return self.get_timepoint(max(self.timepoints.keys()))
+
+    @property
     def time_of_appearance(self):
         return self.timepoint_first.date_time
-
-    def get_timepoint(self, date_time: datetime):
-        """
-        Returns a Timepoint object from the Colony timepoints collection
-
-        :param date_time: the datetime key for specific Timepoint in the Colony timepoints collection
-        :returns: a Timepoint object from the Colony timepoints collection
-        """
-        if date_time in self.__timepoints:
-            return self.timepoints[date_time]
-        else:
-            raise ValueError(f"The requested time point ({date_time}) does not exist")
 
     def append_timepoint(self, timepoint: Timepoint):
         """
@@ -140,24 +128,7 @@ class Colony(Identified, Named):
         else:
             raise ValueError(f"This time point ({timepoint.date_time})  already exists")
 
-    def update_timepoint(self, timepoint_original: Timepoint, timepoint_new: Timepoint):
-        """
-        Replace a Timepoint from the Colony timepoints collection with a new Timepoint
-
-        :param timepoint_original: a Timepoint that exists in the Colony timepoints collection
-        :param timepoint_new: a Timepoint object to replace the existing Timepoint
-        """
-        self.timepoints[timepoint_original.date_time] = timepoint_new
-
-    def remove_timepoint(self, date_time: datetime):
-        """
-        Remove a specified Timepoint from the Colony timepoints collection
-
-        :param date_time: the datetime key for specific Timepoint in the Colony timepoints collection
-        """
-        del self.timepoints[date_time]
-
-    def circularity_at_timepoint(self, date_time: datetime):
+    def get_circularity_at_timepoint(self, date_time: datetime):
         """
         Calculate the circularity of the colony at a specified timepoint
 
@@ -208,6 +179,35 @@ class Colony(Identified, Named):
             time_sum = sum(doubling_times, timedelta())
 
         return time_sum / len(doubling_times)
+
+    def get_timepoint(self, date_time: datetime):
+        """
+        Returns a Timepoint object from the Colony timepoints collection
+
+        :param date_time: the datetime key for specific Timepoint in the Colony timepoints collection
+        :returns: a Timepoint object from the Colony timepoints collection
+        """
+        if date_time in self.__timepoints:
+            return self.timepoints[date_time]
+        else:
+            raise ValueError(f"The requested time point ({date_time}) does not exist")
+
+    def remove_timepoint(self, date_time: datetime):
+        """
+        Remove a specified Timepoint from the Colony timepoints collection
+
+        :param date_time: the datetime key for specific Timepoint in the Colony timepoints collection
+        """
+        del self.timepoints[date_time]
+
+    def update_timepoint(self, timepoint_original: Timepoint, timepoint_new: Timepoint):
+        """
+        Replace a Timepoint from the Colony timepoints collection with a new Timepoint
+
+        :param timepoint_original: a Timepoint that exists in the Colony timepoints collection
+        :param timepoint_new: a Timepoint object to replace the existing Timepoint
+        """
+        self.timepoints[timepoint_original.date_time] = timepoint_new
 
     @staticmethod
     def __circularity(self, area: float, perimeter: float):
