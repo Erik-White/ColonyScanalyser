@@ -1,6 +1,7 @@
-from collections.abc import Iterable
+from collections.abc import Collection
 from .base import Identified, Named
 from .geometry import Circle
+from .colony import Colony
 
 
 class Plate(Identified, Named, Circle):
@@ -37,13 +38,13 @@ class Plate(Identified, Named, Circle):
         return self.__colonies
 
     @colonies.setter
-    def colonies(self, val: Iterable):
+    def colonies(self, val: Collection):
         if isinstance(val, list):
             self.__colonies = val
-        elif isinstance(val, Iterable) and not isinstance(val, str):
+        elif isinstance(val, Collection) and not isinstance(val, str):
             self.__colonies = [colony for colony in val]
         else:
-            raise ValueError("Colonies must be supplied as a List or other iterable")
+            raise ValueError("Colonies must be supplied as a List or other Collection")
 
     @property
     def colony_count(self):
@@ -57,7 +58,7 @@ class Plate(Identified, Named, Circle):
     def edge_cut(self, val: float):
         self.__edge_cut = val
 
-    def add_colony(self, colony: object):
+    def add_colony(self, colony: Colony):
         """
         Append a Colony object to the plate colony collection
 
@@ -68,7 +69,7 @@ class Plate(Identified, Named, Circle):
         else:
             raise ValueError(f"A colony with ID #{colony.id} already exists")
 
-    def colony_exists(self, colony: object):
+    def colony_exists(self, colony: Colony):
         """
         Check if a colony exists in the plate colony collection
 
