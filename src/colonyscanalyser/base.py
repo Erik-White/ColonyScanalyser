@@ -9,7 +9,7 @@ class Identified:
         self.id = id
 
     @property
-    def id(self):
+    def id(self) -> int:
         return self.__id
 
     @id.setter
@@ -20,7 +20,7 @@ class Identified:
             raise ValueError(f"'{val}' is not a valid id. An id must be a non-negative integer'")
 
     @staticmethod
-    def __id_exists(self, collection: Collection, id: int):
+    def __id_exists(self, collection: Collection, id: int) -> bool:
         """
         Verifies if an object in a collection matches the specified ID number
 
@@ -31,7 +31,7 @@ class Identified:
         return any(id == existing.id for existing in collection)
 
     @staticmethod
-    def __id_is_valid(self, id: int):
+    def __id_is_valid(self, id: int) -> bool:
         """
         Verifies if a value conforms to the requirements for an ID number
 
@@ -51,7 +51,7 @@ class Named:
         self.name = name
 
     @property
-    def name(self):
+    def name(self) -> str:
         return self.__name
 
     @name.setter
@@ -76,7 +76,7 @@ class Unique(Identified):
         pass
 
     @classmethod
-    def id_increment(self):
+    def id_increment(self) -> int:
         """
         Increments the built-in ID counter
 

@@ -1,3 +1,4 @@
+from typing import Union, Tuple
 from math import pi
 
 
@@ -6,22 +7,22 @@ class Shape:
     An abstract class to provide the fundamental properties of a surface
     """
     @property
-    def area(self):
+    def area(self) -> float:
         raise NotImplementedError("This property must be implemented in a derived class")
 
     @property
-    def center(self):
+    def center(self) -> Union[Tuple[float, float], Tuple[float, float, float]]:
         try:
             return self.__center
         except AttributeError:
             return None
 
     @center.setter
-    def center(self, val: tuple):
+    def center(self, val: Union[Tuple[float, float], Tuple[float, float, float]]):
         self.__center = val
 
     @property
-    def depth(self):
+    def depth(self) -> float:
         try:
             return self.__depth
         except AttributeError:
@@ -32,7 +33,7 @@ class Shape:
         self.__depth = val
 
     @property
-    def height(self):
+    def height(self) -> float:
         try:
             return self.__height
         except AttributeError:
@@ -43,11 +44,11 @@ class Shape:
         self.__height = val
 
     @property
-    def perimeter(self):
+    def perimeter(self) -> float:
         raise NotImplementedError("This property must be implemented in a derived class")
 
     @property
-    def width(self):
+    def width(self) -> float:
         try:
             return self.__width
         except AttributeError:
@@ -66,15 +67,15 @@ class Circle(Shape):
         self.diameter = diameter
 
     @property
-    def area(self):
+    def area(self) -> float:
         return pi * self.radius * self.radius
 
     @property
-    def circumference(self):
+    def circumference(self) -> float:
         return self.perimeter
 
     @property
-    def diameter(self):
+    def diameter(self) -> float:
         return self.__diameter
 
     @diameter.setter
@@ -85,17 +86,17 @@ class Circle(Shape):
         self.__diameter = val
 
     @property
-    def height(self):
+    def height(self) -> float:
         return self.diameter
 
     @property
-    def perimeter(self):
+    def perimeter(self) -> float:
         return pi * self.diameter
 
     @property
-    def radius(self):
+    def radius(self) -> float:
         return self.diameter / 2
 
     @property
-    def width(self):
+    def width(self) -> float:
         return self.diameter

@@ -1,6 +1,7 @@
 ﻿from datetime import datetime, timedelta
 from math import pi, log
 from dataclasses import dataclass
+from typing import Union, List, Tuple
 from collections.abc import Collection
 from numpy import ndarray
 from .base import Identified, Named
@@ -63,28 +64,28 @@ class Colony(Identified, Named):
             ])
 
     @property
-    def center(self):
+    def center(self) -> Union[Tuple[float, float], Tuple[float, float, float]]:
         centers = [x.center for x in self.timepoints.values()]
         return tuple(sum(x) / len(self.timepoints) for x in zip(*centers))
 
     @property
-    def color(self):
+    def color(self) -> Tuple[float, float, float]:
         color_averages = [x.color_average for x in self.timepoints.values()]
         return tuple(sum(x) / len(self.timepoints) for x in zip(*color_averages))
 
     @property
-    def color_name(self):
+    def color_name(self) -> str:
         return rgb_to_name(self.color, color_spec = "css3")
 
     @property
-    def growth_rate(self):
+    def growth_rate(self) -> float:
         try:
             return (self.timepoint_last.area - self.timepoint_first.area) / self.timepoint_first.area
         except ZeroDivisionError:
             return 0
 
     @property
-    def growth_rate_average(self):
+    def growth_rate_average(self) -> float:
         if self.growth_rate == 0:
             return 0
         else:
@@ -107,15 +108,15 @@ class Colony(Identified, Named):
             raise ValueError("Timepoints must be supplied as a Dict or other Collection")
 
     @property
-    def timepoint_first(self):
+    def timepoint_first(self) -> "Timepoint":
         return self.get_timepoint(min(self.timepoints.keys()))
 
     @property
-    def timepoint_last(self):
+    def timepoint_last(self) -> "Timepoint":
         return self.get_timepoint(max(self.timepoints.keys()))
 
     @property
-    def time_of_appearance(self):
+    def time_of_appearance(self) -> datetime:
         return self.timepoint_first.date_time
 
     def append_timepoint(self, timepoint: Timepoint):
@@ -129,16 +130,16 @@ class Colony(Identified, Named):
         else:
             raise ValueError(f"This time point ({timepoint.date_time})  already exists")
 
-    def get_circularity_at_timepoint(self, date_time: datetime):
+    def get_circularity_at_timepoint(self, date_time: datetime) -> float:
         """
         Calculate the circularity of the colony at a specified timepoint
 
         :param date_time: the datetime key for specific Timepoint in the Colony timepoints collection
         :returns: the circularity of the colony as a float
         """
-        return self.__circularity(self.get_timepoint(date_time).area, self.get_timepoint(date_time).perimeter)
+        return self.__circularity(self, self.get_timepoint(date_time).area, self.get_timepoint(date_time).perimeter)
 
-    def get_doubling_times(self, window: int = 10, elapsed_minutes: bool = False):
+    def get_doubling_times(self, window: int = 10, elapsed_minutes: bool = False) -> Union[List[datetime], List[float]]:
         """
         Calculate the colony area doubling times over the specified number of time points
 
@@ -161,7 +162,7 @@ class Colony(Identified, Named):
 
         return [self.__local_doubling_time(self, i, x_pts, y_pts, window = window) for i in range(len(x_pts) - window)]
 
-    def get_doubling_time_average(self, window: int = 10, elapsed_minutes: bool = False):
+    def get_doubling_time_average(self, window: int = 10, elapsed_minutes: bool = False) -> Union[timedelta, float]:
         """
         Calculate an average of the colony area doubling times over the specified number of time points
 
@@ -181,7 +182,7 @@ class Colony(Identified, Named):
 
         return time_sum / len(doubling_times)
 
-    def get_timepoint(self, date_time: datetime):
+    def get_timepoint(self, date_time: datetime) -> "Timepoint":
         """
         Returns a Timepoint object from the Colony timepoints collection
 
@@ -211,7 +212,7 @@ class Colony(Identified, Named):
         self.timepoints[timepoint_original.date_time] = timepoint_new
 
     @staticmethod
-    def __circularity(self, area: float, perimeter: float):
+    def __circularity(self, area: float, perimeter: float) -> float:
         """
         Calculate how closely the shape of an object approaches that of a mathematically perfect circle
 
@@ -224,7 +225,13 @@ class Colony(Identified, Named):
         return (4 * pi * area) / (perimeter * perimeter)
 
     @staticmethod
-    def __local_doubling_time(self, index: int, x_pts: list, y_pts: list, window: int = 10):
+    def __local_doubling_time(
+        self,
+        index: int,
+        x_pts: list,
+        y_pts: List[float],
+        window: int = 10
+    ) -> Union[List[datetime], List[float]]:
         """
         Calculate the doubling times over the specified number of sequence points
 
@@ -245,7 +252,12 @@ class Colony(Identified, Named):
             return 0
 
 
-def timepoints_from_image(image_segmented: ndarray, time_point: datetime, elapsed_minutes: int, image: ndarray = None):
+def timepoints_from_image(
+    image_segmented: ndarray,
+    time_point: datetime,
+    elapsed_minutes: int,
+    image: ndarray = None
+) -> List[Colony.Timepoint]:
     """
     Create Timepoint objects from a segemented image
 
@@ -297,7 +309,10 @@ def timepoints_from_image(image_segmented: ndarray, time_point: datetime, elapse
     return colonies
 
 
-def colonies_from_timepoints(timepoints: list, distance_tolerance: float = 1):
+def colonies_from_timepoints(
+    timepoints: List["Timepoint"],
+    distance_tolerance: float = 1
+) -> List[Colony]:
     """
     Create a dictionary of Colony objects from Timepoint data
 
@@ -338,7 +353,11 @@ def colonies_from_timepoints(timepoints: list, distance_tolerance: float = 1):
     return colonies
 
 
-def group_timepoints_by_center(timepoints: list, max_distance: float = 1, axis: int = 0):
+def group_timepoints_by_center(
+    timepoints: List[Colony.Timepoint],
+    max_distance: float = 1,
+    axis: int = 0
+) -> List[List[Colony]]:
     """
     Split a list of Timepoint objects into sub groups
     Compares difference in values along a specified axis
