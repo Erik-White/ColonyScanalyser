@@ -1,3 +1,6 @@
+from collections.abc import Collection
+
+
 class Identified:
     """
     An object with a integer ID number
@@ -17,12 +20,27 @@ class Identified:
             raise ValueError(f"'{val}' is not a valid id. An id must be a non-negative integer'")
 
     @staticmethod
-    def __id_exists(self, collection: list, id: int):
+    def __id_exists(self, collection: Collection, id: int):
+        """
+        Verifies if an object in a collection matches the specified ID number
+
+        :param collection: a collection of objects (List, Dict etc)
+        :param id: an ID number to locate
+        :returns: True if an object with id exists in the collection
+        """
         return any(id == existing.id for existing in collection)
 
     @staticmethod
-    def __id_is_valid(self, val: int):
-        return isinstance(val, int) and val >= 0
+    def __id_is_valid(self, id: int):
+        """
+        Verifies if a value conforms to the requirements for an ID number
+
+        An ID number is an integer with a value greater than zero
+
+        :param id: an ID number to verify
+        :returns: True if the value conforms to the requirements for an ID number
+        """
+        return isinstance(id, int) and id >= 0
 
 
 class Named:
@@ -43,7 +61,7 @@ class Named:
 
 class Unique(Identified):
     """
-    An object with a incremented integer ID number
+    An object with a auto incremented integer ID number
     """
     id_count = 0
 
@@ -59,5 +77,11 @@ class Unique(Identified):
 
     @classmethod
     def id_increment(self):
+        """
+        Increments the built-in ID counter
+
+        :returns: the auto incremented ID number
+        """
         self.id_count += 1
+
         return self.id_count
