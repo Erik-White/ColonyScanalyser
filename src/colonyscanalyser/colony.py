@@ -2,6 +2,7 @@
 from math import pi, log
 from dataclasses import dataclass
 from collections.abc import Collection
+from numpy import ndarray
 from .base import Identified, Named
 from .utilities import round_tuple_floats
 from .imaging import rgb_to_name
@@ -244,7 +245,7 @@ class Colony(Identified, Named):
             return 0
 
 
-def timepoints_from_image(image_segmented, time_point, elapsed_minutes, image = None):
+def timepoints_from_image(image_segmented: ndarray, time_point: datetime, elapsed_minutes: int, image: ndarray = None):
     """
     Create Timepoint objects from a segemented image
 
@@ -296,7 +297,7 @@ def timepoints_from_image(image_segmented, time_point, elapsed_minutes, image = 
     return colonies
 
 
-def colonies_from_timepoints(timepoints, distance_tolerance = 1):
+def colonies_from_timepoints(timepoints: list, distance_tolerance: float = 1):
     """
     Create a dictionary of Colony objects from Timepoint data
 
@@ -337,7 +338,7 @@ def colonies_from_timepoints(timepoints, distance_tolerance = 1):
     return colonies
 
 
-def group_timepoints_by_center(timepoints, max_distance = 1, axis = 0):
+def group_timepoints_by_center(timepoints: list, max_distance: float = 1, axis: int = 0):
     """
     Split a list of Timepoint objects into sub groups
     Compares difference in values along a specified axis
