@@ -18,7 +18,6 @@ class Plate(Identified, Named, Circle):
 
         # Set property defaults
         self.colonies = colonies
-        self.description = ""
         self.edge_cut = 0
         self.name = ""
 
