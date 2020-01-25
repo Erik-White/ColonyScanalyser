@@ -7,12 +7,12 @@ from colonyscanalyser.base import (
     )
 
 
-@pytest.fixture(params = [0, 1, 2, 10000000])
+@pytest.fixture(params = [1, 2, 10000000])
 def id(request):
     yield request.param
 
 
-@pytest.fixture(params = [-1, 0.5, "one"])
+@pytest.fixture(params = [-1, 0, 0.5, "one"])
 def id_invalid(request):
     yield request.param
 
@@ -38,7 +38,7 @@ class TestNamed:
         yield request.param
 
     def test_init(self, name):
-        assert Named(name).name == name
+        assert Named(name).name == str(name)
 
 
 class TestUnique:

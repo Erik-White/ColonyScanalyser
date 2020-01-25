@@ -40,7 +40,7 @@ class Identified:
         :param id: an ID number to verify
         :returns: True if the value conforms to the requirements for an ID number
         """
-        return isinstance(id, int) and id >= 0
+        return isinstance(id, int) and id > 0
 
 
 class Named:
@@ -56,7 +56,7 @@ class Named:
 
     @name.setter
     def name(self, val: str):
-        self.__name = val
+        self.__name = str(val)
 
 
 class Unique(Identified):
