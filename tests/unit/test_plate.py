@@ -7,7 +7,7 @@ from colonyscanalyser.plate import (
 invalid = [-1, -1.1, "one", None]
 
 
-@pytest.fixture(params = [0, 1, 123456789])
+@pytest.fixture(params = [1, 2, 123456789])
 def id(request):
     yield request.param
 
