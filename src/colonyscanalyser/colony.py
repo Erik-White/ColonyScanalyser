@@ -32,7 +32,7 @@ class Colony(Identified, Named):
                 round(self.diameter, 2),
                 round(self.perimeter, 2),
                 round_tuple_floats(self.color_average, 2),
-                ])
+            ])
 
     def __init__(self, id: int, timepoints: Collection = None):
         self.id = id
@@ -61,7 +61,7 @@ class Colony(Identified, Named):
             round_tuple_floats(self.timepoint_last.center, 2),
             self.timepoint_last.area,
             round(self.timepoint_last.diameter, 2)
-            ])
+        ])
 
     @property
     def center(self) -> Union[Tuple[float, float], Tuple[float, float, float]]:
@@ -332,7 +332,7 @@ def colonies_from_timepoints(
         timepoints,
         max_distance = distance_tolerance,
         axis = 0
-        )
+    )
 
     # Then split the groups further by column values
     for timepoint_group in center_groups:
@@ -340,7 +340,7 @@ def colonies_from_timepoints(
             timepoint_group,
             max_distance = distance_tolerance,
             axis = 1
-            )
+        )
         colony_centers.extend(group)
 
     # Create a colony object for each group of centres
