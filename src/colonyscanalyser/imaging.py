@@ -73,7 +73,7 @@ def crop_image(image, crop_shape, center = None):
     if any(x < 0 for x in crop_shape) or any(not isinstance(x, int) for x in crop_shape) or len(image.shape) < len(crop_shape):
         raise ValueError(
             f"The crop shape ({crop_shape}) must be positive integers and the same dimensions as the image to crop"
-            )
+        )
     if crop_shape > img.shape:
         raise ValueError(f"The crop shape ({crop_shape}) cannot be larger than the image ({image.shape}) to crop")
 
@@ -174,7 +174,7 @@ def get_image_circles(image, circle_radius, circle_count = -1, search_radius = 0
         min_xdistance = circle_radius,
         min_ydistance = circle_radius
         # total_num_peaks = circle_count
-        )
+    )
 
     # Temporary helper function until hough_circle_peaks respects min distances
     cx, cy, radii = circles_radius_median(cx, cy, radii, circle_count)

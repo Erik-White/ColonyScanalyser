@@ -180,7 +180,7 @@ def main():
     parser = argparse.ArgumentParser(
         description = "An image analysis tool for measuring microorganism colony growth",
         formatter_class = argparse.ArgumentDefaultsHelpFormatter
-        )
+    )
     parser.add_argument("path", type = str,
                         help = "Image files location", default = None)
     parser.add_argument("-v", "--verbose", type = int, default = 1,
@@ -294,7 +294,7 @@ def main():
                     int(PLATE_SIZE / 2),
                     circle_count = utilities.coordinate_to_index_number(PLATE_LATTICE),
                     search_radius = 50
-                    )
+                )
                 # Create new Plate instances to store the information
                 plate_colonies = dict()
                 for plate_id, coord in enumerate(plate_coordinates, start = 1):
@@ -346,7 +346,7 @@ def main():
                     args = (image_file, plate_coordinates, plate_images_mask, time_points[i], time_points_elapsed[i], PLATE_EDGE_CUT),
                     kwds = {"plot_path" : None},
                     callback = callback_function
-                    ))
+                ))
 
             # Consolidate the results to a single dict
             for process in processes:
@@ -428,7 +428,7 @@ def main():
             "Final center point (row, column)",
             "Final area (pixels)",
             "Final diameter (pixels)"
-            ]
+        ]
 
         # Save data for all colonies on one plate
         file_access.save_to_csv(
@@ -458,7 +458,7 @@ def main():
             colony_timepoints,
             headers,
             save_path.joinpath(f"plate{str(plate_id) + plate_name}_colony_timepoints")
-            )
+        )
 
     # Only generate plots when working with original images
     # Can't guarantee that the original images and full list of time points

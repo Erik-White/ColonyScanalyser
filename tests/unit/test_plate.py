@@ -2,7 +2,7 @@ import pytest
 
 from colonyscanalyser.plate import (
     Plate
-    )
+)
 
 invalid = [-1, -1.1, "one", None]
 

@@ -4,7 +4,7 @@ from math import pi
 from colonyscanalyser.geometry import (
     Shape,
     Circle
-    )
+)
 
 
 class TestShape:

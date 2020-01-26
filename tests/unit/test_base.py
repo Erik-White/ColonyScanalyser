@@ -4,7 +4,7 @@ from colonyscanalyser.base import (
     Identified,
     Named,
     Unique
-    )
+)
 
 
 @pytest.fixture(params = [1, 2, 10000000])

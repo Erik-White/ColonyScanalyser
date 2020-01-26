@@ -12,7 +12,7 @@ from colonyscanalyser.file_access import (
     load_file,
     save_file,
     save_to_csv
-    )
+)
 
 FILE_NON_EXISTANT = Path("")
 SUB_DIR = Path("test_subdir")
@@ -243,7 +243,7 @@ class TestSaveToCSV():
             def __iter__(self):
                 return iter([
                     self.prop
-                    ])
+                ])
 
         data_iters = list()
         for row in data_list:

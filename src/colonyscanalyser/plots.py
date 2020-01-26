@@ -169,7 +169,7 @@ def plot_plate_segmented(plate_image, segmented_image, date_time, save_path):
             color = "red",
             horizontalalignment = "center",
             verticalalignment = "center"
-            )
+        )
 
     plt.suptitle(f"Plate time point {date_time.strftime('%Y/%m/%d %H:%M')}")
     image_path = f"time_point_{date_time.strftime('%Y%m%d')}_{date_time.strftime('%H%M')}.png"
@@ -207,7 +207,7 @@ def plot_growth_curve(plates_dict, time_points_elapsed, save_path):
         "format": "png",
         "bbox_extra_artists": (lgd,),
         "bbox_inches": "tight"
-        }
+    }
 
     plt.ylim(ymin = 0)
     plt.title("Colony growth")
@@ -242,7 +242,7 @@ def growth_curve(ax, plate_item, time_points_elapsed, scatter_color, line_color 
             marker = "o",
             s = 1,
             alpha = 0.25
-            )
+        )
 
     # Plot the mean
     areas_averages = average_dicts_values_by_key(areas_average)
@@ -251,7 +251,7 @@ def growth_curve(ax, plate_item, time_points_elapsed, scatter_color, line_color 
         color = line_color,
         label = f"Plate {plate_id}",
         linewidth = 2
-        )
+    )
 
     # Format x-axis labels as integer hours
     ax.set_xticklabels(axis_minutes_to_hours(ax.get_xticks()))
@@ -284,7 +284,7 @@ def plot_appearance_frequency(plates_dict, time_points_elapsed, save_path, bar =
         "format": "png",
         "bbox_extra_artists": (lgd,),
         "bbox_inches": "tight"
-        }
+    }
 
     plt.ylim(ymin = 0)
     plt.title("Time of appearance")
@@ -319,7 +319,7 @@ def time_of_appearance_frequency(ax, plate_item, time_points_elapsed, plot_color
             color = plot_color,
             label = f"Plate {plate_id}",
             alpha = 0.9
-            )
+        )
     else:
         if plot_total is not None:
             width = plot_total + 1
@@ -337,7 +337,7 @@ def time_of_appearance_frequency(ax, plate_item, time_points_elapsed, plot_color
             width = width,
             color = plot_color,
             label = f"Plate {plate_id}"
-            )
+        )
 
     # Format x-axis labels as integer hours
     ax.set_xticklabels(axis_minutes_to_hours(ax.get_xticks()))
@@ -375,7 +375,7 @@ def plot_doubling_map(plates_dict, time_points_elapsed, save_path):
         cmap = "RdPu",
         extent = extent,
         origin = "lower"
-        )
+    )
 
     plt.xlim(xmin = 0)
     plt.ylim(ymin = 0)

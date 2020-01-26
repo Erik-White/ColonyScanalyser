@@ -207,7 +207,7 @@ def save_to_csv(data, headers, save_path, delimiter = ","):
                     outfile,
                     delimiter = delimiter,
                     fieldnames = headers
-                    )
+                )
                 writer.writeheader()
                 data = [data]
             else:

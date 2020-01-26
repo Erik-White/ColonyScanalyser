@@ -6,7 +6,7 @@ from colonyscanalyser.colony import (
     timepoints_from_image,
     colonies_from_timepoints,
     group_timepoints_by_center
-    )
+)
 
 
 centers = [
@@ -19,7 +19,7 @@ centers = [
     (4, 3.9),
     (3, 10),
     (0, 4.4)
-    ]
+]
 
 
 @pytest.fixture(params = [centers])

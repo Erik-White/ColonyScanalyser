@@ -7,7 +7,7 @@ from colonyscanalyser.utilities import (
     progress_bar,
     average_dicts_values_by_key,
     average_median_dicts_values_by_key
-    )
+)
 
 
 class TestRoundTupleFloats():
@@ -15,7 +15,7 @@ class TestRoundTupleFloats():
         (1.3285, 1.00001),
         (-95840.3567, 0.0),
         (43.94387678, "string.", 2.567)
-        ])
+    ])
     def tuples(self, request):
         yield request.param
 

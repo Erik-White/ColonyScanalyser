@@ -9,7 +9,7 @@ from colonyscanalyser.imaging import (
     get_image_circles,
     remove_background_mask,
     watershed_separation
-    )
+)
 
 image_ref = np.array([
     [0, 0, 0, 0, 0, 0, 0, 1, 0],
@@ -254,7 +254,7 @@ class TestRemoveBackgroundMask():
             remove_background_mask(
                 np.ones((5, 5), dtype = np.uint8),
                 np.ones((3, 5), dtype = np.uint8)
-                )
+            )
 
     def test_image_blank(self):
         image_blank = np.zeros((3, 3))
