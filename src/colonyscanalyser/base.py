@@ -1,4 +1,5 @@
 from collections.abc import Collection
+from datetime import datetime, timedelta
 
 
 class Identified:
@@ -85,3 +86,52 @@ class Unique(Identified):
         self.id_count += 1
 
         return self.id_count
+
+
+class TimeStamped:
+    def __init__(self, timestamp: datetime = None):
+        self.timestamp = timestamp
+        if self.timestamp is None:
+            self.timestamp = datetime.now()
+
+    @property
+    def timestamp(self) -> datetime:
+        return self.__timestamp
+
+    @timestamp.setter
+    def timestamp(self, val: datetime):
+        self.__timestamp = val
+
+
+class TimeStampElapsed(TimeStamped):
+    def __init__(self, timestamp: datetime = None, timestamp_initial: datetime = None):
+        self._TimeStamped__timestamp = timestamp
+        if self.timestamp is None:
+            self.timestamp = datetime.now()
+        self.timestamp_initial = timestamp_initial
+        if timestamp_initial is None:
+            self.timestamp_initial = self.timestamp
+
+    @property
+    def timestamp_elapsed(self) -> timedelta:
+        return self.timestamp - self.timestamp_initial
+
+    @property
+    def timestamp_elapsed_hours(self) -> float:
+        return (self.timestamp_elapsed_seconds / 60) / 60
+
+    @property
+    def timestamp_elapsed_minutes(self) -> int:
+        return int(self.timestamp_elapsed_seconds / 60)
+
+    @property
+    def timestamp_elapsed_seconds(self) -> int:
+        return self.timestamp_elapsed.total_seconds()
+
+    @property
+    def timestamp_initial(self) -> datetime:
+        return self.__timestamp_initial
+
+    @timestamp_initial.setter
+    def timestamp_initial(self, val: datetime):
+        self.__timestamp_initial = val

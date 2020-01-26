@@ -1,9 +1,12 @@
 import pytest
+from datetime import datetime
 
 from colonyscanalyser.base import (
     Identified,
     Named,
-    Unique
+    Unique,
+    TimeStamped,
+    TimeStampElapsed
 )
 
 
@@ -73,3 +76,39 @@ class TestUnique:
         obj.id = id
 
         assert obj.id == original_id
+
+
+class TestTimeStamped:
+    def test_init(self):
+        timestamp = datetime(1, 1, 1)
+        timestamped = TimeStamped(timestamp)
+
+        assert timestamped.timestamp == timestamp
+
+    def test_init_auto(self):
+
+        assert TimeStamped().timestamp is not None
+
+
+class TestTimeStampElapsed:
+    def test_init(self):
+        timestamp = datetime(1, 1, 1)
+        timestampelapsed = TimeStampElapsed(timestamp, timestamp)
+
+        assert timestampelapsed.timestamp == timestamp
+        assert timestampelapsed.timestamp_initial == timestamp
+
+    def test_init_auto(self):
+
+        assert TimeStampElapsed().timestamp is not None
+        assert TimeStampElapsed().timestamp_initial is not None
+
+    def test_timestamp_elapsed(self):
+        timestamp_inital = datetime(1, 1, 1, 0, 0)
+        timestamp = datetime(1, 1, 1, 1, 1)
+        timestampelapsed = TimeStampElapsed(timestamp, timestamp_inital)
+        timestamp_diff = timestamp - timestamp_inital
+
+        assert timestampelapsed.timestamp_elapsed == timestamp_diff
+        assert timestampelapsed.timestamp_elapsed_hours == timestamp_diff.total_seconds() / 3600
+        assert timestampelapsed.timestamp_elapsed_minutes == int(timestamp_diff.total_seconds() / 60)
