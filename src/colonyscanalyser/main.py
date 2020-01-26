@@ -157,7 +157,7 @@ def image_file_to_timepoints(image_path, plate_coordinates, plate_images_mask, t
     plate_timepoints = defaultdict(list)
 
     # Load image
-    img = imread(str(image_path), as_gray = False)
+    img = imread(str(image_path), plugin = "pil", as_gray = False)
 
     # Split image into individual plates
     plate_images = get_plate_images(img, plate_coordinates, edge_cut = edge_cut)
@@ -283,7 +283,7 @@ def main():
         # Load the first image to get plate coordinate and mask
         with image_files[0] as image_file:
             # Load image
-            img = imread(str(image_file), as_gray = True)
+            img = imread(str(image_file), plugin = "pil", as_gray = True)
 
             # Only find centers using first image. Assume plates do not move
             if plate_coordinates is None:
@@ -335,7 +335,7 @@ def main():
         with Pool(processes = POOL_MAX) as pool:
             for i, image_file in enumerate(image_files):
                 # Load image
-                img = imread(str(image_file), as_gray = True)
+                img = imread(str(image_file), plugin = "pil", as_gray = True)
                         
                 # Allow args to be passed to callback function
                 callback_function = partial(progress_update, progress = ((i + 1) / len(image_files)) * 100)
@@ -473,7 +473,7 @@ def main():
             plots.plot_appearance_frequency(plate_colonies, time_points_elapsed, save_path)
             plots.plot_appearance_frequency(plate_colonies, time_points_elapsed, save_path, bar = True)
             plots.plot_doubling_map(plate_colonies, time_points_elapsed, save_path)
-            plots.plot_colony_map(imread(image_files[-1], as_gray = False), plate_colonies, save_path)
+            plots.plot_colony_map(imread(image_files[-1], plugin = "pil", as_gray = False), plate_colonies, save_path)
 
         # Plot colony growth curves, ID map and time of appearance for each plate
         if SAVE_PLOTS >= 2:
