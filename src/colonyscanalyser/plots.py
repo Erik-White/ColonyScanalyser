@@ -5,12 +5,11 @@ from .utilities import average_dicts_values_by_key
 from .plotting import rc_to_xy, axis_minutes_to_hours
 
 
-def plot_colony_map(plate_image, plate_coordinates, plate_colonies, save_path, edge_cut = 0):
+def plot_colony_map(plate_image, plate_colonies, save_path):
     """
     Saves original plate image with overlaid plate and colony IDs
 
     :param plate_image: the final timepoint image of all plates
-    :param plate_coordinates: a dictionary of centre and radii tuples
     :param plate_colonies: a dictionary of Colony objects
     :param save_path: a path object
     :returns: a file path object if the plot was saved sucessfully
@@ -28,18 +27,18 @@ def plot_colony_map(plate_image, plate_coordinates, plate_colonies, save_path, e
     ax.axis('off')
     ax.imshow(plate_image)
 
-    for plate_id, plate in plate_colonies.items():
-        (center_y, center_x), plate_radius = plate_coordinates[plate_id]
+    for plate in plate_colonies.values():
+        center_y, center_x = plate.center
 
         # Colony coordinates are relative to individual plate images
         # Calculate a correction factor to allow plotting on the original image
-        offset_y = center_y - plate_radius + edge_cut
-        offset_x = center_x - plate_radius + edge_cut
+        offset_y = center_y - plate.radius + plate.edge_cut
+        offset_x = center_x - plate.radius + plate.edge_cut
 
         # Label plates
         ax.annotate(
-            f"Plate #{plate_id}".upper(),
-            (center_x, center_y - plate_radius - (edge_cut * 1.4)),
+            f"Plate #{plate.id}".upper(),
+            (center_x, center_y - plate.radius - (plate.edge_cut * 1.4)),
             xycoords = "data",
             horizontalalignment = "center",
             verticalalignment = "center",
@@ -47,11 +46,22 @@ def plot_colony_map(plate_image, plate_coordinates, plate_colonies, save_path, e
             backgroundcolor = "black",
             color = "white"
         )
+        if len(plate.name) > 0:
+            ax.annotate(
+                plate.name,
+                (center_x, center_y - plate.radius - (plate.edge_cut * 0.6)),
+                xycoords = "data",
+                horizontalalignment = "center",
+                verticalalignment = "center",
+                fontsize = "32",
+                backgroundcolor = "black",
+                color = "white"
+            )
 
         # Mark the detected boundary of the plate
         plate_circle = plt.Circle(
             (center_x, center_y),
-            radius = plate_radius,
+            radius = plate.radius,
             facecolor = "none",
             edgecolor = "purple",
             linewidth = "2.5",
@@ -63,7 +73,7 @@ def plot_colony_map(plate_image, plate_coordinates, plate_colonies, save_path, e
         # Mark the measured area of the plate
         plate_circle_measured = plt.Circle(
             (center_x, center_y),
-            radius = plate_radius - edge_cut,
+            radius = plate.radius - plate.edge_cut,
             facecolor = "none",
             edgecolor = "white",
             linewidth = "1.5",
@@ -73,7 +83,7 @@ def plot_colony_map(plate_image, plate_coordinates, plate_colonies, save_path, e
         ax.add_artist(plate_circle_measured)
 
         # Mark colony centres and ID numbers
-        for colony in plate.values():
+        for colony in plate.colonies:
             x, y = rc_to_xy(colony.center)
             x = offset_x + x
             y = offset_y + y
@@ -216,7 +226,7 @@ def growth_curve(ax, plate_item, time_points_elapsed, scatter_color, line_color 
     if line_color is None:
         line_color = scatter_color
 
-    for colony in plate.values():
+    for colony in plate.colonies:
         # Map areas to a dictionary of all timepoints
         time_points_dict = dict.fromkeys(time_points_elapsed)
         for timepoint in colony.timepoints.values():
@@ -265,7 +275,7 @@ def plot_appearance_frequency(plates_dict, time_points_elapsed, save_path, bar =
             cm_plate = "Purple"
             plot_total = None
 
-        if not len(plate_item) < 1:
+        if not plate_item.colony_count < 1:
             # Plot frequency for each time point
             time_of_appearance_frequency(ax, (plate_id, plate_item), time_points_elapsed, cm_plate, plot_total, bar = bar)
 
@@ -294,7 +304,7 @@ def time_of_appearance_frequency(ax, plate_item, time_points_elapsed, plot_color
     plate_id, plate = plate_item
 
     time_points_dict = dict()
-    for colony in plate.values():
+    for colony in plate.colonies:
         key = colony.timepoint_first.elapsed_minutes
         if key not in time_points_dict:
             time_points_dict[key] = 0
@@ -348,7 +358,7 @@ def plot_doubling_map(plates_dict, time_points_elapsed, save_path):
     y = [0]
 
     for plate in plates_dict.values():
-        for colony in plate.values():
+        for colony in plate.colonies:
             x.append(colony.timepoint_first.elapsed_minutes)
             y.append(colony.get_doubling_time_average(elapsed_minutes = True))
 
