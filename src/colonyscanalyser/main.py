@@ -405,60 +405,11 @@ def main():
         
     save_path = BASE_PATH.joinpath("data")
     for plate_id, plate in plate_colonies.items():
-        plate_name = ""
-        if len(plate.name) > 0:
-            plate_name = "_" + plate.name.replace(" ", "_")
-
-        headers = [
-            "Colony ID",
-            "Time of appearance",
-            "Time of appearance (elapsed minutes)",
-            "Center point averaged (row, column)",
-            "Colour averaged name",
-            "Colour averaged (R,G,B)",
-            "Growth rate average",
-            "Growth rate",
-            "Doubling time average (minutes)",
-            "Doubling times (minutes)",
-            "First detection (elapsed minutes)",
-            "First center point (row, column)",
-            "First area (pixels)",
-            "First diameter (pixels)",
-            "Final detection (elapsed minutes)",
-            "Final center point (row, column)",
-            "Final area (pixels)",
-            "Final diameter (pixels)"
-        ]
-
         # Save data for all colonies on one plate
-        file_access.save_to_csv(
-            plate.colonies,
-            headers,
-            save_path.joinpath(f"plate{str(plate_id) + plate_name}_colonies")
-            )
+        plate.colonies_to_csv(save_path)
 
         # Save data for each colony on a plate
-        headers = [
-            "Colony ID",
-            "Date/Time",
-            "Elapsed time (minutes)",
-            "Area (pixels)",
-            "Center (row, column)",
-            "Diameter (pixels)",
-            "Perimeter (pixels)",
-            "Color average (R,G,B)"
-        ]
-        colony_timepoints = list()
-        for colony in plate.colonies:
-            for timepoint in colony.timepoints.values():
-                # Unpack timepoint properties to a flat list
-                colony_timepoints.append([colony.id, *timepoint])
-
-        file_access.save_to_csv(
-            colony_timepoints,
-            headers,
-            save_path.joinpath(f"plate{str(plate_id) + plate_name}_colony_timepoints")
-        )
+        plate.colonies_timepoints_to_csv(save_path)
 
     # Only generate plots when working with original images
     # Can't guarantee that the original images and full list of time points

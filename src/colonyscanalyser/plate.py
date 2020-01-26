@@ -1,7 +1,10 @@
+from typing import List
 from collections.abc import Collection
+from pathlib import Path, PurePath
 from .base import Identified, Named
 from .geometry import Circle
 from .colony import Colony
+from .file_access import save_to_csv
 
 
 class Plate(Identified, Named, Circle):
@@ -68,6 +71,78 @@ class Plate(Identified, Named, Circle):
         else:
             raise ValueError(f"A colony with ID #{colony.id} already exists")
 
+    def colonies_to_csv(self, save_path: Path, headers: List[str] = None) -> Path:
+        """
+        Output the data from the colonies collection to a CSV file
+
+        :param save_path: the location to save the CSV data file
+        :param headers: a list of strings to use as column headers
+        :returns: a Path representing the new file, if successful
+        """
+        if headers is None:
+            headers = [
+                "Colony ID",
+                "Time of appearance",
+                "Time of appearance (elapsed minutes)",
+                "Center point averaged (row, column)",
+                "Colour averaged name",
+                "Colour averaged (R,G,B)",
+                "Growth rate average",
+                "Growth rate",
+                "Doubling time average (minutes)",
+                "Doubling times (minutes)",
+                "First detection (elapsed minutes)",
+                "First center point (row, column)",
+                "First area (pixels)",
+                "First diameter (pixels)",
+                "Final detection (elapsed minutes)",
+                "Final center point (row, column)",
+                "Final area (pixels)",
+                "Final diameter (pixels)"
+            ]
+
+        return self.__collection_to_csv(
+            self,
+            save_path,
+            "_".join(filter(None, [f"plate{str(self.id)}", self.name.replace(" ", "_"), "colonies"])),
+            self.colonies,
+            headers
+        )
+
+    def colonies_timepoints_to_csv(self, save_path: Path, headers: List[str] = None) -> Path:
+        """
+        Output the data from the timepoints in the colonies collection to a CSV file
+
+        :param save_path: the location to save the CSV data file
+        :param headers: a list of strings to use as column headers
+        :returns: a Path representing the new file, if successful
+        """
+        if headers is None:
+            headers = [
+                "Colony ID",
+                "Date/Time",
+                "Elapsed time (minutes)",
+                "Area (pixels)",
+                "Center (row, column)",
+                "Diameter (pixels)",
+                "Perimeter (pixels)",
+                "Color average (R,G,B)"
+            ]
+
+        # Unpack timepoint properties to a flat list
+        colony_timepoints = list()
+        for colony in self.colonies:
+            for timepoint in colony.timepoints.values():
+                colony_timepoints.append([colony.id, *timepoint])
+
+        return self.__collection_to_csv(
+            self,
+            save_path,
+            "_".join(filter(None, [f"plate{str(self.id)}", self.name.replace(" ", "_"), "colony", "timepoints"])),
+            colony_timepoints,
+            headers
+        )
+
     def colony_exists(self, colony: Colony):
         """
         Check if a colony exists in the plate colony collection
@@ -123,3 +198,26 @@ class Plate(Identified, Named, Circle):
                     self.colonies.remove(colony)
         else:
             raise KeyError(f"No colony with ID #{colony_id} could be found")
+
+    @staticmethod
+    def __collection_to_csv(self, save_path: Path, file_name: str, data: Collection, headers: List[str] = None) -> Path:
+        """
+        Output the data from the timepoints in the colonies collection to a CSV file
+
+        :param save_path: the location to save the CSV data file
+        :param file_name: the name of the CSV data file
+        :param data: a collection of iterables to output as rows to the CSV file
+        :param headers: a list of strings to use as column headers
+        :returns: a Path representing the new file, if successful
+        """
+        # Check that a path has been specified and can be found
+        if not isinstance(save_path, Path):
+            save_path = Path(save_path)
+        if not save_path.exists() or str(PurePath(save_path)) == ".":
+            raise FileNotFoundError(f"The path '{str(save_path)}' could not be found. Please specify a different save path")
+
+        return save_to_csv(
+            data,
+            headers,
+            save_path.joinpath(file_name)
+        )

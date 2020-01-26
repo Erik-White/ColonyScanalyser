@@ -17,12 +17,12 @@ def diameter(request):
     yield request.param
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope = "function")
 def plate(request, id, diameter):
     yield Plate(id, diameter)
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope = "function")
 def colonies(request):
     colonies = list()
     for i in range(1, 10):
@@ -30,7 +30,7 @@ def colonies(request):
 
     yield colonies
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope = "function")
 def colony_rand_id(request, colonies):
     from random import randint
 
@@ -40,6 +40,12 @@ def colony_rand_id(request, colonies):
 class Colony():
     def __init__(self, id):
         self.id = id
+        self.timepoints = {str(id): str(id)}
+
+    def __iter__(self):
+        return iter([
+            self.id
+        ])
 
 
 class TestPlate():
@@ -146,3 +152,41 @@ class TestPlate():
 
             with pytest.raises(KeyError):
                 plate.remove_colony(-1)
+
+        def test_colonies_to_csv(self, plate, colonies, tmp_path):
+            import csv
+
+            plate.colonies = colonies
+            result = plate.colonies_to_csv(tmp_path)
+
+            # Check all rows were written correctly
+            with open(result, 'r') as csvfile:
+                reader = csv.reader(csvfile)
+                for i, row in enumerate(reader):
+                    # Skip headers row
+                    if i != 0:
+                        assert [str(x) for x in colonies[i - 1]] == row
+
+        def test_colonies_timepoints_to_csv(self, plate, colonies, tmp_path):
+            import csv
+
+            plate.colonies = colonies
+            result = plate.colonies_timepoints_to_csv(tmp_path)
+
+            # Check all rows were written correctly
+            with open(result, 'r') as csvfile:
+                reader = csv.reader(csvfile)
+                for i, row in enumerate(reader):
+                    # Skip headers row
+                    if i != 0:
+                        assert [str(x) for x in colonies[i - 1].timepoints.items()] == [str(tuple(row))]
+
+        def test_collection_to_csv(self, plate, tmp_path, colonies):
+            file_name = "test"
+            result = plate._Plate__collection_to_csv(self, str(tmp_path), file_name, colonies, list())
+
+            assert result == tmp_path.joinpath(file_name).with_suffix(".csv")
+
+        def test_collection_to_csv_path(self, plate):
+            with pytest.raises(FileNotFoundError):
+                plate._Plate__collection_to_csv(self, "", "", list())
