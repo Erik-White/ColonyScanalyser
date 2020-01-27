@@ -137,7 +137,7 @@ class Colony(Identified, Named):
         :param date_time: the datetime key for specific Timepoint in the Colony timepoints collection
         :returns: the circularity of the colony as a float
         """
-        return self.__circularity(self, self.get_timepoint(date_time).area, self.get_timepoint(date_time).perimeter)
+        return self.__circularity(self.get_timepoint(date_time).area, self.get_timepoint(date_time).perimeter)
 
     def get_doubling_times(self, window: int = 10, elapsed_minutes: bool = False) -> Union[List[datetime], List[float]]:
         """
@@ -160,7 +160,7 @@ class Colony(Identified, Named):
             x_pts = [value.date_time for key, value in self.timepoints.items()]
         y_pts = [value.area for key, value in self.timepoints.items()]
 
-        return [self.__local_doubling_time(self, i, x_pts, y_pts, window = window) for i in range(len(x_pts) - window)]
+        return [self.__local_doubling_time(i, x_pts, y_pts, window = window) for i in range(len(x_pts) - window)]
 
     def get_doubling_time_average(self, window: int = 10, elapsed_minutes: bool = False) -> Union[timedelta, float]:
         """
@@ -212,7 +212,7 @@ class Colony(Identified, Named):
         self.timepoints[timepoint_original.date_time] = timepoint_new
 
     @staticmethod
-    def __circularity(self, area: float, perimeter: float) -> float:
+    def __circularity(area: float, perimeter: float) -> float:
         """
         Calculate how closely the shape of an object approaches that of a mathematically perfect circle
 
@@ -226,7 +226,6 @@ class Colony(Identified, Named):
 
     @staticmethod
     def __local_doubling_time(
-        self,
         index: int,
         x_pts: list,
         y_pts: List[float],

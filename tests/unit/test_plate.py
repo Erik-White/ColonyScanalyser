@@ -183,10 +183,10 @@ class TestPlate():
 
         def test_collection_to_csv(self, plate, tmp_path, colonies):
             file_name = "test"
-            result = plate._Plate__collection_to_csv(self, str(tmp_path), file_name, colonies, list())
+            result = plate._Plate__collection_to_csv(str(tmp_path), file_name, colonies, list())
 
             assert result == tmp_path.joinpath(file_name).with_suffix(".csv")
 
         def test_collection_to_csv_path(self, plate):
             with pytest.raises(FileNotFoundError):
-                plate._Plate__collection_to_csv(self, "", "", list())
+                plate._Plate__collection_to_csv("", "", list())

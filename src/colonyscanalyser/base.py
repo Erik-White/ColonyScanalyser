@@ -15,12 +15,12 @@ class Identified:
 
     @id.setter
     def id(self, val: int):
-        if self.__id_is_valid(self, val):
+        if self.__id_is_valid(val):
             self.__id = val
         else:
             raise ValueError(f"'{val}' is not a valid id. An id must be a non-negative integer'")
 
-    @staticmethod
+    @classmethod
     def __id_exists(self, collection: Collection, id: int) -> bool:
         """
         Verifies if an object in a collection matches the specified ID number
@@ -31,7 +31,7 @@ class Identified:
         """
         return any(id == existing.id for existing in collection)
 
-    @staticmethod
+    @classmethod
     def __id_is_valid(self, id: int) -> bool:
         """
         Verifies if a value conforms to the requirements for an ID number

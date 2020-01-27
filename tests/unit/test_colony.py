@@ -264,7 +264,7 @@ class TestColony():
         def test_local_doubling_time(self, timepoint_empty):
             colony = Colony(1, [timepoint_empty])
 
-            assert colony._Colony__local_doubling_time(colony, 0, [0], [0], window = 0) == 0
+            assert colony._Colony__local_doubling_time(0, [0], [0], window = 0) == 0
 
 
 class TestColoniesFromTimepoints():

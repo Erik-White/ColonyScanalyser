@@ -102,7 +102,6 @@ class Plate(Identified, Named, Circle):
             ]
 
         return self.__collection_to_csv(
-            self,
             save_path,
             "_".join(filter(None, [f"plate{str(self.id)}", self.name.replace(" ", "_"), "colonies"])),
             self.colonies,
@@ -136,7 +135,6 @@ class Plate(Identified, Named, Circle):
                 colony_timepoints.append([colony.id, *timepoint])
 
         return self.__collection_to_csv(
-            self,
             save_path,
             "_".join(filter(None, [f"plate{str(self.id)}", self.name.replace(" ", "_"), "colony", "timepoints"])),
             colony_timepoints,
@@ -159,7 +157,7 @@ class Plate(Identified, Named, Circle):
         :param colony_id: a Colony object id number
         :returns: True if a colony is found with matching ID
         """
-        return self._Identified__id_exists(self, self.colonies, colony_id)
+        return self._Identified__id_exists(self.colonies, colony_id)
 
     def colonies_rename_sequential(self, start: int = 1):
         """
@@ -200,7 +198,7 @@ class Plate(Identified, Named, Circle):
             raise KeyError(f"No colony with ID #{colony_id} could be found")
 
     @staticmethod
-    def __collection_to_csv(self, save_path: Path, file_name: str, data: Collection, headers: List[str] = None) -> Path:
+    def __collection_to_csv(save_path: Path, file_name: str, data: Collection, headers: List[str] = None) -> Path:
         """
         Output the data from the timepoints in the colonies collection to a CSV file
 
