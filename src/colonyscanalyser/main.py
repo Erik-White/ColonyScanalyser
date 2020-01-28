@@ -8,9 +8,6 @@ from collections import defaultdict
 from multiprocessing import Pool, cpu_count
 from functools import partial
 
-# Third party modules
-from skimage.io import imread
-
 # Local modules
 from colonyscanalyser import (
     utilities,
@@ -18,6 +15,7 @@ from colonyscanalyser import (
     imaging,
     plots
 )
+from .image_file import ImageFile, ImageFileCollection
 from .plate import Plate
 from .colony import Colony, timepoints_from_image, colonies_from_timepoints, timepoints_from_image
 
@@ -40,37 +38,6 @@ def get_plate_directory(parent_path, row, col, create_dir = True):
         return file_access.create_subdirectory(parent_path, child_path)
     else:
         return parent_path.joinpath(child_path)
-
-
-def get_image_timestamps(image_paths, elapsed_minutes = False):
-    """
-    Get timestamps from a list of images
-
-    Assumes images have a file name with as timestamp
-    Timestamps should be in YYYYMMDD_HHMM format
-
-    :param images: a list of image file path objects
-    :param elapsed_minutes: return timestamps as elapsed integer minutes
-    :returns: a list of timestamps
-    """
-    time_points = list()
-
-    # Get date and time information from filenames
-    dates = [str(image.name[:-8].split("_")[-2]) for image in image_paths]
-    times = [str(image.name[:-4].split("_")[-1]) for image in image_paths]
-    
-    # Convert string timestamps to Python datetime objects
-    for i, date in enumerate(dates):
-        time_points.append(datetime.combine(datetime.strptime(date, "%Y%m%d"), datetime.strptime(times[i], "%H%M").time()))
-
-    if elapsed_minutes:
-        # Store time points as elapsed minutes since start
-        time_points_elapsed = list()
-        for time_point in time_points:
-            time_points_elapsed.append(int((time_point - time_points[0]).total_seconds() / 60))
-        time_points = time_points_elapsed
-
-    return time_points
 
 
 def get_plate_images(image, plate_coordinates, edge_cut = 100):
@@ -137,17 +104,15 @@ def segment_image(plate_image, plate_mask, plate_noise_mask, area_min = 5):
     return colonies
 
 
-def image_file_to_timepoints(image_path, plate_coordinates, plate_images_mask, time_point, elapsed_minutes, edge_cut, plot_path = None):
+def image_file_to_timepoints(image_file, plate_coordinates, plate_images_mask, edge_cut, plot_path = None):
     """
     Get Timepoint object data from a plate image
 
     Lists the results in a dict with the plate number as the key
 
-    :param image_path: a Path object representing an image
+    :param image_file: an ImageFile object
     :param plate_coordinates: a list of (row, column) tuple plate centres
     :param plate_images_mask: a list of plate images to use as noise masks
-    :param time_point: a Datetime object
-    :param elapsed_minutes: the number of integer minutes since starting
     :param plot_path: a Path directory to save the segmented image plot
     :returns: a Dict of lists, each containing Timepoint objects
     """
@@ -156,21 +121,18 @@ def image_file_to_timepoints(image_path, plate_coordinates, plate_images_mask, t
 
     plate_timepoints = defaultdict(list)
 
-    # Load image
-    img = imread(str(image_path), plugin = "pil", as_gray = False)
-
     # Split image into individual plates
-    plate_images = get_plate_images(img, plate_coordinates, edge_cut = edge_cut)
+    plate_images = get_plate_images(image_file.image, plate_coordinates, edge_cut = edge_cut)
 
     for j, plate_image in enumerate(plate_images):
         plate_image_gray = rgb2gray(plate_image)
         # Segment each image
         plate_images[j] = segment_image(plate_image_gray, plate_image_gray > 0, plate_images_mask[j], area_min = 8)
         # Create Timepoint objects for each plate
-        plate_timepoints[j + 1].extend(timepoints_from_image(plate_images[j], time_point, elapsed_minutes, image = plate_image))
+        plate_timepoints[j + 1].extend(timepoints_from_image(plate_images[j], image_file.timestamp, image_file.timestamp_elapsed_minutes, image = plate_image))
         # Save segmented image plot, if required
         if plot_path is not None:
-            plots.plot_plate_segmented(plate_image_gray, plate_images[j], time_point, plot_path)
+            plots.plot_plate_segmented(plate_image_gray, plate_images[j], image_file.timestamp, plot_path)
 
     return plate_timepoints
 
@@ -255,22 +217,32 @@ def main():
     if not USE_CACHED or plate_colonies is None:
         # Find images in working directory
         image_formats = ["tif", "tiff", "png"]
-        image_files = file_access.get_files_by_type(BASE_PATH, image_formats)
+        image_paths = file_access.get_files_by_type(BASE_PATH, image_formats)
 
-        # Check if images have been loaded
-        if len(image_files) > 0:
+        # Store images as ImageFile objects
+        # Timestamps are automatically read from filenames
+        image_files = ImageFileCollection()
+        for image_path in image_paths:
+            image_files.add_image_file(
+                file_path = image_path,
+                timestamp = None,
+                timestamp_initial = None,
+                cache_image = False
+            )
+
+        # Check if images have been loaded and timestamps could be read
+        if image_files.image_file_count > 0:
             if VERBOSE >= 1:
-                print(f"{len(image_files)} images found")
+                print(f"{image_files.image_file_count} images found")
         else:
             raise IOError(f"No images could be found in the supplied folder path."
             " Images are expected in these formats: {image_formats}")
-
-        # Get date and time information from filenames
-        time_points = get_image_timestamps(image_files)
-        time_points_elapsed = get_image_timestamps(image_files, elapsed_minutes = True)
-        if len(time_points) != len(image_files) or len(time_points) != len(image_files):
+        if image_files.image_file_count != len(image_files.timestamps):
             raise IOError("Unable to load timestamps from all image filenames."
             " Please check that images have a filename with YYYYMMDD_HHMM timestamps")
+
+        # Set intial timestamp
+        image_files.timestamps_initial = image_files.timestamps[0]
 
         # Process images to Timepoint data objects
         plate_coordinates = None
@@ -280,17 +252,14 @@ def main():
         if VERBOSE >= 1:
             print("Preprocessing images to locate plates")
 
-        # Load the first image to get plate coordinate and mask
-        with image_files[0] as image_file:
-            # Load image
-            img = imread(str(image_file), plugin = "pil", as_gray = True)
-
+        # Load the first image to get plate coordinates and mask
+        with image_files.image_files[0] as image_file:
             # Only find centers using first image. Assume plates do not move
             if plate_coordinates is None:
                 if VERBOSE >= 2:
-                    print(f"Locating plate centres in image: {image_file}")
+                    print(f"Locating plate centres in image: {image_file.file_path}")
                 plate_coordinates = imaging.get_image_circles(
-                    img,
+                    image_file.image_gray,
                     int(PLATE_SIZE / 2),
                     circle_count = utilities.coordinate_to_index_number(PLATE_LATTICE),
                     search_radius = 50
@@ -318,7 +287,7 @@ def main():
                         print(f"Plate {plate.id} center: {plate.center}")
 
             # Split image into individual plates
-            plate_images = get_plate_images(img, plate_coordinates, edge_cut = PLATE_EDGE_CUT)
+            plate_images = get_plate_images(image_file.image_gray, plate_coordinates, edge_cut = PLATE_EDGE_CUT)
 
             # Use the first plate image as a noise mask
             if plate_images_mask is None:
@@ -333,17 +302,14 @@ def main():
 
         processes = list()
         with Pool(processes = POOL_MAX) as pool:
-            for i, image_file in enumerate(image_files):
-                # Load image
-                img = imread(str(image_file), plugin = "pil", as_gray = True)
-                        
+            for i, image_file in enumerate(image_files.image_files):
                 # Allow args to be passed to callback function
-                callback_function = partial(progress_update, progress = ((i + 1) / len(image_files)) * 100)
+                callback_function = partial(progress_update, progress = ((i + 1) / image_files.image_file_count) * 100)
 
                 # Create processes
                 processes.append(pool.apply_async(
                     image_file_to_timepoints,
-                    args = (image_file, plate_coordinates, plate_images_mask, time_points[i], time_points_elapsed[i], PLATE_EDGE_CUT),
+                    args = (image_file, plate_coordinates, plate_images_mask, PLATE_EDGE_CUT),
                     kwds = {"plot_path" : None},
                     callback = callback_function
                 ))
@@ -372,7 +338,7 @@ def main():
             # Filter colonies to remove noise, background objects and merged colonies
             plate_colonies[plate_id].colonies = list(filter(lambda item:
                 # Remove objects that do not have sufficient data points, usually just noise
-                len(item.timepoints) > len(time_points) * 0.2 and
+                len(item.timepoints) > image_files.image_file_count * 0.2 and
                 # Remove object that do not show growth, these are not colonies
                 item.growth_rate > 1 and
                 # Colonies that appear with a large initial area are most likely merged colonies, not new colonies
@@ -404,7 +370,7 @@ def main():
         print("Saving data to CSV")
         
     save_path = BASE_PATH.joinpath("data")
-    for plate_id, plate in plate_colonies.items():
+    for plate in plate_colonies.values():
         # Save data for all colonies on one plate
         plate.colonies_to_csv(save_path)
 
@@ -420,11 +386,11 @@ def main():
             if VERBOSE >= 1:
                 print("Saving plots")
             save_path = file_access.create_subdirectory(BASE_PATH, "plots")
-            plots.plot_growth_curve(plate_colonies, time_points_elapsed, save_path)
-            plots.plot_appearance_frequency(plate_colonies, time_points_elapsed, save_path)
-            plots.plot_appearance_frequency(plate_colonies, time_points_elapsed, save_path, bar = True)
-            plots.plot_doubling_map(plate_colonies, time_points_elapsed, save_path)
-            plots.plot_colony_map(imread(image_files[-1], plugin = "pil", as_gray = False), plate_colonies, save_path)
+            plots.plot_growth_curve(plate_colonies, image_files.timestamps_elapsed_minutes, save_path)
+            plots.plot_appearance_frequency(plate_colonies, image_files.timestamps_elapsed_minutes, save_path)
+            plots.plot_appearance_frequency(plate_colonies, image_files.timestamps_elapsed_minutes, save_path, bar = True)
+            plots.plot_doubling_map(plate_colonies, image_files.timestamps_elapsed_minutes, save_path)
+            plots.plot_colony_map(image_files.image_files[-1].image, plate_colonies, save_path)
 
         # Plot colony growth curves, ID map and time of appearance for each plate
         if SAVE_PLOTS >= 2:
@@ -432,9 +398,9 @@ def main():
                 row, col = utilities.index_number_to_coordinate(plate_id, PLATE_LATTICE)
                 save_path_plate = get_plate_directory(save_path, row, col, create_dir = True)
                 plate_item = {plate_id : plate}
-                plots.plot_growth_curve(plate_item, time_points_elapsed, save_path_plate)
-                plots.plot_appearance_frequency(plate_item, time_points_elapsed, save_path_plate)
-                plots.plot_appearance_frequency(plate_item, time_points_elapsed, save_path_plate, bar = True)
+                plots.plot_growth_curve(plate_item, image_files.timestamps_elapsed_minutes, save_path_plate)
+                plots.plot_appearance_frequency(plate_item, image_files.timestamps_elapsed_minutes, save_path_plate)
+                plots.plot_appearance_frequency(plate_item, image_files.timestamps_elapsed_minutes, save_path_plate, bar = True)
     else:
         if VERBOSE >= 1:
             print("Unable to generate plots from cached data. Run analysis on original images to generate plot images")

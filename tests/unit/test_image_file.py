@@ -1,10 +1,12 @@
 import pytest
+from unittest import mock
 from datetime import datetime, timedelta
 from pathlib import Path
 from numpy import array
 
 from colonyscanalyser.image_file import (
-    ImageFile
+    ImageFile,
+    ImageFileCollection
 )
 
 
@@ -67,6 +69,17 @@ class TestImageFile:
             assert imagefile.timestamp_initial == timestamp - timestamp_diff
             assert imagefile.timestamp_elapsed == timestamp_diff
 
+        def test_enter_exit(self, tmp_path, timestamp_image, cache_image, image):
+            image_path = TestImageFile.create_temp_file(tmp_path, timestamp_image[1], suffix = "png", file_data = image)
+            imagefile = ImageFile(image_path, cache_image = cache_image)
+
+            with imagefile as image_file:
+                assert (image_file._ImageFile__image == array([[[255, 255, 255, 255]]])).all()
+            if imagefile.cache_image:
+                assert (imagefile._ImageFile__image == array([[[255, 255, 255, 255]]])).all()
+            else:
+                assert imagefile._ImageFile__image is None
+
     class TestProperties:
         @pytest.mark.parametrize("image_path", ["", Path(), "."])
         def test_filepath_missing(self, image_path):
@@ -79,12 +92,12 @@ class TestImageFile:
             imagefile = ImageFile(image_path, cache_image = cache_image)
 
             assert (imagefile.image == array([[[255, 255, 255, 255]]])).all()
+            assert (imagefile.image_gray == array([[1.]])).all()
 
             if cache_image:
                 assert (imagefile._ImageFile__image == array([[[255, 255, 255, 255]]])).all()
             else:
                 assert imagefile._ImageFile__image is None
-
 
     class TestMethods:
         def test_timestamp_from_exif(self, tmp_path, timestamp_image):
@@ -110,3 +123,102 @@ class TestImageFile:
                 imagefile.timestamp_from_string(image_path, pattern = "")
                 imagefile.timestamp_from_string("")
             assert imagefile.timestamp_from_string(imagefile.file_path.name) is None
+
+
+class TestImageFileCollection:
+    @staticmethod
+    def ImageFileMock(file_path, timestamp):
+        image_file = mock.Mock(spec = ImageFile)
+        image_file.file_path = file_path
+        image_file.timestamp = timestamp
+        image_file.timestamp_initial = image_file.timestamp - timedelta(hours = 1)
+
+        return image_file
+
+    @pytest.fixture
+    def image_files(self):
+        image_files = list()
+        timestamp = datetime.now()
+
+        for i in range(10):
+            image_files.append(self.ImageFileMock(str(i), timestamp + timedelta(hours = i)))
+
+        return image_files
+
+    class TestInitialize:
+        def test_init(self):
+            imagefiles = ImageFileCollection()
+
+            assert imagefiles.image_files == list()
+
+        def test_init_list(self, image_files):
+            print(image_files)
+            imagefiles = ImageFileCollection(image_files)
+
+            assert imagefiles.image_files == image_files
+
+    class TestProperties:
+        def test_image_files_sorted(self, image_files):
+            from random import sample
+
+            image_files_shuffled = sample(image_files, len(image_files))
+            imagefiles = ImageFileCollection(image_files_shuffled)
+
+            assert imagefiles.image_files != image_files_shuffled
+            assert imagefiles.image_files == image_files
+
+        def test_image_file_count(self, image_files):
+            imagefiles = ImageFileCollection(image_files)
+
+            assert imagefiles.image_file_count == len(image_files)
+
+        def test_file_paths(self, image_files):
+            imagefiles = ImageFileCollection(image_files)
+
+            assert len(imagefiles.file_paths) == len(image_files)
+            assert imagefiles.file_paths == [image_file.file_path for image_file in image_files]
+
+        def test_timestamps(self, image_files):
+            imagefiles = ImageFileCollection(image_files)
+
+            assert len(imagefiles.timestamps) == len(image_files)
+            assert imagefiles.timestamps == [image_file.timestamp for image_file in image_files]
+
+        def test_timestamps_initial(self, image_files):
+            imagefiles = ImageFileCollection(image_files)
+
+            assert len(imagefiles.timestamps_initial) == len(image_files)
+            assert imagefiles.timestamps_initial == [image_file.timestamp_initial for image_file in image_files]
+
+            timestamp_initial = datetime(1, 1, 1, 1, 1, 1)
+            imagefiles.timestamps_initial = timestamp_initial
+
+            assert imagefiles.timestamps_initial == [image_file.timestamp_initial for image_file in image_files]
+
+        def test_timestamps_elapsed(self, image_files):
+            imagefiles = ImageFileCollection(image_files)
+
+            assert len(imagefiles.timestamps_elapsed) == len(image_files)
+            assert imagefiles.timestamps_elapsed == [image_file.timestamp_elapsed for image_file in image_files]
+            assert imagefiles.timestamps_elapsed_hours == [image_file.timestamp_elapsed_hours for image_file in image_files]
+            assert (
+                imagefiles.timestamps_elapsed_minutes == [image_file.timestamp_elapsed_minutes for image_file in image_files]
+            )
+            assert (
+                imagefiles.timestamps_elapsed_seconds == [image_file.timestamp_elapsed_seconds for image_file in image_files]
+            )
+
+        @mock.patch("colonyscanalyser.image_file.file_exists", return_value = True)
+        def test_add_image_file(self, patch, image_files):
+            imagefiles = ImageFileCollection(image_files)
+            image_file_first = imagefiles.image_files[0]
+            new_image_file = imagefiles.add_image_file(
+                file_path = "",
+                timestamp = image_file_first.timestamp - timedelta(hours = 1),
+                timestamp_initial = image_file_first.timestamp_initial - timedelta(hours = 1),
+                cache_image = False
+            )
+
+            assert imagefiles.image_file_count == len(image_files) + 1
+            assert new_image_file in imagefiles.image_files
+            assert imagefiles.image_files[0] == new_image_file
