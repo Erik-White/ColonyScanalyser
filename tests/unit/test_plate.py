@@ -99,14 +99,14 @@ class TestPlate():
                 plate.colonies = colonies
 
     class TestMethods():
-        def test_add_colony(self, plate):
+        def test_append_colony(self, plate):
             colony = Colony(1)
-            plate.add_colony(colony)
+            plate.append_colony(colony)
 
             assert plate.colony_count == 1
             assert any(colony.id == item.id for item in plate.colonies)
             with pytest.raises(ValueError):
-                plate.add_colony(colony)
+                plate.append_colony(colony)
 
         def test_colony_exists(self, plate):
             colony = Colony(1)

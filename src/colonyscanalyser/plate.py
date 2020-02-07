@@ -60,7 +60,7 @@ class Plate(Identified, Named, Circle):
     def edge_cut(self, val: float):
         self.__edge_cut = val
 
-    def add_colony(self, colony: Colony):
+    def append_colony(self, colony: Colony):
         """
         Append a Colony object to the plate colony collection
 
