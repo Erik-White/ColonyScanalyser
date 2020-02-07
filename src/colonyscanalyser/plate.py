@@ -1,7 +1,7 @@
-from typing import List
+from typing import Union, List, Tuple
 from collections.abc import Collection
 from pathlib import Path, PurePath
-from .base import Identified, Named
+from .base import Identified, IdentifiedCollection, Named
 from .geometry import Circle
 from .colony import Colony
 from .file_access import save_to_csv
@@ -11,15 +11,23 @@ class Plate(Identified, Named, Circle):
     """
     An object to hold information about an agar plate and a collection of Colony objects
     """
-    def __init__(self, id: int, diameter: float, colonies: list = None):
+    def __init__(
+        self, id: int,
+        diameter: float,
+        center: Union[Tuple[float, float], Tuple[float, float, float]] = None,
+        colonies: list = None
+    ):
         self.id = id
         self.diameter = diameter
 
         # Can't set argument default otherwise it is shared across all class instances
+        if center is None:
+            center = tuple()
         if colonies is None:
             colonies = list()
 
         # Set property defaults
+        self.center = center
         self.colonies = colonies
         self.edge_cut = 0
         self.name = ""
@@ -36,7 +44,15 @@ class Plate(Identified, Named, Circle):
         ])
 
     @property
-    def colonies(self):
+    def center(self) -> Union[Tuple[float, float], Tuple[float, float, float]]:
+        return self.__center
+
+    @center.setter
+    def center(self, val: Union[Tuple[float, float], Tuple[float, float, float]]):
+        self.__center = val
+
+    @property
+    def colonies(self) -> List[Colony]:
         return self.__colonies
 
     @colonies.setter
@@ -49,11 +65,11 @@ class Plate(Identified, Named, Circle):
             raise ValueError("Colonies must be supplied as a List or other Collection")
 
     @property
-    def colony_count(self):
+    def colony_count(self) -> int:
         return len(self.colonies)
 
     @property
-    def edge_cut(self):
+    def edge_cut(self) -> float:
         return self.__edge_cut
 
     @edge_cut.setter
@@ -141,7 +157,7 @@ class Plate(Identified, Named, Circle):
             headers
         )
 
-    def colony_exists(self, colony: Colony):
+    def colony_exists(self, colony: Colony) -> bool:
         """
         Check if a colony exists in the plate colony collection
 
@@ -150,7 +166,7 @@ class Plate(Identified, Named, Circle):
         """
         return self.colony_id_exists(colony.id)
 
-    def colony_id_exists(self, colony_id: int):
+    def colony_id_exists(self, colony_id: int) -> bool:
         """
         Check if a colony with the specified ID number exists in the plate colony collection
 
@@ -159,7 +175,7 @@ class Plate(Identified, Named, Circle):
         """
         return self._Identified__id_exists(self.colonies, colony_id)
 
-    def colonies_rename_sequential(self, start: int = 1):
+    def colonies_rename_sequential(self, start: int = 1) -> int:
         """
         Update the ID numbers of all colonies in the plate colony collection
 
@@ -171,7 +187,7 @@ class Plate(Identified, Named, Circle):
 
         return i
 
-    def get_colony(self, colony_id: int):
+    def get_colony(self, colony_id: int) -> Colony:
         """
         Returns a colony with the specified ID number from the plate colony collection
 
