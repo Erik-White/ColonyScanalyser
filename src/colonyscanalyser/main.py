@@ -183,7 +183,7 @@ def main():
         # Also that data is not from an older format (< v0.4.0)
         if (
             VERBOSE >= 1 and plates is not None
-            and plates.count == utilities.coordinate_to_index_number(PLATE_LATTICE)
+            and plates.count == PlateCollection.coordinate_to_index(PLATE_LATTICE)
             and isinstance(plates.items[0], Plate)
         ):
             print("Successfully loaded cached data")
@@ -361,7 +361,7 @@ def main():
         # Plot colony growth curves, ID map and time of appearance for each plate
         if PLOTS >= 2:
             for plate in plates.items:
-                save_path_plate = file_access.create_subdirectory(save_path, f"plate{plate.id}")
+                save_path_plate = file_access.create_subdirectory(save_path, file_access.file_safe_name([f"plate{plate.id}", plate.name]))
                 plots.plot_growth_curve([plate], image_files.timestamps_elapsed_minutes, save_path_plate)
                 plots.plot_appearance_frequency([plate], image_files.timestamps_elapsed_minutes, save_path_plate)
                 plots.plot_appearance_frequency([plate], image_files.timestamps_elapsed_minutes, save_path_plate, bar = True)

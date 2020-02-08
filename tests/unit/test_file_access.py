@@ -4,6 +4,7 @@ from pathlib import Path
 
 from colonyscanalyser.file_access import (
     file_exists,
+    file_safe_name,
     get_files_by_type,
     create_subdirectory,
     move_to_subdirectory,
@@ -22,7 +23,7 @@ def create_temp_file(dir, extension = None):
     return Path(tempfile.mkstemp(dir = dir, suffix = extension)[1])
 
 
-class TestFileExists():
+class TestFileExists:
     def test_file_exists(self):
         assert file_exists(Path(__file__)) is True
 
@@ -33,7 +34,24 @@ class TestFileExists():
         assert file_exists("") is False
 
 
-class TestGetFilesByType():
+class TestFileSafeName:
+    def test_join(self):
+        first = "first"
+        second = ""
+        third = "third"
+        safe_name = file_safe_name([first, second, third])
+
+        assert safe_name == first + "_" + third
+
+    def test_replace(self):
+        first = "first second"
+        third = "third"
+        safe_name = file_safe_name([first, third])
+
+        assert safe_name == "first_second_third"
+
+
+class TestGetFilesByType:
     def test_return_list(self):
         # Check that a populated list is returned
         result = get_files_by_type(Path(__file__).parent)
@@ -62,7 +80,7 @@ class TestGetFilesByType():
         assert all(result) is True
 
 
-class TestCreateSubdirectory():
+class TestCreateSubdirectory:
     @pytest.fixture
     def result(self, tmp_path):
         yield create_subdirectory(tmp_path, SUB_DIR)
@@ -94,7 +112,7 @@ class TestCreateSubdirectory():
             test_dir.chmod(test_dir_chmod)
 
 
-class TestMoveToSubdirectory():
+class TestMoveToSubdirectory:
     def test_moved(self, tmp_path):
         temp_file = create_temp_file(tmp_path)
         result = move_to_subdirectory([temp_file], SUB_DIR)
@@ -125,7 +143,7 @@ class TestMoveToSubdirectory():
             test_dir.chmod(test_dir_chmod)
 
 
-class TestFileCompression():
+class TestFileCompression:
     @pytest.fixture(params=["r", "wb"])
     def file_access_modes(self, request):
         yield request.param
@@ -143,7 +161,7 @@ class TestFileCompression():
                     assert outfile.readable() is True
 
 
-class TestLoadFile():
+class TestLoadFile:
     @pytest.fixture
     def data(self):
         return [0, 1, 2, 3, 4]
@@ -161,7 +179,7 @@ class TestLoadFile():
                 assert load_file(temp_file, method) is not None
 
 
-class TestSaveFile():
+class TestSaveFile:
     @pytest.fixture
     def data(self):
         return [0, 1, 2, 3, 4]
@@ -176,7 +194,7 @@ class TestSaveFile():
                 assert file_exists(temp_file) is True
 
 
-class TestSaveToCSV():
+class TestSaveToCSV:
     @pytest.fixture
     def headers(self):
         return ["one", "two", "three"]

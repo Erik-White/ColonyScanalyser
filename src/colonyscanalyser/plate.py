@@ -71,6 +71,8 @@ class Plate(Identified, IdentifiedCollection, Named, Circle):
         :param headers: a list of strings to use as column headers
         :returns: a Path representing the new file, if successful
         """
+        from .file_access import file_safe_name
+
         if headers is None:
             headers = [
                 "Colony ID",
@@ -95,7 +97,8 @@ class Plate(Identified, IdentifiedCollection, Named, Circle):
 
         return self.__collection_to_csv(
             save_path,
-            "_".join(filter(None, [f"plate{str(self.id)}", self.name.replace(" ", "_"), "colonies"])),
+            # "_".join(filter(None, [f"plate{str(self.id)}", self.name.replace(" ", "_"), "colonies"])),
+            file_safe_name([f"plate{str(self.id)}", self.name, "colonies"]),
             self.items,
             headers
         )
@@ -108,6 +111,8 @@ class Plate(Identified, IdentifiedCollection, Named, Circle):
         :param headers: a list of strings to use as column headers
         :returns: a Path representing the new file, if successful
         """
+        from .file_access import file_safe_name
+
         if headers is None:
             headers = [
                 "Colony ID",
@@ -128,7 +133,8 @@ class Plate(Identified, IdentifiedCollection, Named, Circle):
 
         return self.__collection_to_csv(
             save_path,
-            "_".join(filter(None, [f"plate{str(self.id)}", self.name.replace(" ", "_"), "colony", "timepoints"])),
+            # "_".join(filter(None, [f"plate{str(self.id)}", self.name.replace(" ", "_"), "colony", "timepoints"])),
+            file_safe_name([f"plate{str(self.id)}", self.name, "colony", "timepoints"]),
             colony_timepoints,
             headers
         )
