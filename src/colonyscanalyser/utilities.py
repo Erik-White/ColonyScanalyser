@@ -1,42 +1,8 @@
 ﻿def round_tuple_floats(tuple_item, precision = 2):
     if not isinstance(tuple_item, tuple):
         raise ValueError(f"The object must be of type 'tuple', not type '{type(tuple_item)}'")
+
     return tuple(map(lambda x: isinstance(x, float) and round(x, precision) or x, tuple_item))
-
-
-def index_number_to_coordinate(index, lattice):
-    """
-    Calculate row and column numbers for an item index
-
-    Lattice co-ordinate and item index numbers are 1-based
-
-    :param index: item index integer
-    :param lattice: row and column tuple boundaries
-    :returns: row and column co-ordinate tuple
-    :raises IndexError: if the returned index number would exceed the lattice size
-    """
-    (lattice_row, lattice_col) = lattice
-    if index < 1 or lattice_row < 1 or lattice_col < 1:
-        raise ValueError("All supplied parameters must be greater than zero")
-
-    row = ((index - 1) // lattice[1]) + 1
-    col = ((index - 1) % lattice[1]) + 1
-
-    if row > lattice_row or col > lattice_col:
-        raise IndexError("Index number is greater than the supplied lattice size")
-
-    return (row, col)
-
-
-def coordinate_to_index_number(coordinate):
-    """
-    Find a positional index for a coordinate
-
-    Starting along rows and then down columns
-    """
-    import numpy as np
-
-    return np.prod(coordinate)
 
 
 def progress_bar(bar_progress, bar_length = 30, message = ""):

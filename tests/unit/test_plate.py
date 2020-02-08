@@ -1,7 +1,8 @@
 import pytest
 
 from colonyscanalyser.plate import (
-    Plate
+    Plate,
+    PlateCollection
 )
 
 invalid = [-1, -1.1, "one", None]
@@ -127,3 +128,143 @@ class TestPlate():
         def test_collection_to_csv_path(self, plate):
             with pytest.raises(FileNotFoundError):
                 plate._Plate__collection_to_csv("", "", list())
+
+
+class TestPlateCollection:
+    class TestInitialize:
+        @pytest.mark.parametrize("shape", [(3, 1), (5, 5), (2, 2)])
+        def test_init(self, shape):
+            collection = PlateCollection(shape = shape)
+
+            assert collection.shape == shape
+
+        @pytest.mark.parametrize("shape", [(0, 1), (-1, 1), (1.1, 1)])
+        def test_init_invalid(self, shape):
+            with pytest.raises(ValueError):
+                PlateCollection(shape = shape)
+
+    class TestProperties:
+        def test_centers(self):
+            centers = list()
+            collection = PlateCollection()
+            for i in range(1, 10):
+                center = (i, i)
+                centers.append(center)
+                collection.add(id = i, diameter = 1, center = center)
+
+            assert collection.count == len(centers)
+            assert collection.centers == centers
+
+    class TestMethods:
+        @pytest.fixture
+        def image_circle(self, request):
+            from numpy import uint8, mgrid
+
+            # Create a 200x200 array with a donut shaped circle around the centre
+            xx, yy = mgrid[:200, :200]
+            circle = (xx - 100) ** 2 + (yy - 100) ** 2
+            img = ((circle < (6400 + 60)) & (circle > (6400 - 60))).astype(uint8)
+            img[img == circle] = 255
+
+            yield img
+
+        def test_add(self, id, diameter):
+            collection = PlateCollection()
+            item_new = collection.add(id = id, diameter = diameter)
+
+            assert collection.count == 1
+            assert item_new in collection.items
+
+        def test_from_image(self, image_circle):
+            plates = PlateCollection.from_image(
+                shape = (1, 1),
+                image = image_circle,
+                diameter = 180,
+            )
+
+            assert plates is not None
+            assert isinstance(plates, PlateCollection)
+
+        def test_plates_from_image(self, image_circle):
+            label = "label"
+            plates = PlateCollection(shape = (1, 1))
+            plates.plates_from_image(
+                image = image_circle,
+                diameter = 180,
+                labels = {1: label}
+            )
+
+            assert plates.count == 1
+            assert plates.centers == [(102, 102)]
+            assert plates.items[0].diameter == 160
+            assert plates.items[0].name == label
+
+        def test_plates_from_image_invalid(self, image_circle):
+            plates = PlateCollection()
+
+            print(plates.shape)
+            print(PlateCollection.coordinate_to_index(plates.shape))
+            with pytest.raises(ValueError):
+                plates.plates_from_image(
+                    image = image_circle,
+                    diameter = 180
+                )
+
+        def test_slice_plate_image(self, image_circle):
+            plates = PlateCollection(shape = (1, 1))
+            plates.add(
+                id = 1,
+                diameter = 180,
+                edge_cut = 20,
+                center = (102, 102)
+            )
+
+            images = plates.slice_plate_image(image_circle)
+
+            assert len(images) == 1
+            assert images[1].shape == (141, 141)
+
+        @pytest.mark.parametrize(
+            "index, shape, expected",
+            [
+                (3, (3, 2), (2, 1)),
+                (5, (1, 8), (1, 5)),
+                (10, (5, 5), (2, 5)),
+            ])
+        def test_index_to_coordinate(self, index, shape, expected):
+            result = PlateCollection.index_to_coordinate(index, shape)
+
+            assert result == expected
+
+        @pytest.mark.parametrize(
+            "index, shape",
+            [
+                (-1, (1, 1)),
+                (0, (1, 1)),
+                (1, (0, 0)),
+                (1, (0, 1)),
+                (1, (-1, 1)),
+            ])
+        def test_index_to_coordinate_invalid(self, index, shape):
+            with pytest.raises(ValueError):
+                PlateCollection.index_to_coordinate(index, shape)
+
+            with pytest.raises(IndexError):
+                PlateCollection.index_to_coordinate(100, (1, 1))
+
+        @pytest.mark.parametrize(
+            "coordinate, expected",
+            [
+                ((3, 2), 6),
+                ((1, 8), 8),
+                ((5, 5), 25),
+            ])
+        def test_coordinate_to_index(self, coordinate, expected):
+            result = PlateCollection.coordinate_to_index(coordinate)
+
+            assert result == expected
+
+        @pytest.mark.parametrize("coordinate", [(0, 0), (-1, 1)])
+        def test_coordinate_to_index_invalid(self, coordinate):
+            with pytest.raises(ValueError):
+                PlateCollection.coordinate_to_index(coordinate)

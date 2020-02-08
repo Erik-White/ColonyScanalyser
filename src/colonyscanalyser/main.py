@@ -1,6 +1,8 @@
 ﻿# System modules
 import sys
 import argparse
+from typing import Union, Dict, List, Tuple
+from numpy import ndarray
 from pathlib import Path
 from datetime import datetime
 from distutils.util import strtobool
@@ -16,49 +18,16 @@ from colonyscanalyser import (
     plots
 )
 from .image_file import ImageFile, ImageFileCollection
-from .plate import Plate
+from .plate import Plate, PlateCollection
 from .colony import Colony, timepoints_from_image, colonies_from_timepoints, timepoints_from_image
 
 
-def get_plate_directory(parent_path, row, col, create_dir = True):
-    """
-    Determine the directory path for a specified plate
-
-    Can create the directory if needed
-
-    :param parent_path: a path object
-    :param row: a lattice co-ordinate row
-    :param col: a lattice co-ordinate column
-    :param create_dir: specify if the directory should be created
-    :returns: a path object for the specified plate
-    """
-
-    child_path = '_'.join(['row', str(row), 'col', str(col)])
-    if create_dir:
-        return file_access.create_subdirectory(parent_path, child_path)
-    else:
-        return parent_path.joinpath(child_path)
-
-
-def get_plate_images(image, plate_coordinates, edge_cut = 100):
-    """
-    Split image into lattice subimages and delete background
-
-    :param img: a black and white image as a numpy array
-    :param plate_coordinates: a list of centers and radii
-    :param edge_cut: a radius, in pixels, to remove from the outer edge of the plate
-    :returns: a list of plate images
-    """
-    plates = []
-
-    for coordinate in plate_coordinates:
-        center, radius = coordinate
-        plates.append(imaging.cut_image_circle(image, center, radius - edge_cut))
-
-    return plates
-
-
-def segment_image(plate_image, plate_mask, plate_noise_mask, area_min = 5):
+def segment_image(
+    plate_image: ndarray,
+    plate_mask: ndarray,
+    plate_noise_mask: ndarray,
+    area_min: float = 5
+) -> ndarray:
     """
     Attempts to find and label all colonies on a plate
 
@@ -104,14 +73,19 @@ def segment_image(plate_image, plate_mask, plate_noise_mask, area_min = 5):
     return colonies
 
 
-def image_file_to_timepoints(image_file, plate_coordinates, plate_images_mask, edge_cut, plot_path = None):
+def image_file_to_timepoints(
+    image_file: ndarray,
+    plates: PlateCollection,
+    plate_images_mask: List[ndarray],
+    plot_path: Path = None
+) -> Dict[int, List[Colony.Timepoint]]:
     """
     Get Timepoint object data from a plate image
 
     Lists the results in a dict with the plate number as the key
 
     :param image_file: an ImageFile object
-    :param plate_coordinates: a list of (row, column) tuple plate centres
+    :param plates: a PlateCollection of Plate instances
     :param plate_images_mask: a list of plate images to use as noise masks
     :param plot_path: a Path directory to save the segmented image plot
     :returns: a Dict of lists, each containing Timepoint objects
@@ -122,17 +96,18 @@ def image_file_to_timepoints(image_file, plate_coordinates, plate_images_mask, e
     plate_timepoints = defaultdict(list)
 
     # Split image into individual plates
-    plate_images = get_plate_images(image_file.image, plate_coordinates, edge_cut = edge_cut)
+    plate_images = plates.slice_plate_image(image_file.image)
 
-    for j, plate_image in enumerate(plate_images):
+    for plate_id, plate_image in plate_images.items():
         plate_image_gray = rgb2gray(plate_image)
         # Segment each image
-        plate_images[j] = segment_image(plate_image_gray, plate_image_gray > 0, plate_images_mask[j], area_min = 8)
+        plate_images[plate_id] = segment_image(plate_image_gray, plate_image_gray > 0, plate_images_mask[plate_id], area_min = 8)
         # Create Timepoint objects for each plate
-        plate_timepoints[j + 1].extend(timepoints_from_image(plate_images[j], image_file.timestamp, image_file.timestamp_elapsed_minutes, image = plate_image))
+        plate_timepoints[plate_id].extend(timepoints_from_image(plate_images[plate_id], image_file.timestamp, image_file.timestamp_elapsed_minutes, image = plate_image))
         # Save segmented image plot, if required
         if plot_path is not None:
-            plots.plot_plate_segmented(plate_image_gray, plate_images[j], image_file.timestamp, plot_path)
+            save_path = file_access.create_subdirectory(plot_path, f"plate{plate_id}")
+            plots.plot_plate_segmented(plate_image_gray, plate_images[plate_id], image_file.timestamp, save_path)
 
     return plate_timepoints
 
@@ -193,10 +168,11 @@ def main():
 
     # Check if processed image data is already stored and can be loaded
     segmented_image_data_filename = "cached_data"
+    plates = None
     if USE_CACHED:
         if VERBOSE >= 1:
             print("Attempting to load cached data")
-        plate_colonies = file_access.load_file(
+        plates = file_access.load_file(
             BASE_PATH.joinpath("data", segmented_image_data_filename),
             file_access.CompressionMethod.LZMA,
             pickle = True
@@ -204,17 +180,17 @@ def main():
         # Check that segmented image data has been loaded for all plates
         # Also that data is not from an older format (< v0.4.0)
         if (
-            VERBOSE >= 1 and plate_colonies is not None
-            and len(plate_colonies) == utilities.coordinate_to_index_number(PLATE_LATTICE)
-            and isinstance(plate_colonies[1], Plate)
+            VERBOSE >= 1 and plates is not None
+            and plates.count == utilities.coordinate_to_index_number(PLATE_LATTICE)
+            and isinstance(plates.items[0], Plate)
         ):
             print("Successfully loaded cached data")
             image_files = None
         else:
             print("Unable to load cached data, starting image processing")
-            plate_colonies = None
+            plates = None
 
-    if not USE_CACHED or plate_colonies is None:
+    if not USE_CACHED or plates is None:
         # Find images in working directory
         image_formats = ["tif", "tiff", "png"]
         image_paths = file_access.get_files_by_type(BASE_PATH, image_formats)
@@ -223,7 +199,7 @@ def main():
         # Timestamps are automatically read from filenames
         image_files = ImageFileCollection()
         for image_path in image_paths:
-            image_files.add_image_file(
+            image_files.add(
                 file_path = image_path,
                 timestamp = None,
                 timestamp_initial = None,
@@ -231,13 +207,13 @@ def main():
             )
 
         # Check if images have been loaded and timestamps could be read
-        if image_files.image_file_count > 0:
+        if image_files.count > 0:
             if VERBOSE >= 1:
-                print(f"{image_files.image_file_count} images found")
+                print(f"{image_files.count} images found")
         else:
             raise IOError(f"No images could be found in the supplied folder path."
             " Images are expected in these formats: {image_formats}")
-        if image_files.image_file_count != len(image_files.timestamps):
+        if image_files.count != len(image_files.timestamps):
             raise IOError("Unable to load timestamps from all image filenames."
             " Please check that images have a filename with YYYYMMDD_HHMM timestamps")
 
@@ -245,7 +221,6 @@ def main():
         image_files.timestamps_initial = image_files.timestamps[0]
 
         # Process images to Timepoint data objects
-        plate_coordinates = None
         plate_images_mask = None
         plate_timepoints = defaultdict(list)
 
@@ -253,45 +228,33 @@ def main():
             print("Preprocessing images to locate plates")
 
         # Load the first image to get plate coordinates and mask
-        with image_files.image_files[0] as image_file:
+        with image_files.items[0] as image_file:
             # Only find centers using first image. Assume plates do not move
-            if plate_coordinates is None:
+            if plates is None:
                 if VERBOSE >= 2:
                     print(f"Locating plate centres in image: {image_file.file_path}")
-                plate_coordinates = imaging.get_image_circles(
-                    image_file.image_gray,
-                    int(PLATE_SIZE / 2),
-                    circle_count = utilities.coordinate_to_index_number(PLATE_LATTICE),
-                    search_radius = 50
-                )
+
                 # Create new Plate instances to store the information
-                plate_colonies = dict()
-                for plate_id, coord in enumerate(plate_coordinates, start = 1):
-                    center, radius = coord
+                plates = PlateCollection.from_image(
+                    shape = PLATE_LATTICE,
+                    image = image_file.image_gray,
+                    diameter = PLATE_SIZE,
+                    search_radius = 50,
+                    edge_cut = PLATE_EDGE_CUT,
+                    labels = PLATE_LABELS
+                )
 
-                    plate = Plate(plate_id, radius * 2)
-                    plate.center = center
-                    plate.edge_cut = PLATE_EDGE_CUT
-                    if plate.id in PLATE_LABELS:
-                        plate.name = PLATE_LABELS[plate.id]
-
-                    plate_colonies[plate.id] = plate
-
-                if not len(plate_colonies) > 0:
-                    print(f"Unable to locate plates in image: {image_file}")
+                if not plates.count > 0:
+                    print(f"Unable to locate plates in image: {image_file.file_path}")
                     print(f"Processing unable to continue")
                     sys.exit()
                 
                 if VERBOSE >= 3:
-                    for plate in plate_colonies.values():
+                    for plate in plates.items:
                         print(f"Plate {plate.id} center: {plate.center}")
 
-            # Split image into individual plates
-            plate_images = get_plate_images(image_file.image_gray, plate_coordinates, edge_cut = PLATE_EDGE_CUT)
-
             # Use the first plate image as a noise mask
-            if plate_images_mask is None:
-                plate_images_mask = plate_images
+            plate_images_mask = plates.slice_plate_image(image_file.image_gray)
 
         if VERBOSE >= 1:
             print("Processing colony data from all images")
@@ -302,14 +265,14 @@ def main():
 
         processes = list()
         with Pool(processes = POOL_MAX) as pool:
-            for i, image_file in enumerate(image_files.image_files):
+            for i, image_file in enumerate(image_files.items):
                 # Allow args to be passed to callback function
-                callback_function = partial(progress_update, progress = ((i + 1) / image_files.image_file_count) * 100)
+                callback_function = partial(progress_update, progress = ((i + 1) / image_files.count) * 100)
 
                 # Create processes
                 processes.append(pool.apply_async(
                     image_file_to_timepoints,
-                    args = (image_file, plate_coordinates, plate_images_mask, PLATE_EDGE_CUT),
+                    args = (image_file, plates, plate_images_mask),
                     kwds = {"plot_path" : None},
                     callback = callback_function
                 ))
@@ -330,26 +293,27 @@ def main():
             print("Calculating colony properties")
 
         # Group Timepoints by centres and create Colony objects
-        for plate_id, plate in plate_timepoints.items():
-            plate_colonies[plate_id].colonies = colonies_from_timepoints(plate, distance_tolerance = 8)
+        for plate_id, plate_timepoints in plate_timepoints.items():
+            plate = plates.get_item(plate_id)
+            plate.items = colonies_from_timepoints(plate_timepoints, distance_tolerance = 8)
             if VERBOSE >= 3:
-                print(f"{plate_colonies[plate_id].colony_count} colonies located on plate {plate_id}, before filtering")
+                print(f"{plate.count} colonies located on plate {plate.id}, before filtering")
 
             # Filter colonies to remove noise, background objects and merged colonies
-            plate_colonies[plate_id].colonies = list(filter(lambda item:
+            plate.items = list(filter(lambda colony:
                 # Remove objects that do not have sufficient data points, usually just noise
-                len(item.timepoints) > image_files.image_file_count * 0.2 and
+                len(colony.timepoints) > image_files.count * 0.2 and
                 # Remove object that do not show growth, these are not colonies
-                item.growth_rate > 1 and
+                colony.growth_rate > 1 and
                 # Colonies that appear with a large initial area are most likely merged colonies, not new colonies
-                item.timepoint_first.area < 50,
-                plate_colonies[plate_id].colonies
+                colony.timepoint_first.area < 50,
+                plate.items
             ))
 
             if VERBOSE >= 1:
-                print(f"Colony data stored for {plate_colonies[plate_id].colony_count} colonies on plate {plate_id}")
+                print(f"Colony data stored for {plate.count} colonies on plate {plate.id}")
 
-        if not any([len(plate.colonies) for plate in plate_colonies.values()]):
+        if not any([plate.count for plate in plates.items]):
             if VERBOSE >= 1:
                 print("Unable to locate any colonies in the images provided")
                 print(f"ColonyScanalyser analysis completed for: {BASE_PATH}")
@@ -358,7 +322,7 @@ def main():
     # Store pickled data to allow quick re-use
     save_path = file_access.create_subdirectory(BASE_PATH, "data")
     save_path = save_path.joinpath(segmented_image_data_filename)
-    save_status = file_access.save_file(save_path, plate_colonies, file_access.CompressionMethod.LZMA)
+    save_status = file_access.save_file(save_path, plates, file_access.CompressionMethod.LZMA)
     if VERBOSE >= 1:
         if save_status:
             print(f"Cached data saved to {save_path}")
@@ -370,7 +334,7 @@ def main():
         print("Saving data to CSV")
         
     save_path = BASE_PATH.joinpath("data")
-    for plate in plate_colonies.values():
+    for plate in plates.items:
         # Save data for all colonies on one plate
         plate.colonies_to_csv(save_path)
 
@@ -386,21 +350,19 @@ def main():
             if VERBOSE >= 1:
                 print("Saving plots")
             save_path = file_access.create_subdirectory(BASE_PATH, "plots")
-            plots.plot_growth_curve(plate_colonies, image_files.timestamps_elapsed_minutes, save_path)
-            plots.plot_appearance_frequency(plate_colonies, image_files.timestamps_elapsed_minutes, save_path)
-            plots.plot_appearance_frequency(plate_colonies, image_files.timestamps_elapsed_minutes, save_path, bar = True)
-            plots.plot_doubling_map(plate_colonies, image_files.timestamps_elapsed_minutes, save_path)
-            plots.plot_colony_map(image_files.image_files[-1].image, plate_colonies, save_path)
+            plots.plot_growth_curve(plates.items, image_files.timestamps_elapsed_minutes, save_path)
+            plots.plot_appearance_frequency(plates.items, image_files.timestamps_elapsed_minutes, save_path)
+            plots.plot_appearance_frequency(plates.items, image_files.timestamps_elapsed_minutes, save_path, bar = True)
+            plots.plot_doubling_map(plates.items, image_files.timestamps_elapsed_minutes, save_path)
+            plots.plot_colony_map(image_files.items[-1].image, plates.items, save_path)
 
         # Plot colony growth curves, ID map and time of appearance for each plate
         if SAVE_PLOTS >= 2:
-            for plate_id, plate in plate_colonies.items():
-                row, col = utilities.index_number_to_coordinate(plate_id, PLATE_LATTICE)
-                save_path_plate = get_plate_directory(save_path, row, col, create_dir = True)
-                plate_item = {plate_id : plate}
-                plots.plot_growth_curve(plate_item, image_files.timestamps_elapsed_minutes, save_path_plate)
-                plots.plot_appearance_frequency(plate_item, image_files.timestamps_elapsed_minutes, save_path_plate)
-                plots.plot_appearance_frequency(plate_item, image_files.timestamps_elapsed_minutes, save_path_plate, bar = True)
+            for plate in plates.items:
+                save_path_plate = file_access.create_subdirectory(save_path, f"plate{plate.id}")
+                plots.plot_growth_curve([plate], image_files.timestamps_elapsed_minutes, save_path_plate)
+                plots.plot_appearance_frequency([plate], image_files.timestamps_elapsed_minutes, save_path_plate)
+                plots.plot_appearance_frequency([plate], image_files.timestamps_elapsed_minutes, save_path_plate, bar = True)
     else:
         if VERBOSE >= 1:
             print("Unable to generate plots from cached data. Run analysis on original images to generate plot images")
