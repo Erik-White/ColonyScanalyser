@@ -8,11 +8,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Full unit test coverage
 - Type annotations on all functions
 
-## [0.4.0] - 2020-01-19
+## [0.4.0] - 2020-02-08
+### Added
+- `plate_labels` command line argument
+- `base` module with base classes to provide core functionality throughout the package
+- `geometry` module with base shape classes
+- `plate` module with `Plate` and `PlateCollection` classes
+- `image_file` module with `ImageFile` and `ImageFileCollection` classes
 ### Changed
 - Cached data is now not used by default
 - `use_saved` command line argument renamed to `use_cached_data`
 - Compressed serialised data filename changed to `cached_data`
+- `save_plots` command line argument renamed to `plots`
+- Refactored most of the functions from `main` as static methods in the `plate` or `image_file` modules
+### Fixed
+- A rare error when opening images using skimage.io.imread
 
 ## [0.3.4] - 2020-01-18
 ### Added

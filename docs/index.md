@@ -9,7 +9,7 @@ ColonyScanalyser can provide information on:
 * Colony appearance time
 * Colony growth over time
 * Growth and appearance time distribution
-* Colony colour (e.g. staining or other visual 
+* Colony colour (e.g. staining or other visual indicator)
 
 ## Install
 ```

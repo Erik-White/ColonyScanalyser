@@ -1,18 +1,23 @@
+from typing import List
+from datetime import datetime
+from pathlib import Path
+from numpy import ndarray
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
+from matplotlib.axes import Axes
 
 from .utilities import average_dicts_values_by_key
 from .plotting import rc_to_xy, axis_minutes_to_hours
+from .plate import Plate
 
 
-def plot_colony_map(plate_image, plate_coordinates, plate_colonies, save_path, edge_cut = 0):
+def plot_colony_map(plate_image: ndarray, plates: List[Plate], save_path: Path) -> Path:
     """
     Saves original plate image with overlaid plate and colony IDs
 
     :param plate_image: the final timepoint image of all plates
-    :param plate_coordinates: a dictionary of centre and radii tuples
-    :param plate_colonies: a dictionary of Colony objects
-    :param save_path: a path object
+    :param plates: a PlateCollection of Plate instances
+    :param save_path: the directory to save the plot image
     :returns: a file path object if the plot was saved sucessfully
     """
     from matplotlib import rcParams
@@ -25,21 +30,21 @@ def plot_colony_map(plate_image, plate_coordinates, plate_colonies, save_path, e
     # Create a figure that takes up the full size of the image
     fig = plt.figure(figsize = figsize)
     ax = fig.add_axes([0, 0, 1, 1])
-    ax.axis('off')
+    ax.axis("off")
     ax.imshow(plate_image)
 
-    for plate_id, plate in plate_colonies.items():
-        (center_y, center_x), plate_radius = plate_coordinates[plate_id]
+    for plate in plates:
+        center_y, center_x = plate.center
 
         # Colony coordinates are relative to individual plate images
         # Calculate a correction factor to allow plotting on the original image
-        offset_y = center_y - plate_radius + edge_cut
-        offset_x = center_x - plate_radius + edge_cut
+        offset_y = center_y - plate.radius + plate.edge_cut
+        offset_x = center_x - plate.radius + plate.edge_cut
 
         # Label plates
         ax.annotate(
-            f"Plate #{plate_id}".upper(),
-            (center_x, center_y - plate_radius - (edge_cut * 1.4)),
+            f"Plate #{plate.id}".upper(),
+            (center_x, center_y - plate.radius - (plate.edge_cut * 1.4)),
             xycoords = "data",
             horizontalalignment = "center",
             verticalalignment = "center",
@@ -47,11 +52,22 @@ def plot_colony_map(plate_image, plate_coordinates, plate_colonies, save_path, e
             backgroundcolor = "black",
             color = "white"
         )
+        if len(plate.name) > 0:
+            ax.annotate(
+                plate.name,
+                (center_x, center_y - plate.radius - (plate.edge_cut * 0.6)),
+                xycoords = "data",
+                horizontalalignment = "center",
+                verticalalignment = "center",
+                fontsize = "32",
+                backgroundcolor = "black",
+                color = "white"
+            )
 
         # Mark the detected boundary of the plate
         plate_circle = plt.Circle(
             (center_x, center_y),
-            radius = plate_radius,
+            radius = plate.radius,
             facecolor = "none",
             edgecolor = "purple",
             linewidth = "2.5",
@@ -63,7 +79,7 @@ def plot_colony_map(plate_image, plate_coordinates, plate_colonies, save_path, e
         # Mark the measured area of the plate
         plate_circle_measured = plt.Circle(
             (center_x, center_y),
-            radius = plate_radius - edge_cut,
+            radius = plate.radius - plate.edge_cut,
             facecolor = "none",
             edgecolor = "white",
             linewidth = "1.5",
@@ -73,7 +89,7 @@ def plot_colony_map(plate_image, plate_coordinates, plate_colonies, save_path, e
         ax.add_artist(plate_circle_measured)
 
         # Mark colony centres and ID numbers
-        for colony in plate.values():
+        for colony in plate.items:
             x, y = rc_to_xy(colony.center)
             x = offset_x + x
             y = offset_y + y
@@ -122,8 +138,7 @@ def plot_colony_map(plate_image, plate_coordinates, plate_colonies, save_path, e
         fontsize = "18"
     )
 
-    image_path = "plate_map.png"
-    save_path = save_path.joinpath(image_path)
+    save_path = save_path.joinpath("plate_map.png")
     try:
         plt.savefig(str(save_path), format = "png")
     except Exception:
@@ -133,14 +148,19 @@ def plot_colony_map(plate_image, plate_coordinates, plate_colonies, save_path, e
         return save_path
 
 
-def plot_plate_segmented(plate_image, segmented_image, date_time, save_path):
+def plot_plate_segmented(
+    plate_image: ndarray,
+    segmented_image: ndarray,
+    date_time: datetime,
+    save_path: Path
+) -> Path:
     """
     Saves processed plate images and corresponding segmented data plots
 
     :param plate_image: a black and white image as a numpy array
     :param segmented_image: a segmented and labelled image as a numpy array
     :param date_time: a datetime object
-    :param save_path: a path object
+    :param save_path: the directory to save the plot image
     :returns: a file path object if the plot was saved sucessfully
     """
     from skimage.measure import regionprops
@@ -159,7 +179,7 @@ def plot_plate_segmented(plate_image, segmented_image, date_time, save_path):
             color = "red",
             horizontalalignment = "center",
             verticalalignment = "center"
-            )
+        )
 
     plt.suptitle(f"Plate time point {date_time.strftime('%Y/%m/%d %H:%M')}")
     image_path = f"time_point_{date_time.strftime('%Y%m%d')}_{date_time.strftime('%H%M')}.png"
@@ -173,50 +193,69 @@ def plot_plate_segmented(plate_image, segmented_image, date_time, save_path):
         return save_path
 
 
-def plot_growth_curve(plates_dict, time_points_elapsed, save_path):
+def plot_growth_curve(plates: List[Plate], time_points_elapsed: List[int], save_path: Path) -> Path:
     """
     Growth curves for either a single plate, or all plates on the lattice
+
+    :param plates: a list of Plate instances
+    :param time_points_elapsed: a list of elapsed time values
+    :param save_path: the directory to save the plot image
+    :returns: a file path object if the plot was saved sucessfully
     """
     _, ax = plt.subplots()
     colormap = cm.get_cmap("plasma")
 
-    for plate_item in plates_dict.items():
-        if len(plates_dict) > 1:
+    for plate in plates:
+        if len(plates) > 1:
             # Get a color from the colourmap
-            cm_scatter = colormap(0.2 + (0.65 - 0.2) * (plate_item[0] / len(plates_dict)))
+            cm_scatter = colormap(0.2 + (0.65 - 0.2) * (plate.id / len(plates)))
             cm_line = None
         else:
             cm_scatter = "Mediumpurple"
             cm_line = "Purple"
 
         # Add the growth curve plot for this plate
-        growth_curve(ax, plate_item, time_points_elapsed, cm_scatter, cm_line)
+        growth_curve(ax, plate, time_points_elapsed, cm_scatter, cm_line)
 
     lgd = ax.legend(loc = 'center right', fontsize = 8, bbox_to_anchor = (1.25, 0.5))
     save_params = {
         "format": "png",
         "bbox_extra_artists": (lgd,),
         "bbox_inches": "tight"
-        }
+    }
 
-    plt.ylim(ymin = 0)
-    plt.title("Colony growth")
-    plt.savefig(str(save_path.joinpath("growth_curve.png")), **save_params)
+    save_path = save_path.joinpath("growth_curve.png")
+    try:
+        plt.savefig(str(save_path), **save_params)
+    except Exception:
+        save_path = None
+    finally:
+        plt.close()
+        return save_path
 
-    plt.close()
 
-
-def growth_curve(ax, plate_item, time_points_elapsed, scatter_color, line_color = None):
+def growth_curve(
+    ax: Axes,
+    plate: Plate,
+    time_points_elapsed: List[int],
+    scatter_color: str,
+    line_color: str = None
+):
     """
     Add a growth curve scatter plot, with mean, to an axis
+
+    :param ax: a Matplotlib Axes object to add a plot to
+    :param plate: a Plate instance
+    :param time_points_elapsed: a list of elapsed time values
+    :param scatter_color: a Colormap color
+    :param line_color: a Colormap color
     """
-    plate_id, plate = plate_item
     areas_average = list()
 
     if line_color is None:
         line_color = scatter_color
 
-    for colony in plate.values():
+    for colony in plate.items:
         # Map areas to a dictionary of all timepoints
         time_points_dict = dict.fromkeys(time_points_elapsed)
         for timepoint in colony.timepoints.values():
@@ -232,16 +271,16 @@ def growth_curve(ax, plate_item, time_points_elapsed, scatter_color, line_color 
             marker = "o",
             s = 1,
             alpha = 0.25
-            )
+        )
 
     # Plot the mean
     areas_averages = average_dicts_values_by_key(areas_average)
     ax.plot(
         *zip(*sorted(areas_averages.items())),
         color = line_color,
-        label = f"Plate {plate_id}",
+        label = f"Plate {plate.id}",
         linewidth = 2
-        )
+    )
 
     # Format x-axis labels as integer hours
     ax.set_xticklabels(axis_minutes_to_hours(ax.get_xticks()))
@@ -249,32 +288,38 @@ def growth_curve(ax, plate_item, time_points_elapsed, scatter_color, line_color 
     ax.set_ylabel("Colony area (pixels)")
 
 
-def plot_appearance_frequency(plates_dict, time_points_elapsed, save_path, bar = False):
+def plot_appearance_frequency(plates: List[Plate], time_points_elapsed, save_path, bar = False) -> Path:
     """
     Time of appearance frequency for either a single plate, or all plates on the lattice
+
+    :param plates: a list of Plate instances
+    :param time_points_elapsed: a list of elapsed time values
+    :param save_path: the directory to save the plot image
+    :param bar: if a bar plot should be used instead of the default line plot
+    :returns: a file path object if the plot was saved sucessfully
     """
     _, ax = plt.subplots()
     colormap = cm.get_cmap("plasma")
 
-    for plate_id, plate_item in plates_dict.items():
-        if len(plates_dict) > 1:
+    for plate in plates:
+        if len(plates) > 1:
             # Get a color from the colourmap
-            cm_plate = colormap(0.2 + (0.65 - 0.2) * (plate_id / len(plates_dict)))
-            plot_total = len(plates_dict)
+            cm_plate = colormap(0.2 + (0.65 - 0.2) * (plate.id / len(plates)))
+            plot_total = len(plates)
         else:
             cm_plate = "Purple"
             plot_total = None
 
-        if not len(plate_item) < 1:
+        if not plate.count < 1:
             # Plot frequency for each time point
-            time_of_appearance_frequency(ax, (plate_id, plate_item), time_points_elapsed, cm_plate, plot_total, bar = bar)
+            time_of_appearance_frequency(ax, plate, time_points_elapsed, cm_plate, plot_total, bar = bar)
 
     lgd = ax.legend(loc = 'center right', fontsize = 8, bbox_to_anchor = (1.25, 0.5))
     save_params = {
         "format": "png",
         "bbox_extra_artists": (lgd,),
         "bbox_inches": "tight"
-        }
+    }
 
     plt.ylim(ymin = 0)
     plt.title("Time of appearance")
@@ -282,19 +327,37 @@ def plot_appearance_frequency(plates_dict, time_points_elapsed, save_path, bar =
         save_name = "time_of_appearance_bar.png"
     else:
         save_name = "time_of_appearance.png"
-    plt.savefig(str(save_path.joinpath(save_name)), **save_params)
+    save_path = save_path.joinpath(save_name)
 
-    plt.close()
+    try:
+        plt.savefig(str(save_path), **save_params)
+    except Exception:
+        save_path = None
+    finally:
+        plt.close()
+        return save_path
 
 
-def time_of_appearance_frequency(ax, plate_item, time_points_elapsed, plot_color, plot_total = None, bar = False):
+def time_of_appearance_frequency(
+    ax: Axes,
+    plate: Plate,
+    time_points_elapsed: List[int],
+    plot_color: str,
+    plot_total: int = None,
+    bar: bool = False
+):
     """
     Add a time of appearance frequency bar or line plot to an axis
-    """
-    plate_id, plate = plate_item
 
+    :param ax: a Matplotlib Axes object to add a plot to
+    :param plate: a Plate instance
+    :param time_points_elapsed: a list of elapsed time values
+    :param plot_color: a Colormap color
+    :param plot_total: the total number of plots on the Axes
+    :param bar: if a bar plot should be used instead of the default line plot
+    """
     time_points_dict = dict()
-    for colony in plate.values():
+    for colony in plate.items:
         key = colony.timepoint_first.elapsed_minutes
         if key not in time_points_dict:
             time_points_dict[key] = 0
@@ -307,14 +370,14 @@ def time_of_appearance_frequency(ax, plate_item, time_points_elapsed, plot_color
         ax.plot(
             *zip(*sorted(time_points_dict.items())),
             color = plot_color,
-            label = f"Plate {plate_id}",
+            label = f"Plate {plate.id}",
             alpha = 0.9
-            )
+        )
     else:
         if plot_total is not None:
             width = plot_total + 1
             # Offset x positions so bars aren't obscured
-            x = [x + ((plate_id - 1) * width) for x in sorted(time_points_dict.keys())]
+            x = [x + ((plate.id - 1) * width) for x in sorted(time_points_dict.keys())]
         else:
             width = 14
             x = [x for x in sorted(time_points_dict.keys())]
@@ -326,8 +389,8 @@ def time_of_appearance_frequency(ax, plate_item, time_points_elapsed, plot_color
             y,
             width = width,
             color = plot_color,
-            label = f"Plate {plate_id}"
-            )
+            label = f"Plate {plate.id}"
+        )
 
     # Format x-axis labels as integer hours
     ax.set_xticklabels(axis_minutes_to_hours(ax.get_xticks()))
@@ -335,9 +398,14 @@ def time_of_appearance_frequency(ax, plate_item, time_points_elapsed, plot_color
     ax.set_ylabel("Frequency")
 
 
-def plot_doubling_map(plates_dict, time_points_elapsed, save_path):
+def plot_doubling_map(plates: List[Plate], time_points_elapsed: List[int], save_path: Path) -> Path:
     """
     Heatmap of doubling time vs time of appearance
+
+    :param plates: a list of Plate instances
+    :param time_points_elapsed: a list of elapsed time values
+    :param save_path: the directory to save the plot image
+    :returns: a file path object if the plot was saved sucessfully
     """
     from numpy import histogram2d, zeros_like
     from numpy.ma import masked_where
@@ -347,8 +415,8 @@ def plot_doubling_map(plates_dict, time_points_elapsed, save_path):
     x = [0]
     y = [0]
 
-    for plate in plates_dict.values():
-        for colony in plate.values():
+    for plate in plates:
+        for colony in plate.items:
             x.append(colony.timepoint_first.elapsed_minutes)
             y.append(colony.get_doubling_time_average(elapsed_minutes = True))
 
@@ -365,7 +433,7 @@ def plot_doubling_map(plates_dict, time_points_elapsed, save_path):
         cmap = "RdPu",
         extent = extent,
         origin = "lower"
-        )
+    )
 
     plt.xlim(xmin = 0)
     plt.ylim(ymin = 0)
@@ -383,6 +451,12 @@ def plot_doubling_map(plates_dict, time_points_elapsed, save_path):
     ax.set_ylabel("Average doubling time (hours)")
 
     plt.tight_layout()
-    plt.savefig(str(save_path.joinpath("appearance_doubling_distribution.png")), format = "png")
 
-    plt.close()
+    save_path = save_path.joinpath("appearance_doubling_distribution.png")
+    try:
+        plt.savefig(str(save_path), format = "png")
+    except Exception:
+        save_path = None
+    finally:
+        plt.close()
+        return save_path

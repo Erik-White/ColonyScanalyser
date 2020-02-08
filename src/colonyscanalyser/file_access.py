@@ -1,4 +1,5 @@
-﻿from enum import Enum
+﻿from typing import List
+from enum import Enum
 
 
 def file_exists(file_path):
@@ -17,6 +18,19 @@ def file_exists(file_path):
         return True
 
     return False
+
+
+def file_safe_name(file_name: List[str], separator: str = "_") -> str:
+    """
+    Converts a list of string to a safe file name
+
+    :param file_name: a list of strings that make up the complete filename
+    :param separator: a character to place in between the items of file_name
+    :returns: a new filename string
+    """
+    safe_names = [val.replace(" ", separator) for val in file_name]
+
+    return separator.join(filter(None, safe_names))
 
 
 def get_files_by_type(path, file_extensions = ["*"]):
@@ -207,7 +221,7 @@ def save_to_csv(data, headers, save_path, delimiter = ","):
                     outfile,
                     delimiter = delimiter,
                     fieldnames = headers
-                    )
+                )
                 writer.writeheader()
                 data = [data]
             else:

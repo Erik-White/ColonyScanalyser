@@ -6,7 +6,7 @@ from colonyscanalyser.colony import (
     timepoints_from_image,
     colonies_from_timepoints,
     group_timepoints_by_center
-    )
+)
 
 
 centers = [
@@ -19,7 +19,7 @@ centers = [
     (4, 3.9),
     (3, 10),
     (0, 4.4)
-    ]
+]
 
 
 @pytest.fixture(params = [centers])
@@ -133,13 +133,6 @@ class TestColony():
                 colony.timepoints
 
     class TestProperties():
-        @pytest.mark.parametrize("timepoints_iter", [list, None], indirect = True)
-        @pytest.mark.parametrize("id", [-1, 0, 2, 3.4, 1000000, "1"])
-        def test_id(self, timepoints_iter, id):
-            colony = Colony(id, timepoints_iter)
-
-            assert colony.id == id
-
         def test_iterable(self, colony):
             assert len([*colony.__iter__()]) == 18
 
@@ -151,7 +144,7 @@ class TestColony():
         def test_center(self, timepoints):
             from statistics import mean
 
-            colony = Colony(id, timepoints)
+            colony = Colony(1, timepoints)
 
             for i, coord in enumerate(colony.center):
                 assert round(coord, 4) == round(mean([t.center[i] for t in timepoints]), 4)
@@ -164,7 +157,7 @@ class TestColony():
             assert colony_empty.growth_rate == 0
 
         def test_growth_rate_average(self, timepoints, timepoint_empty):
-            colony = Colony(id, timepoints)
+            colony = Colony(1, timepoints)
             colony_empty = Colony(1, [timepoint_empty])
 
             assert colony.growth_rate_average == ((timepoints[-1].area - timepoints[0].area) ** (1 / len(timepoints))) - 1
@@ -182,7 +175,6 @@ class TestColony():
         def test_get_timepoint(self, timepoints):
             colony = Colony(1, timepoints)
 
-            # Get timepoint
             assert colony.get_timepoint(timepoints[0].date_time) == timepoints[0]
             with pytest.raises(ValueError):
                 colony.get_timepoint(None)
@@ -210,7 +202,7 @@ class TestColony():
         @pytest.mark.parametrize("timepoint_index, expected", [(0, 12.57), (-1, 1.4)])
         def test_circularity(self, timepoints, timepoint_index, expected):
             colony = Colony(1, timepoints)
-            circularity = colony.circularity_at_timepoint(timepoints[timepoint_index].date_time)
+            circularity = colony.get_circularity_at_timepoint(timepoints[timepoint_index].date_time)
 
             assert round(circularity, 2) == expected
 
