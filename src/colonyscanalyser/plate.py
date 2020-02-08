@@ -1,19 +1,23 @@
-from typing import Union, List, Tuple
+from __future__ import annotations
+from typing import Union, Dict, List, Tuple
 from collections.abc import Collection
 from pathlib import Path, PurePath
+from numpy import ndarray
 from .base import Identified, IdentifiedCollection, Named
 from .geometry import Circle
-from .colony import Colony
 from .file_access import save_to_csv
 
 
-class Plate(Identified, Named, Circle):
+class Plate(Identified, IdentifiedCollection, Named, Circle):
     """
     An object to hold information about an agar plate and a collection of Colony objects
     """
     def __init__(
-        self, id: int,
+        self,
+        id: int,
         diameter: float,
+        edge_cut: float = 0,
+        name: str = "",
         center: Union[Tuple[float, float], Tuple[float, float, float]] = None,
         colonies: list = None
     ):
@@ -28,9 +32,9 @@ class Plate(Identified, Named, Circle):
 
         # Set property defaults
         self.center = center
-        self.colonies = colonies
-        self.edge_cut = 0
-        self.name = ""
+        self.items = colonies
+        self.edge_cut = edge_cut
+        self.name = name
 
     def __iter__(self):
         return iter([
@@ -40,7 +44,7 @@ class Plate(Identified, Named, Circle):
             self.diameter,
             self.area,
             self.edge_cut,
-            self.colony_count
+            self.count
         ])
 
     @property
@@ -52,40 +56,12 @@ class Plate(Identified, Named, Circle):
         self.__center = val
 
     @property
-    def colonies(self) -> List[Colony]:
-        return self.__colonies
-
-    @colonies.setter
-    def colonies(self, val: Collection):
-        if isinstance(val, list):
-            self.__colonies = val
-        elif isinstance(val, Collection) and not isinstance(val, str):
-            self.__colonies = [colony for colony in val]
-        else:
-            raise ValueError("Colonies must be supplied as a List or other Collection")
-
-    @property
-    def colony_count(self) -> int:
-        return len(self.colonies)
-
-    @property
     def edge_cut(self) -> float:
         return self.__edge_cut
 
     @edge_cut.setter
     def edge_cut(self, val: float):
         self.__edge_cut = val
-
-    def append_colony(self, colony: Colony):
-        """
-        Append a Colony object to the plate colony collection
-
-        :param colony: a Colony object
-        """
-        if not self.colony_exists(colony):
-            self.colonies.append(colony)
-        else:
-            raise ValueError(f"A colony with ID #{colony.id} already exists")
 
     def colonies_to_csv(self, save_path: Path, headers: List[str] = None) -> Path:
         """
@@ -120,7 +96,7 @@ class Plate(Identified, Named, Circle):
         return self.__collection_to_csv(
             save_path,
             "_".join(filter(None, [f"plate{str(self.id)}", self.name.replace(" ", "_"), "colonies"])),
-            self.colonies,
+            self.items,
             headers
         )
 
@@ -146,7 +122,7 @@ class Plate(Identified, Named, Circle):
 
         # Unpack timepoint properties to a flat list
         colony_timepoints = list()
-        for colony in self.colonies:
+        for colony in self.items:
             for timepoint in colony.timepoints.values():
                 colony_timepoints.append([colony.id, *timepoint])
 
@@ -157,24 +133,6 @@ class Plate(Identified, Named, Circle):
             headers
         )
 
-    def colony_exists(self, colony: Colony) -> bool:
-        """
-        Check if a colony exists in the plate colony collection
-
-        :param colony: a Colony object
-        :returns: True if a colony is found with matching ID
-        """
-        return self.colony_id_exists(colony.id)
-
-    def colony_id_exists(self, colony_id: int) -> bool:
-        """
-        Check if a colony with the specified ID number exists in the plate colony collection
-
-        :param colony_id: a Colony object id number
-        :returns: True if a colony is found with matching ID
-        """
-        return self._Identified__id_exists(self.colonies, colony_id)
-
     def colonies_rename_sequential(self, start: int = 1) -> int:
         """
         Update the ID numbers of all colonies in the plate colony collection
@@ -182,36 +140,10 @@ class Plate(Identified, Named, Circle):
         :param start: the new initial ID number
         :returns: the final ID number of the renamed sequence
         """
-        for i, colony in enumerate(self.colonies, start = start):
+        for i, colony in enumerate(self.items, start = start):
             colony.id = i
 
         return i
-
-    def get_colony(self, colony_id: int) -> Colony:
-        """
-        Returns a colony with the specified ID number from the plate colony collection
-
-        :param colony_id: a Colony ID number
-        :returns: a Colony object, if found
-        """
-        for colony in self.colonies:
-            if colony.id == colony_id:
-                return colony
-
-        return None
-
-    def remove_colony(self, colony_id: int):
-        """
-        Remove a Colony object from the plate colony collection
-
-        :param colony_id: a Colony object ID
-        """
-        if self.colony_id_exists(colony_id):
-            for i, colony in enumerate(self.colonies):
-                if colony.id == colony_id:
-                    self.colonies.remove(colony)
-        else:
-            raise KeyError(f"No colony with ID #{colony_id} could be found")
 
     @staticmethod
     def __collection_to_csv(save_path: Path, file_name: str, data: Collection, headers: List[str] = None) -> Path:

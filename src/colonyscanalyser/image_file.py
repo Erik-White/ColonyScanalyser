@@ -5,13 +5,13 @@ from re import search
 from numpy import ndarray
 from skimage.io import imread
 from skimage.color import rgb2gray
-from .base import Unique, TimeStampElapsed
+from .base import IdentifiedCollection, Unique, TimeStampElapsed
 from .file_access import file_exists
 
 
 class ImageFile(Unique, TimeStampElapsed):
     """
-    An object to hold information, and provide access to, a timestamped image file
+    An object to hold information about, and provide access to, a timestamped image file
     """
     def __init__(
         self,
@@ -20,27 +20,30 @@ class ImageFile(Unique, TimeStampElapsed):
         timestamp_initial: datetime = None,
         cache_image: bool = False
     ):
+        super(ImageFile, self).__init__()
         self.file_path = file_path
+
+        if timestamp is None:
+            timestamp = self.timestamp_from_string(str(self.file_path.name))
+        if timestamp_initial is None:
+            timestamp_initial = timestamp
+
         self.timestamp = timestamp
-        if self.timestamp is None:
-            self.timestamp = self.timestamp_from_string(str(self.file_path.name))
         self.timestamp_initial = timestamp_initial
-        if self.timestamp_initial is None:
-            self.timestamp_initial = self.timestamp
         self.cache_image = cache_image
         self.__image = None
         if self.cache_image:
-            self.__image = self.__load_image(self.file_path)
+            self.__image = ImageFile.__load_image(self.file_path)
 
     def __enter__(self):
         # Load and cache image ready for use
         if self.__image is None:
-            self.__image = self.__load_image(self.file_path)
+            self.__image = ImageFile.__load_image(self.file_path)
 
         return self
 
     def __exit__(self, exception_type, exception_value, traceback):
-        # Remove cached images unless required
+        # Remove cached images, unless required
         if not self.cache_image:
             self.__image = None
 
@@ -57,7 +60,7 @@ class ImageFile(Unique, TimeStampElapsed):
         if self.cache_image and self.__image is not None:
             return self.__image.copy()
         else:
-            return self.__load_image(self.file_path)
+            return ImageFile.__load_image(self.file_path)
 
     @property
     def image_gray(self) -> ndarray:
@@ -77,13 +80,12 @@ class ImageFile(Unique, TimeStampElapsed):
 
         self.__file_path = val
 
-    @classmethod
-    def timestamp_from_exif(self, image_file: Path) -> datetime:
+    @staticmethod
+    def timestamp_from_exif(image_file: Path) -> Optional[datetime]:
         raise NotImplementedError()
 
-    @classmethod
+    @staticmethod
     def timestamp_from_string(
-        self,
         search_string: str,
         pattern: str =
         "(?P<year>\\d{4}).?(?P<month>[0-1][0-9]).?(?P<day>[0-3][0-9]).?(?P<hour>[0-2][0-9]).?(?P<minute>[0-5][0-9])"
@@ -113,69 +115,53 @@ class ImageFile(Unique, TimeStampElapsed):
         else:
             return None
 
-    @classmethod
-    def __load_image(self, file_path: Path, as_gray: bool = False, plugin: str = "pil") -> ndarray:
+    @staticmethod
+    def __load_image(file_path: Path, as_gray: bool = False, plugin: str = "pil") -> ndarray:
         return imread(str(file_path), as_gray = as_gray, plugin = plugin)
 
 
-class ImageFileCollection:
+class ImageFileCollection(IdentifiedCollection):
     """
     Holds a collection of ImageFiles
     """
-    def __init__(self, image_files: List[ImageFile] = None):
-        self.image_files = image_files
-        if self.image_files is None:
-            self.image_files = list()
-
-    @property
-    def image_files(self) -> List[ImageFile]:
-        return self.__image_files
-
-    @image_files.setter
-    def image_files(self, val: List[ImageFile]):
-        if val is None:
-            self.__image_files = None
-        else:
-            self.__image_files = sorted(val, key = lambda image_file: image_file.timestamp)
-
-    @property
-    def image_file_count(self) -> int:
-        return len(self.image_files)
+    @IdentifiedCollection.items.getter
+    def items(self) -> List[ImageFile]:
+        return sorted(self._IdentifiedCollection__items, key = lambda item: item.timestamp)
 
     @property
     def file_paths(self) -> List[datetime]:
-        return [image_file.file_path for image_file in self.image_files]
+        return [image_file.file_path for image_file in self.items]
 
     @property
     def timestamps(self) -> List[datetime]:
-        return [image_file.timestamp for image_file in self.image_files]
+        return [image_file.timestamp for image_file in self.items]
 
     @property
     def timestamps_initial(self) -> List[datetime]:
-        return [image_file.timestamp_initial for image_file in self.image_files]
+        return [image_file.timestamp_initial for image_file in self.items]
 
     @timestamps_initial.setter
     def timestamps_initial(self, val: datetime):
-        for image_file in self.image_files:
+        for image_file in self.items:
             image_file.timestamp_initial = val
 
     @property
     def timestamps_elapsed(self) -> List[datetime]:
-        return [image_file.timestamp_elapsed for image_file in self.image_files]
+        return [image_file.timestamp_elapsed for image_file in self.items]
 
     @property
     def timestamps_elapsed_hours(self) -> List[float]:
-        return [image_file.timestamp_elapsed_hours for image_file in self.image_files]
+        return [image_file.timestamp_elapsed_hours for image_file in self.items]
 
     @property
     def timestamps_elapsed_minutes(self) -> List[int]:
-        return [image_file.timestamp_elapsed_minutes for image_file in self.image_files]
+        return [image_file.timestamp_elapsed_minutes for image_file in self.items]
 
     @property
     def timestamps_elapsed_seconds(self) -> List[int]:
-        return [image_file.timestamp_elapsed_seconds for image_file in self.image_files]
+        return [image_file.timestamp_elapsed_seconds for image_file in self.items]
 
-    def add_image_file(
+    def add(
         self,
         file_path: Path,
         timestamp: datetime = None,
@@ -189,7 +175,7 @@ class ImageFileCollection:
         :param timestamp: a datetime associated with the image
         :param timestamp_initial: a starting datetime used to calculate elapsed timestamps
         :param cache_image: load the image dynamically from file, or store in memory
-        :returns: the new ImageFile object
+        :returns: the new ImageFile instance
         """
         image_file = ImageFile(
             file_path = file_path,
@@ -198,8 +184,6 @@ class ImageFileCollection:
             cache_image = cache_image
         )
 
-        # Append the new ImageFile and ensure the collection is sorted
-        self.image_files.append(image_file)
-        self.image_files = self.image_files
+        self.append(image_file)
 
         return image_file

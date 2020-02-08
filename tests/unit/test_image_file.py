@@ -149,13 +149,12 @@ class TestImageFileCollection:
         def test_init(self):
             imagefiles = ImageFileCollection()
 
-            assert imagefiles.image_files == list()
+            assert imagefiles.items == list()
 
         def test_init_list(self, image_files):
-            print(image_files)
             imagefiles = ImageFileCollection(image_files)
 
-            assert imagefiles.image_files == image_files
+            assert imagefiles.items == image_files
 
     class TestProperties:
         def test_image_files_sorted(self, image_files):
@@ -164,13 +163,13 @@ class TestImageFileCollection:
             image_files_shuffled = sample(image_files, len(image_files))
             imagefiles = ImageFileCollection(image_files_shuffled)
 
-            assert imagefiles.image_files != image_files_shuffled
-            assert imagefiles.image_files == image_files
+            assert imagefiles.items != image_files_shuffled
+            assert imagefiles.items == image_files
 
         def test_image_file_count(self, image_files):
             imagefiles = ImageFileCollection(image_files)
 
-            assert imagefiles.image_file_count == len(image_files)
+            assert imagefiles.count == len(image_files)
 
         def test_file_paths(self, image_files):
             imagefiles = ImageFileCollection(image_files)
@@ -208,17 +207,19 @@ class TestImageFileCollection:
                 imagefiles.timestamps_elapsed_seconds == [image_file.timestamp_elapsed_seconds for image_file in image_files]
             )
 
+    class TestMethods:
         @mock.patch("colonyscanalyser.image_file.file_exists", return_value = True)
         def test_add_image_file(self, patch, image_files):
             imagefiles = ImageFileCollection(image_files)
-            image_file_first = imagefiles.image_files[0]
-            new_image_file = imagefiles.add_image_file(
+            image_file_first = imagefiles.items[0]
+            new_image_file = imagefiles.add(
                 file_path = "",
                 timestamp = image_file_first.timestamp - timedelta(hours = 1),
                 timestamp_initial = image_file_first.timestamp_initial - timedelta(hours = 1),
                 cache_image = False
             )
 
-            assert imagefiles.image_file_count == len(image_files) + 1
-            assert new_image_file in imagefiles.image_files
-            assert imagefiles.image_files[0] == new_image_file
+            assert imagefiles.count == len(image_files) + 1
+            assert new_image_file in imagefiles.items
+            assert image_file_first != new_image_file
+            assert imagefiles.items[0] == new_image_file
