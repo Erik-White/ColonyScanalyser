@@ -2,13 +2,15 @@
 import sys
 import argparse
 from typing import Union, Dict, List, Tuple
-from numpy import ndarray
 from pathlib import Path
 from datetime import datetime
 from distutils.util import strtobool
 from collections import defaultdict
 from multiprocessing import Pool, cpu_count
 from functools import partial
+
+# Third party modules
+from numpy import ndarray
 
 # Local modules
 from colonyscanalyser import (
@@ -120,35 +122,35 @@ def main():
     )
     parser.add_argument("path", type = str,
                         help = "Image files location", default = None)
-    parser.add_argument("-v", "--verbose", type = int, default = 1,
-                        help = "Information output level")
     parser.add_argument("-dpi", "--dots_per_inch", type = int, default = 2540,
                         help = "The image DPI (dots per inch) setting")
-    parser.add_argument("--plate_size", type = int, default = 100,
-                        help = "The plate diameter, in millimetres")
+    parser.add_argument("-mp", "--multiprocessing", type = strtobool, default = True,
+                        help = "Enables use of more CPU cores, faster but more resource intensive")
+    parser.add_argument("-p", "--plots", type = int, default = 1,
+                        help = "The detail level of plot images to store on disk")
     parser.add_argument("--plate_edge_cut", type = int, default = 60,
                         help = "The radius from the plate edge to remove, in pixels")
+    parser.add_argument("--plate_labels", type = str, nargs = "*", default = list(),
+                        help = "A list of labels to identify each plate. Plates are ordered from top left, in rows. Example usage: --plate_labels plate1 plate2")
     parser.add_argument("--plate_lattice", type = int, nargs = 2, default = (3, 2),
                         metavar = ("ROW", "COL"),
                         help = "The row and column co-ordinate layout of plates. Example usage: --plate_lattice 3 3")
-    parser.add_argument("--plate_labels", type = str, nargs = "*", default = list(),
-                        help = "A list of labels to identify each plate. Plates are ordered from top left, in rows. Example usage: --plate_labels plate1 plate2")
-    parser.add_argument("--save_plots", type = int, default = 1,
-                        help = "The detail level of plot images to store on disk")
+    parser.add_argument("--plate_size", type = int, default = 100,
+                        help = "The plate diameter, in millimetres")
     parser.add_argument("--use_cached_data", type = strtobool, default = False,
                         help = "Allow use of previously calculated data")
-    parser.add_argument("-mp", "--multiprocessing", type = strtobool, default = True,
-                        help = "Enables use of more CPU cores, faster but more resource intensive")
+    parser.add_argument("-v", "--verbose", type = int, default = 1,
+                        help = "Information output level")
 
     args = parser.parse_args()
     BASE_PATH = args.path
-    VERBOSE = args.verbose
-    PLATE_SIZE = imaging.mm_to_pixels(args.plate_size, dots_per_inch = args.dots_per_inch)
-    PLATE_LATTICE = tuple(args.plate_lattice)
-    PLATE_LABELS = {plate_id: label for plate_id, label in enumerate(args.plate_labels, start = 1)}
+    PLOTS = args.plots
     PLATE_EDGE_CUT = args.plate_edge_cut
-    SAVE_PLOTS = args.save_plots
+    PLATE_LABELS = {plate_id: label for plate_id, label in enumerate(args.plate_labels, start = 1)}
+    PLATE_LATTICE = tuple(args.plate_lattice)
+    PLATE_SIZE = imaging.mm_to_pixels(args.plate_size, dots_per_inch = args.dots_per_inch)
     USE_CACHED = args.use_cached_data
+    VERBOSE = args.verbose
     POOL_MAX = 1
     if args.multiprocessing:
         POOL_MAX = cpu_count()
@@ -346,7 +348,7 @@ def main():
     # will be available when using cached data
     if image_files is not None:
         # Plots for all plates
-        if SAVE_PLOTS >= 1:
+        if PLOTS >= 1:
             if VERBOSE >= 1:
                 print("Saving plots")
             save_path = file_access.create_subdirectory(BASE_PATH, "plots")
@@ -357,7 +359,7 @@ def main():
             plots.plot_colony_map(image_files.items[-1].image, plates.items, save_path)
 
         # Plot colony growth curves, ID map and time of appearance for each plate
-        if SAVE_PLOTS >= 2:
+        if PLOTS >= 2:
             for plate in plates.items:
                 save_path_plate = file_access.create_subdirectory(save_path, f"plate{plate.id}")
                 plots.plot_growth_curve([plate], image_files.timestamps_elapsed_minutes, save_path_plate)
