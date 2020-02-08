@@ -1,3 +1,4 @@
+from typing import Type, TypeVar, Optional, List
 from collections.abc import Collection
 from datetime import datetime, timedelta
 
@@ -42,6 +43,109 @@ class Identified:
         :returns: True if the value conforms to the requirements for an ID number
         """
         return isinstance(id, int) and id > 0
+
+
+class IdentifiedCollection:
+    """
+    An collection of Identified objects with generic methods for modifying the collection
+    """
+    T = TypeVar("T", bound = Identified)
+
+    def __init__(self, items: Collection = None):
+        self.items = items
+
+    @property
+    def count(self) -> int:
+        return len(self.items)
+
+    @property
+    def items(self) -> List["T"]:
+        """
+        Returns a sorted list of items from the collection
+
+        A copy is returned, preventing direct changes to the collection
+        """
+        return sorted(self.__items, key = lambda item: item.id)
+
+    @items.setter
+    def items(self, val: Collection):
+        if isinstance(val, dict):
+            val = list(val.values())
+
+        if val is None:
+            self.__items = list()
+        elif isinstance(val, Collection) and not isinstance(val, str):
+            self.__items = val.copy()
+        else:
+            raise ValueError(f"Items must be supplied as a valid Collection, not {type(val)}")
+
+    def add(self, id: int) -> "T":
+        """
+        Create a new instance of T and append it to the collection
+
+        :param id: a valid Identified ID number
+        :returns: a new instance of T
+        """
+        item = Identified(id = id)
+
+        self.append(item)
+
+        return item
+
+    def append(self, item: Type[T]):
+        """
+        Append an item to the collection
+
+        :param item: the object to append to the collection
+        """
+        if not self.exists(item):
+            self.__items.append(item)
+        else:
+            raise ValueError(f"An item with ID #{item.id} already exists")
+
+    def exists(self, item: Type[T]) -> bool:
+        """
+        Check if an item exists in the item collection
+
+        :param item: an instance of T
+        :returns: True if an item is found with matching ID
+        """
+        return self.id_exists(item.id)
+
+    def id_exists(self, id: int) -> bool:
+        """
+        Check if an item with the specified ID number exists in the item collection
+
+        :param id: a valid Identified id number
+        :returns: True if an item is found with matching ID
+        """
+        return Identified._Identified__id_exists(self.items, id)
+
+    def get_item(self, id: int) -> Optional["T"]:
+        """
+        Returns an item with the specified ID number from the item collection
+
+        :param id: a valid Identified ID number
+        :returns: an item from the collection, if found
+        """
+        for item in self.items:
+            if item.id == id:
+                return item
+
+        return None
+
+    def remove(self, id: int):
+        """
+        Remove an item from the collection
+
+        :param id: a valid Identified ID number
+        """
+        if self.id_exists(id):
+            for item in self.items:
+                if item.id == id:
+                    self.__items.remove(item)
+        else:
+            raise KeyError(f"No item with ID #{id} could be found")
 
 
 class Named:
