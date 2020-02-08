@@ -21,8 +21,8 @@ class Identified:
         else:
             raise ValueError(f"'{val}' is not a valid id. An id must be a non-negative integer'")
 
-    @classmethod
-    def __id_exists(self, collection: Collection, id: int) -> bool:
+    @staticmethod
+    def __id_exists(collection: Collection, id: int) -> bool:
         """
         Verifies if an object in a collection matches the specified ID number
 
@@ -32,8 +32,8 @@ class Identified:
         """
         return any(id == existing.id for existing in collection)
 
-    @classmethod
-    def __id_is_valid(self, id: int) -> bool:
+    @staticmethod
+    def __id_is_valid(id: int) -> bool:
         """
         Verifies if a value conforms to the requirements for an ID number
 
@@ -176,27 +176,27 @@ class Unique(Identified):
     @Identified.id.setter
     def id(self, val: int):
         """
-        Overrides base method to prevent setting id
+        Overrides base method to make id read-only
         """
         pass
 
-    @classmethod
     def id_increment(self) -> int:
         """
         Increments the built-in ID counter
 
         :returns: the auto incremented ID number
         """
-        self.id_count += 1
+        Unique.id_count += 1
 
-        return self.id_count
+        return Unique.id_count
 
 
 class TimeStamped:
     def __init__(self, timestamp: datetime = None):
+        if timestamp is None:
+            timestamp = datetime.now()
+
         self.timestamp = timestamp
-        if self.timestamp is None:
-            self.timestamp = datetime.now()
 
     @property
     def timestamp(self) -> datetime:
@@ -209,12 +209,13 @@ class TimeStamped:
 
 class TimeStampElapsed(TimeStamped):
     def __init__(self, timestamp: datetime = None, timestamp_initial: datetime = None):
-        self._TimeStamped__timestamp = timestamp
-        if self.timestamp is None:
-            self.timestamp = datetime.now()
-        self.timestamp_initial = timestamp_initial
+        if timestamp is None:
+            timestamp = datetime.now()
         if timestamp_initial is None:
-            self.timestamp_initial = self.timestamp
+            timestamp_initial = timestamp
+
+        self._TimeStamped__timestamp = timestamp
+        self.timestamp_initial = timestamp_initial
 
     @property
     def timestamp_elapsed(self) -> timedelta:
