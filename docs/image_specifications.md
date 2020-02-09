@@ -10,13 +10,13 @@ To allow the colonies to easily be discerned in the image, a strongly contrastin
 ### Image formats
 Images should be saved in a [lossless format](https://en.wikipedia.org/wiki/Lossless_compression#Raster_graphics). ColonyScanalyser currently supports `png` and `tiff` image files.
 ### Image file names
-Images need to be saved with a file name that contains the date and time stamp when the image was taken. This information must be in `YYYYMMDD_HHMM` (year/month/day hour/minute) format.
+Images need to be saved with a file name that contains the date and time stamp when the image was taken. This information must be in `YYYYMMDD HHMM` (year/month/day hour/minute) format.
 
-File names can have any prefix, but must end with the date and time stamp. For example, assuming 30 minute intervals:
+Date and timestamp detection is flexible and can tolerate a wide range of separator characters. For example these are all valid:
 ```
 image20190624_1034.tif
-image20190624_1104.tif
-image20190624_1134.tif
+image2019-06-24_11-04.tif
+2019 06 24_1134_image.tif
 ...
 ```
 ### Examples

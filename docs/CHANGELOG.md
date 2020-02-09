@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Compressed serialised data filename changed to `cached_data`
 - `save_plots` command line argument renamed to `plots`
 - Refactored most of the functions from `main` as static methods in the `plate` or `image_file` modules
+- Improved flexibility when detecting date and time stamp information in file names
 ### Fixed
 - A rare error when opening images using skimage.io.imread
 
