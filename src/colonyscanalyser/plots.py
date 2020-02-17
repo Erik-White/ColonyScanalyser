@@ -194,13 +194,14 @@ def plot_plate_segmented(
         return save_path
 
 
-def plot_plate_images_animation_parallel(
+def plot_plate_images_animation(
     plates: PlateCollection,
     image_files: ImageFileCollection,
     save_path: Path,
     fps: int = 10,
     image_size: Tuple[int, int] = None,
     image_name: str = "plate_image_animation",
+    background_color = (255, 255, 255, 0),
     pool_max: int = 1
 ) -> List[Path]:
     """
@@ -223,9 +224,15 @@ def plot_plate_images_animation_parallel(
 
     # Divide up image files between processes and assemble results
     chunk_size = int(image_files.count // pool_max)
+    func = partial(
+        __image_file_to_plate_images,
+        plate_collection = plates,
+        image_size = image_size,
+        background_color = background_color
+    )
     with Pool(processes = pool_max) as pool:
         images = pool.map(
-            partial(__image_file_to_plate_images, plate_collection = plates, image_size = image_size),
+            func,
             image_files.items,
             chunksize = chunk_size
         )
@@ -526,7 +533,8 @@ def plot_doubling_map(plates: List[Plate], time_points_elapsed: List[int], save_
 def __image_file_to_plate_images(
     image_file: ImageFile,
     plate_collection: PlateCollection = None,
-    image_size: Tuple[int, int] = None
+    image_size: Tuple[int, int] = None,
+    background_color: Tuple = 0
 ) -> Dict[str, ndarray]:
     """
     Slice an image according to the plates in a PlateCollection
@@ -536,21 +544,20 @@ def __image_file_to_plate_images(
     :param image_file: the image containing a set of plates
     :param plate_collection: Plate objects shown in image_file
     :param image_size: the desired size for the individual plate images
+    :param background_color: the color to replace the empty parts of the image
     :returns: a dictionary of plate images with the plate ID numbers as keys
     """
     from PIL import Image
     from skimage.transform import resize
 
     # Slice the image into individual plate images
-    sliced_images = plate_collection.slice_plate_image(image_file.image)
+    sliced_images = plate_collection.slice_plate_image(image_file.image, background_color = background_color)
     # Create PIL Image objects and resize if required
     images = dict()
     for plate_id, image in sliced_images.items():
         if image_size is not None:
             image = resize(image, image_size, preserve_range = True)
-            # resize returns an array of type float64, which Image.fromarray can't handle
-            if not image.dtype == "uint8":
-                image = image.astype("uint8")
-        images[plate_id] = Image.fromarray(image, mode = "RGBA")
+        # resize returns an array of type float64, which Image.fromarray can't handle
+        images[plate_id] = Image.fromarray(image.astype("uint8"), mode = "RGBA")
 
     return images
