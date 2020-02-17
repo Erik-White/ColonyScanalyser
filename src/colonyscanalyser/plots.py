@@ -534,7 +534,7 @@ def __image_file_to_plate_images(
     image_file: ImageFile,
     plate_collection: PlateCollection = None,
     image_size: Tuple[int, int] = None,
-    background_color: Tuple = 0
+    background_color = 0
 ) -> Dict[str, ndarray]:
     """
     Slice an image according to the plates in a PlateCollection
