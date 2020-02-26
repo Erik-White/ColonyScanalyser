@@ -17,6 +17,6 @@ jobs:
       - name: Deploy docs
         uses: mhausenblas/mkdocs-deploy-gh-pages@master
         with:
-          python-version: '>=3.7'
+          python-version: "3.7"
         env:
           GITHUB_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
