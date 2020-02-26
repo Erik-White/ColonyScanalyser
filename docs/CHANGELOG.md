@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `geometry` module with base shape classes
 - `plate` module with `Plate` and `PlateCollection` classes
 - `image_file` module with `ImageFile` and `ImageFileCollection` classes
+- `plot_plate_images_animation` outputs animated gifs for each plate in two sizes
 ### Changed
 - Cached data is now not used by default
 - `use_saved` command line argument renamed to `use_cached_data`
