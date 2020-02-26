@@ -13,7 +13,7 @@ def read(*names, **kwargs):
 
 
 setup(
-    python_requires = ">=3.7, <3.8",
+    python_requires = ">=3.7",
     name = "colonyscanalyser",
     version = "0.4.0",
     description = "An image analysis tool for measuring microorganism colony growth",
@@ -30,7 +30,7 @@ setup(
     package_dir = {"": "src"},
     zip_safe = False,
     install_requires = [
-        "numpy",
+        "numpy >= 1.18",
         "matplotlib",
         "scikit-image >= 0.16",
         "webcolors"

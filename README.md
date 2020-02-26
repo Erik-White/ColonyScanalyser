@@ -36,7 +36,7 @@ scanalyser --help
 A full set of documentation is available at https://erik-white.github.io/ColonyScanalyser/
 
 ### Prerequisites
-ColonyScanalyser requires Python version 3.7, and the Pip package manager. Pip is included with Python version 3.4 and up.
+ColonyScanalyser requires Python version 3.7 or greater, and the Pip package manager. Pip is included with Python version 3.4 and up.
 
 The remaining Python package dependencies are automatically handled by Pip when installing the Colonyscanalyser package.
 
