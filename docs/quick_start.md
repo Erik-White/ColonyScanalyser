@@ -3,13 +3,13 @@
 ## Install Python
 The most basic requirements for the package are simply Python with its package manager
 
-- Python 3.7
+- Python >= 3.7
 - Pip
 
 The [installation guide](installation.md) has more information on getting Python.
 
 ## Install ColonyScanalyser
-Once Python 3.7 is installed the Python package manager, Pip, can be used to install ColonyScanalyser. Open a command line window and install the package:
+Once Python is installed the Python package manager, Pip, can be used to install ColonyScanalyser. Open a command line window and install the package:
 ```
 pip3 install colonyscanalyser
 ```
