@@ -97,7 +97,6 @@ class Plate(Identified, IdentifiedCollection, Named, Circle):
 
         return self.__collection_to_csv(
             save_path,
-            # "_".join(filter(None, [f"plate{str(self.id)}", self.name.replace(" ", "_"), "colonies"])),
             file_safe_name([f"plate{str(self.id)}", self.name, "colonies"]),
             self.items,
             headers

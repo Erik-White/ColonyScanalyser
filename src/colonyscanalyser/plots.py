@@ -199,10 +199,9 @@ def plot_plate_images_animation(
     image_files: ImageFileCollection,
     save_path: Path,
     fps: int = 10,
-    image_size: Tuple[int, int] = None,
     image_name: str = "plate_image_animation",
-    background_color = (255, 255, 255, 0),
-    pool_max: int = 1
+    pool_max: int = 1,
+    **kwargs
 ) -> List[Path]:
     """
     Creates an animated gifs of individual plate images
@@ -213,9 +212,9 @@ def plot_plate_images_animation(
     :param image_files: an collection of ImageFile instances
     :param save_path: the directory to save the images
     :param fps: the framerate of the animated gif
-    :param image_size: the dimensions of the saved gif images
     :param image_name: the file name for the saved gif images
     :param pool_max: the maximum number of processors to use for parallel processing
+    :param kwargs: arguments to pass through to __image_file_to_plate_images
     :returns: a list of file path objects if the images were saved sucessfully
     """
     from multiprocessing import Pool
@@ -227,8 +226,7 @@ def plot_plate_images_animation(
     func = partial(
         __image_file_to_plate_images,
         plate_collection = plates,
-        image_size = image_size,
-        background_color = background_color
+        **kwargs
     )
     with Pool(processes = pool_max) as pool:
         images = pool.map(
@@ -534,6 +532,7 @@ def __image_file_to_plate_images(
     image_file: ImageFile,
     plate_collection: PlateCollection = None,
     image_size: Tuple[int, int] = None,
+    image_size_maximum: Tuple[int, int] = None,
     background_color = 0
 ) -> Dict[str, ndarray]:
     """
@@ -544,6 +543,7 @@ def __image_file_to_plate_images(
     :param image_file: the image containing a set of plates
     :param plate_collection: Plate objects shown in image_file
     :param image_size: the desired size for the individual plate images
+    :param image_size_maximum: resize images if they are over a maximum threshold
     :param background_color: the color to replace the empty parts of the image
     :returns: a dictionary of plate images with the plate ID numbers as keys
     """
@@ -556,8 +556,16 @@ def __image_file_to_plate_images(
     images = dict()
     for plate_id, image in sliced_images.items():
         if image_size is not None:
+            # Resize to the desired size
             image = resize(image, image_size, preserve_range = True)
-        # resize returns an array of type float64, which Image.fromarray can't handle
+        # Check that the image is not over the maximum size
+        if image_size_maximum is not None and image.shape > image_size_maximum:
+            # Caluclate new image size while maintaining aspect ratio
+            image_size = (image_size_maximum[0], image_size_maximum[0] * (image.shape[1] / image.shape[0]))
+            # Resize if required
+            image = resize(image, image_size, preserve_range = True)
+
+        # skimage.transform.resize returns an array of type float64, which Image.fromarray can't handle
         images[plate_id] = Image.fromarray(image.astype("uint8"), mode = "RGBA")
 
     return images

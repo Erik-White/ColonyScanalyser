@@ -379,7 +379,8 @@ def main():
                 image_files,
                 save_path,
                 fps = 8,
-                pool_max = POOL_MAX
+                pool_max = POOL_MAX,
+                image_size_maximum = (800, 800)
             )
             # Smaller images
             plots.plot_plate_images_animation(
@@ -387,9 +388,9 @@ def main():
                 image_files,
                 save_path,
                 fps = 8,
+                pool_max = POOL_MAX,
                 image_size = (250, 250),
-                image_name = "plate_image_animation_small",
-                pool_max = POOL_MAX
+                image_name = "plate_image_animation_small"
             )
 
     else:
