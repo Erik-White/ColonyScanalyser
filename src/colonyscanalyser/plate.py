@@ -97,7 +97,6 @@ class Plate(Identified, IdentifiedCollection, Named, Circle):
 
         return self.__collection_to_csv(
             save_path,
-            # "_".join(filter(None, [f"plate{str(self.id)}", self.name.replace(" ", "_"), "colonies"])),
             file_safe_name([f"plate{str(self.id)}", self.name, "colonies"]),
             self.items,
             headers
@@ -293,7 +292,7 @@ class PlateCollection(IdentifiedCollection):
 
         return plates
 
-    def slice_plate_image(self, image: ndarray) -> Dict[int, ndarray]:
+    def slice_plate_image(self, image: ndarray, background_color: Tuple = 0) -> Dict[int, ndarray]:
         """
         Split an image into individual plate subimages and delete background
 
@@ -306,7 +305,12 @@ class PlateCollection(IdentifiedCollection):
         images = dict()
 
         for plate in self.items:
-            images[plate.id] = cut_image_circle(image, center = plate.center, radius = plate.radius - plate.edge_cut)
+            images[plate.id] = cut_image_circle(
+                image,
+                center = plate.center,
+                radius = plate.radius - plate.edge_cut,
+                background_color = background_color
+            )
 
         return images
 

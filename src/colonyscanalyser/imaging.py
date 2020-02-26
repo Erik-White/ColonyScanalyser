@@ -1,3 +1,7 @@
+from typing import Tuple
+from numpy import ndarray
+
+
 def mm_to_pixels(millimeters, dots_per_inch = 300, pixels_per_mm = None):
     """
     Convert a measurement in millimetres to image pixels
@@ -32,17 +36,17 @@ def rgb_to_name(color_rgb, color_spec = "css3"):
     # Default to CSS3 color spec if none specified
     color_spec = str.lower(color_spec)
     if color_spec == "html4":
-        from webcolors import html4_hex_to_names
-        color_dict = html4_hex_to_names
+        from webcolors import HTML4_HEX_TO_NAMES
+        color_dict = HTML4_HEX_TO_NAMES
     elif color_spec == "css2":
-        from webcolors import css2_hex_to_names
-        color_dict = css2_hex_to_names
+        from webcolors import CSS2_HEX_TO_NAMES
+        color_dict = CSS2_HEX_TO_NAMES
     elif color_spec == "css21":
-        from webcolors import css21_hex_to_names
-        color_dict = css21_hex_to_names
+        from webcolors import CSS21_HEX_TO_NAMES
+        color_dict = CSS21_HEX_TO_NAMES
     else:
-        from webcolors import css3_hex_to_names
-        color_dict = css3_hex_to_names
+        from webcolors import CSS3_HEX_TO_NAMES
+        color_dict = CSS3_HEX_TO_NAMES
 
     min_colours = {}
     for key, name in color_dict.items():
@@ -94,7 +98,13 @@ def crop_image(image, crop_shape, center = None):
     return img[slices]
 
 
-def cut_image_circle(image, center = None, radius = None, inverse = False):
+def cut_image_circle(
+    image: ndarray,
+    center: Tuple[float, float] = None,
+    radius: float = None,
+    inverse: bool = False,
+    background_color = 0
+) -> ndarray:
     """
     Get the circular area of an image
 
@@ -103,10 +113,11 @@ def cut_image_circle(image, center = None, radius = None, inverse = False):
     :param image: an image as a numpy array
     :param center: a row, column tuple co-ordinate point
     :param radius: an integer length
-    :param inverse: specify whether to return the inside or the outside area of the circle
+    :param inverse: if True, returns the image area outside the circle
+    :param background_color: the color to replace the empty parts of the image
     :returns: an image as a numpy array
     """
-    import numpy as np
+    from numpy import sqrt, arange, vstack
 
     img = image.copy()
 
@@ -120,19 +131,19 @@ def cut_image_circle(image, center = None, radius = None, inverse = False):
         crop_area = (int(radius) * 2) + 1
         img = crop_image(img, (crop_area, crop_area), center)
 
-    (cy, cx) = map(lambda x: x // 2, img.shape[:2])
+    cy, cx = map(lambda x: x // 2, img.shape[:2])
 
     # Calculate distances from center
-    dist_x = np.vstack([(np.arange(img.shape[1]) - cx)] * (img.shape[0]))
-    dist_y = np.vstack([(np.arange(img.shape[0]) - cy)] * (img.shape[1])).T
-    dist = np.sqrt(dist_x ** 2 + dist_y ** 2)
+    dist_x = vstack([(arange(img.shape[1]) - cx)] * (img.shape[0]))
+    dist_y = vstack([(arange(img.shape[0]) - cy)] * (img.shape[1])).T
+    dist = sqrt(dist_x ** 2 + dist_y ** 2)
 
     if inverse:
         # Remove image information in area inside boundary
-        img[dist <= radius] = 0
+        img[dist <= radius] = background_color
     else:
         # Remove image information in area outside boundary
-        img[dist > radius] = 0
+        img[dist > radius] = background_color
 
     return img
 

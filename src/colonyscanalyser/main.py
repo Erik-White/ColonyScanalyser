@@ -347,24 +347,52 @@ def main():
     # Can't guarantee that the original images and full list of time points
     # will be available when using cached data
     if image_files is not None:
-        # Plots for all plates
+        save_path = file_access.create_subdirectory(BASE_PATH, "plots")
         if PLOTS >= 1:
             if VERBOSE >= 1:
                 print("Saving plots")
-            save_path = file_access.create_subdirectory(BASE_PATH, "plots")
+            # Summary plots for all plates
             plots.plot_growth_curve(plates.items, image_files.timestamps_elapsed_minutes, save_path)
             plots.plot_appearance_frequency(plates.items, image_files.timestamps_elapsed_minutes, save_path)
             plots.plot_appearance_frequency(plates.items, image_files.timestamps_elapsed_minutes, save_path, bar = True)
             plots.plot_doubling_map(plates.items, image_files.timestamps_elapsed_minutes, save_path)
             plots.plot_colony_map(image_files.items[-1].image, plates.items, save_path)
 
-        # Plot colony growth curves, ID map and time of appearance for each plate
         if PLOTS >= 2:
             for plate in plates.items:
+                if VERBOSE >= 2:
+                    print(f"Saving plots for plate #{plate.id}")
                 save_path_plate = file_access.create_subdirectory(save_path, file_access.file_safe_name([f"plate{plate.id}", plate.name]))
+                # Plot colony growth curves, ID map and time of appearance for each plate
                 plots.plot_growth_curve([plate], image_files.timestamps_elapsed_minutes, save_path_plate)
                 plots.plot_appearance_frequency([plate], image_files.timestamps_elapsed_minutes, save_path_plate)
                 plots.plot_appearance_frequency([plate], image_files.timestamps_elapsed_minutes, save_path_plate, bar = True)
+
+        if PLOTS >= 4:
+            # Plot individual plate images as an animation
+            if VERBOSE >= 1:
+                print("Saving plate image animations. This may take several minutes")
+
+            # Original size images
+            plots.plot_plate_images_animation(
+                plates,
+                image_files,
+                save_path,
+                fps = 8,
+                pool_max = POOL_MAX,
+                image_size_maximum = (800, 800)
+            )
+            # Smaller images
+            plots.plot_plate_images_animation(
+                plates,
+                image_files,
+                save_path,
+                fps = 8,
+                pool_max = POOL_MAX,
+                image_size = (250, 250),
+                image_name = "plate_image_animation_small"
+            )
+
     else:
         if VERBOSE >= 1:
             print("Unable to generate plots from cached data. Run analysis on original images to generate plot images")

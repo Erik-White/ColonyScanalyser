@@ -1,4 +1,4 @@
-from typing import List
+from typing import Dict, List, Tuple
 from datetime import datetime
 from pathlib import Path
 from numpy import ndarray
@@ -8,7 +8,8 @@ from matplotlib.axes import Axes
 
 from .utilities import average_dicts_values_by_key
 from .plotting import rc_to_xy, axis_minutes_to_hours
-from .plate import Plate
+from .plate import Plate, PlateCollection
+from .image_file import ImageFile, ImageFileCollection
 
 
 def plot_colony_map(plate_image: ndarray, plates: List[Plate], save_path: Path) -> Path:
@@ -191,6 +192,71 @@ def plot_plate_segmented(
     finally:
         plt.close()
         return save_path
+
+
+def plot_plate_images_animation(
+    plates: PlateCollection,
+    image_files: ImageFileCollection,
+    save_path: Path,
+    fps: int = 10,
+    image_name: str = "plate_image_animation",
+    pool_max: int = 1,
+    **kwargs
+) -> List[Path]:
+    """
+    Creates an animated gifs of individual plate images
+
+    Utilizes multiprocessing to divide the list of images between processors
+
+    :param plates: a PlateCollection instance
+    :param image_files: an collection of ImageFile instances
+    :param save_path: the directory to save the images
+    :param fps: the framerate of the animated gif
+    :param image_name: the file name for the saved gif images
+    :param pool_max: the maximum number of processors to use for parallel processing
+    :param kwargs: arguments to pass through to __image_file_to_plate_images
+    :returns: a list of file path objects if the images were saved sucessfully
+    """
+    from multiprocessing import Pool
+    from functools import partial
+    from .file_access import create_subdirectory, file_safe_name
+
+    # Divide up image files between processes and assemble results
+    chunk_size = int(image_files.count // pool_max)
+    func = partial(
+        __image_file_to_plate_images,
+        plate_collection = plates,
+        **kwargs
+    )
+    with Pool(processes = pool_max) as pool:
+        images = pool.map(
+            func,
+            image_files.items,
+            chunksize = chunk_size
+        )
+
+    try:
+        save_paths = list()
+        for plate in plates.items:
+            # Create directory for each plate if needed
+            image_path = create_subdirectory(save_path, file_safe_name([f"plate{plate.id}", plate.name]))
+            image_path = image_path.joinpath(image_name).with_suffix(".gif")
+            save_paths.append(image_path)
+
+            # Write image frames for each plate to disk
+            images[0][plate.id].save(
+                image_path,
+                format = "GIF",
+                save_all = True,
+                append_images = [image[plate.id] for image in images[1:]],
+                duration = int(1000 / fps),
+                loop = 0
+            )
+
+    except Exception:
+        save_paths = None
+    finally:
+        return save_paths
 
 
 def plot_growth_curve(plates: List[Plate], time_points_elapsed: List[int], save_path: Path) -> Path:
@@ -460,3 +526,46 @@ def plot_doubling_map(plates: List[Plate], time_points_elapsed: List[int], save_
     finally:
         plt.close()
         return save_path
+
+
+def __image_file_to_plate_images(
+    image_file: ImageFile,
+    plate_collection: PlateCollection = None,
+    image_size: Tuple[int, int] = None,
+    image_size_maximum: Tuple[int, int] = None,
+    background_color = 0
+) -> Dict[str, ndarray]:
+    """
+    Slice an image according to the plates in a PlateCollection
+
+    Returns a set of PIL image objects
+
+    :param image_file: the image containing a set of plates
+    :param plate_collection: Plate objects shown in image_file
+    :param image_size: the desired size for the individual plate images
+    :param image_size_maximum: resize images if they are over a maximum threshold
+    :param background_color: the color to replace the empty parts of the image
+    :returns: a dictionary of plate images with the plate ID numbers as keys
+    """
+    from PIL import Image
+    from skimage.transform import resize
+
+    # Slice the image into individual plate images
+    sliced_images = plate_collection.slice_plate_image(image_file.image, background_color = background_color)
+    # Create PIL Image objects and resize if required
+    images = dict()
+    for plate_id, image in sliced_images.items():
+        if image_size is not None:
+            # Resize to the desired size
+            image = resize(image, image_size, preserve_range = True)
+        # Check that the image is not over the maximum size
+        if image_size_maximum is not None and image.shape > image_size_maximum:
+            # Caluclate new image size while maintaining aspect ratio
+            image_size = (image_size_maximum[0], image_size_maximum[0] * (image.shape[1] / image.shape[0]))
+            # Resize if required
+            image = resize(image, image_size, preserve_range = True)
+
+        # skimage.transform.resize returns an array of type float64, which Image.fromarray can't handle
+        images[plate_id] = Image.fromarray(image.astype("uint8"), mode = "RGBA")
+
+    return images

@@ -36,6 +36,8 @@ This technique is however quite resource intensive for your computer so you may 
 ### Plot images output
 The level of detail required when saving plot images after analysis. At the default level (`1`), a few summary plots are saved to give a quick overview of the data. If the output level is increased, individual plots for each plate will be saved.
 
+At the highest level (currently `4`), animations of plate images are created in `gif` format. These may take several minutes to create and the process can be quite resource intensive.
+
 - input: boolean
 ```
 -p
