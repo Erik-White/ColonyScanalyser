@@ -1,4 +1,4 @@
-from typing import Dict, List, Tuple
+from typing import Tuple
 from numpy import ndarray
 
 
@@ -36,17 +36,17 @@ def rgb_to_name(color_rgb, color_spec = "css3"):
     # Default to CSS3 color spec if none specified
     color_spec = str.lower(color_spec)
     if color_spec == "html4":
-        from webcolors import html4_hex_to_names
-        color_dict = html4_hex_to_names
+        from webcolors import HTML4_HEX_TO_NAMES
+        color_dict = HTML4_HEX_TO_NAMES
     elif color_spec == "css2":
-        from webcolors import css2_hex_to_names
-        color_dict = css2_hex_to_names
+        from webcolors import CSS2_HEX_TO_NAMES
+        color_dict = CSS2_HEX_TO_NAMES
     elif color_spec == "css21":
-        from webcolors import css21_hex_to_names
-        color_dict = css21_hex_to_names
+        from webcolors import CSS21_HEX_TO_NAMES
+        color_dict = CSS21_HEX_TO_NAMES
     else:
-        from webcolors import css3_hex_to_names
-        color_dict = css3_hex_to_names
+        from webcolors import CSS3_HEX_TO_NAMES
+        color_dict = CSS3_HEX_TO_NAMES
 
     min_colours = {}
     for key, name in color_dict.items():
