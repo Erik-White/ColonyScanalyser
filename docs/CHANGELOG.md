@@ -4,11 +4,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
-- Full unit test coverage
-- Type annotations on all functions
-
-## [0.4.0] - 2020-02-08
+## [0.4.0] - 2020-02-26
 ### Added
 - `plate_labels` command line argument
 - `base` module with base classes to provide core functionality throughout the package
@@ -16,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `plate` module with `Plate` and `PlateCollection` classes
 - `image_file` module with `ImageFile` and `ImageFileCollection` classes
 - `plot_plate_images_animation` outputs animated gifs for each plate in two sizes
+- Full type hinting for all modules
 ### Changed
 - Cached data is now not used by default
 - `use_saved` command line argument renamed to `use_cached_data`
