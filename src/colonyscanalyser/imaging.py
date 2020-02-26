@@ -1,8 +1,8 @@
-from typing import Tuple
+from typing import Optional, Union, Tuple, List
 from numpy import ndarray
 
 
-def mm_to_pixels(millimeters, dots_per_inch = 300, pixels_per_mm = None):
+def mm_to_pixels(millimeters: float, dots_per_inch: float = 300, pixels_per_mm: Optional[float] = None) -> int:
     """
     Convert a measurement in millimetres to image pixels
 
@@ -21,7 +21,7 @@ def mm_to_pixels(millimeters, dots_per_inch = 300, pixels_per_mm = None):
     return int(millimeters * factor)
 
 
-def rgb_to_name(color_rgb, color_spec = "css3"):
+def rgb_to_name(color_rgb: Union[Tuple[int, int, int], Tuple[float, float, float]], color_spec: str = "css3") -> str:
     """
     Convert an RGB tuple to the closest named web colour
 
@@ -59,7 +59,11 @@ def rgb_to_name(color_rgb, color_spec = "css3"):
     return min_colours[min(min_colours.keys())]
 
 
-def crop_image(image, crop_shape, center = None):
+def crop_image(
+    image: ndarray,
+    crop_shape: Union[Tuple[int, int], Tuple[int, int, int]],
+    center: Optional[Tuple[int, int]] = None
+) -> ndarray:
     """
     Get a subsection of an image
 
@@ -100,8 +104,8 @@ def crop_image(image, crop_shape, center = None):
 
 def cut_image_circle(
     image: ndarray,
-    center: Tuple[float, float] = None,
-    radius: float = None,
+    center: Optional[Tuple[float, float]] = None,
+    radius: Optional[float] = None,
     inverse: bool = False,
     background_color = 0
 ) -> ndarray:
@@ -148,7 +152,12 @@ def cut_image_circle(
     return img
 
 
-def get_image_circles(image, circle_radius, circle_count = -1, search_radius = 0):
+def get_image_circles(
+    image: ndarray,
+    circle_radius: float,
+    circle_count: int = -1,
+    search_radius: float = 0
+) -> List[Tuple[Tuple[float, float], float]]:
     """
     Get circular parts of an image matching the size criteria
 
@@ -230,9 +239,15 @@ def circles_radius_median(cx, cy, radii, circle_count):
     return (cx, cy, radii)
 
 
-def remove_background_mask(image, mask, smoothing = 0.5, **filter_args):
+def remove_background_mask(image: ndarray, mask: ndarray, smoothing: float = 0.5, **filter_args) -> ndarray:
     """
     Process an image by removing a background mask
+
+    :param image: a greyscale image as a numpy array
+    :param mask: a greyscale image mask as a numpy array
+    :param smoothing: a sigma value for the gaussian filter
+    :param filter_args: arguments to pass to the gaussian filter
+    :returns: an image with the background mask removed
     """
     from skimage.filters import gaussian
 
@@ -257,11 +272,15 @@ def remove_background_mask(image, mask, smoothing = 0.5, **filter_args):
     return mask & ind
 
 
-def watershed_separation(image, smoothing = 0.5):
+def watershed_separation(image: ndarray, smoothing: float = 0.5) -> ndarray:
     """
     Returns a labelled image where merged objects are separated
+
+    :param image: an image as a numpy array
+    :param smoothing: a sigma value for the gaussian filter
+    :returns: a separated image
     """
-    import numpy as np
+    from numpy import ones
     from scipy import ndimage
     from skimage.filters import gaussian
     from skimage.measure import label
@@ -277,7 +296,7 @@ def watershed_separation(image, smoothing = 0.5):
     distance = gaussian(distance, smoothing)
 
     # Find image peaks, returned as a boolean array
-    local_maxi = peak_local_max(distance, indices = False, footprint = np.ones((3, 3)), labels = img)
+    local_maxi = peak_local_max(distance, indices = False, footprint = ones((3, 3)), labels = img)
 
     # Find the borders around the peaks
     img = watershed(-distance, label(local_maxi), mask = img)
