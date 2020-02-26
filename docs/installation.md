@@ -1,6 +1,6 @@
 # Installation
 ## Python
-ColonyScanalyser requires Python version 3.7, and the Pip package manager. Pip is included with Python version 3.4 and up.
+ColonyScanalyser requires Python version 3.7 or greater, and the Pip package manager. Pip is included with Python version 3.4 and up.
 
 There are many [detailed guides on the web](https://docs.python-guide.org/starting/installation/) so I will only cover the most basic cases here.
 #### On Mac
@@ -16,7 +16,7 @@ Python may come bundled with your distribution, otherwise it will be available t
 sudo apt-get install python3.7
 ```
 #### On Windows
-Go to the [Python downloads site](https://www.python.org/downloads/windows/) and grab the latest Python 3.7 installer (currently 3.7.5). Run the installer once it has downloaded and follow the setup instructions.
+Go to the [Python downloads site](https://www.python.org/downloads/windows/) and grab the latest Python installer. Run the installer once it has downloaded and follow the setup instructions.
 
 ## ColonyScanalyser
 Use the Python package manager, Pip, to install the [ColonyScanalyser package](https://pypi.org/project/colonyscanalyser/):

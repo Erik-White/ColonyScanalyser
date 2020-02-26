@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `plot_plate_images_animation` outputs animated gifs for each plate in two sizes
 - Full type hinting for all modules
 ### Changed
+- Extended compatibility to Python 3.8
 - Cached data is now not used by default
 - `use_saved` command line argument renamed to `use_cached_data`
 - Compressed serialised data filename changed to `cached_data`
