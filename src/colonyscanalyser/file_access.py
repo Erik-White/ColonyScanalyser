@@ -1,8 +1,10 @@
-﻿from typing import List
+﻿from typing import Optional, Union, List
 from enum import Enum
+from collections.abc import Collection
+from pathlib import Path
 
 
-def file_exists(file_path):
+def file_exists(file_path: Path) -> bool:
     """
     Check whether a file exists and contains data
 
@@ -33,7 +35,7 @@ def file_safe_name(file_name: List[str], separator: str = "_") -> str:
     return separator.join(filter(None, safe_names))
 
 
-def get_files_by_type(path, file_extensions = ["*"]):
+def get_files_by_type(path: Path, file_extensions: List[str] = ["*"]) -> List[Path]:
     """
     Get a list of path objects of a given filetype(s)
 
@@ -56,7 +58,7 @@ def get_files_by_type(path, file_extensions = ["*"]):
     return sorted(path_list)
 
 
-def create_subdirectory(parent_path, subdirectory):
+def create_subdirectory(parent_path: Path, subdirectory: Union[Path, str]) -> Path:
     """
     Create a subdirectory relative to the parent, if required
 
@@ -76,7 +78,7 @@ def create_subdirectory(parent_path, subdirectory):
     return subdir_path
 
 
-def move_to_subdirectory(file_list, subdirectory):
+def move_to_subdirectory(file_list: List[Path], subdirectory: Union[Path, str]) -> List[Path]:
     """
     Move all files in a list to a subdirectory
 
@@ -122,7 +124,7 @@ class CompressionMethod(Enum):
     NONE = ""
 
 
-def file_compression(file_path, compression, access_mode = "r"):
+def file_compression(file_path: Path, compression: CompressionMethod, access_mode: str = "r") -> Optional[object]:
     """
     Allows access to a file using the desired compression method
 
@@ -148,7 +150,12 @@ def file_compression(file_path, compression, access_mode = "r"):
     return None
 
 
-def load_file(file_path, compression, access_mode = "rb", pickle = True):
+def load_file(
+    file_path: Path,
+    compression: CompressionMethod,
+    access_mode: str = "rb",
+    pickle: bool = True
+) -> Optional[object]:
     """
     Load compressed data from a file
 
@@ -168,7 +175,7 @@ def load_file(file_path, compression, access_mode = "rb", pickle = True):
     return load(file_open, allow_pickle = pickle)
 
 
-def save_file(file_path, data, compression):
+def save_file(file_path: Path, data: Collection, compression: CompressionMethod) -> Path:
     """
     Save data to specified file
 
@@ -191,7 +198,7 @@ def save_file(file_path, data, compression):
         return completed
 
 
-def save_to_csv(data, headers, save_path, delimiter = ","):
+def save_to_csv(data: Collection, headers: List[str], save_path: Union[Path, str], delimiter: str = ",") -> Path:
     """
     Save data to CSV files on disk
 
