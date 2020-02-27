@@ -2,18 +2,19 @@ from typing import Optional, Union, Tuple, List
 from numpy import ndarray
 
 
-def mm_to_pixels(millimeters: float, dots_per_inch: float = 300, pixels_per_mm: Optional[float] = None) -> int:
+def mm_to_pixels(millimeters: float, dots_per_inch: float = 300, pixels_per_mm: Optional[float] = None) -> float:
     """
     Convert a measurement in millimetres to image pixels
 
     :param millimeters: the measurement to convert
     :param dots_per_inch: the conversion factor
     :param pixels_per_mm: optional conversion factor, instead of DPI
+    :returns: a value in pixels
     """
     if millimeters <= 0 or dots_per_inch <= 0 or (pixels_per_mm is not None and pixels_per_mm <= 0):
         raise ValueError("All supplied arguments must be positive values")
 
-    factor = dots_per_inch / 254
+    factor = dots_per_inch / 25.4
 
     if pixels_per_mm is not None:
         factor = pixels_per_mm

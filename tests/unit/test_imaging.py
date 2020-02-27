@@ -95,18 +95,15 @@ class TestMMToPixels():
     def dpi(self, request):
         yield request.param
 
-    @pytest.fixture(params = [-1, 0, -25.4])
-    def arg_invalid(self, request):
-        yield request.param
-
     def test_dpi(self, measurements, dpi):
         result = mm_to_pixels(measurements, dpi)
-        assert result == int(measurements * (dpi / 254))
+        assert result == int(measurements * (dpi / 25.4))
 
     def test_ppmm(self, measurements, dpi):
         result = mm_to_pixels(measurements, dpi, pixels_per_mm = dpi)
         assert result == measurements * dpi
 
+    @pytest.mark.parametrize("arg_invalid", [-1, 0, -25.4])
     def test_arg_invalid(self, arg_invalid):
         with pytest.raises(ValueError):
             mm_to_pixels(arg_invalid, arg_invalid, pixels_per_mm = arg_invalid)

@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved flexibility when detecting date and time stamp information in file names
 ### Fixed
 - A rare error when opening images using skimage.io.imread
+- Corrected default DPI settings and conversion factor
 
 ## [0.3.4] - 2020-01-18
 ### Added
