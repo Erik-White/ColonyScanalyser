@@ -122,7 +122,7 @@ def main():
     )
     parser.add_argument("path", type = str,
                         help = "Image files location", default = None)
-    parser.add_argument("-dpi", "--dots_per_inch", type = int, default = 2540,
+    parser.add_argument("-dpi", "--dots_per_inch", type = int, default = 300,
                         help = "The image DPI (dots per inch) setting")
     parser.add_argument("-mp", "--multiprocessing", type = strtobool, default = True,
                         help = "Enables use of more CPU cores, faster but more resource intensive")
@@ -148,7 +148,7 @@ def main():
     PLATE_EDGE_CUT = args.plate_edge_cut
     PLATE_LABELS = {plate_id: label for plate_id, label in enumerate(args.plate_labels, start = 1)}
     PLATE_LATTICE = tuple(args.plate_lattice)
-    PLATE_SIZE = imaging.mm_to_pixels(args.plate_size, dots_per_inch = args.dots_per_inch)
+    PLATE_SIZE = int(imaging.mm_to_pixels(args.plate_size, dots_per_inch = args.dots_per_inch))
     USE_CACHED = args.use_cached_data
     VERBOSE = args.verbose
     POOL_MAX = 1

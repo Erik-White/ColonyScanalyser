@@ -4,7 +4,7 @@ ColonyScanalyser requires clear, high-resolution images from a static viewpoint.
 A program is needed to automatically set the scanners to take images at the desired set intervals.
 
 ### Scanners
-Scanners with a resolution of at least 2000 DPI are recommended, though greater image density will enable greater colony differentiation and improve first appearance detection.
+Scanners with a resolution of at least 300 DPI are recommended, though greater image density will enable greater colony differentiation and improve first appearance detection.
 ### Plates and holders
 To allow the colonies to easily be discerned in the image, a strongly contrasting background is needed. An easy technique is to paint the bottom of the plates black, or place them on black fabric.
 ### Image formats
