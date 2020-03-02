@@ -72,15 +72,15 @@ Run the tests:
 
 ## Contributing
 
-Please read [CONTRIBUTING.md](docs/CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests to us.
+Please read the [contribution guidelines](docs/CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests to us.
 
 ## Versioning
 
-We use [SemVer](http://semver.org/) for versioning. For the versions available, see the [tags on this repository](https://github.com/erik-white/scanalyser/tags).
+We use [SemVer](http://semver.org/) for versioning. For the versions available, see the [releases](https://github.com/Erik-White/ColonyScanalyser/releases).
 
 ## License
 
-This project is licensed under the GPLv3 - see the [LICENSE](LICENSE) file for details
+This project is licensed under the GPLv3 - see the [licence](LICENSE) file for details
 
 ## Acknowledgments
 
