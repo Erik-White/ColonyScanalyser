@@ -1,3 +1,4 @@
+
 name: Publish Documentation
 on:
   push:
@@ -7,16 +8,25 @@ on:
       - 'docs/**'
 
 jobs:
-  build:
-    name: Deploy docs
-    runs-on: ubuntu-latest
+  deploy:
+    runs-on: ubuntu-18.04
     steps:
-      - name: Checkout master
-        uses: actions/checkout@v1
+      - uses: actions/checkout@v2
 
-      - name: Deploy docs
-        uses: mhausenblas/mkdocs-deploy-gh-pages@master
+      - name: Setup Python
+        uses: actions/setup-python@v1
         with:
-          python-version: "3.7"
-        env:
-          GITHUB_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
+          python-version: 3.x
+
+      - name: Install dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install mkdocs
+
+      - run: mkdocs build
+
+      - name: Deploy documentation
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./site
