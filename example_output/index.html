@@ -9,112 +9,99 @@
         
         <link rel="shortcut icon" href="../img/favicon.ico">
         <title>Example Output - ColonyScanalyser</title>
-        <link href="../css/bootstrap-custom.min.css" rel="stylesheet">
+        <link href="../css/bootstrap.min.css" rel="stylesheet">
         <link href="../css/font-awesome.min.css" rel="stylesheet">
         <link href="../css/base.css" rel="stylesheet">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
-        <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
-        <!--[if lt IE 9]>
-            <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
-            <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
-        <![endif]-->
 
         <script src="../js/jquery-1.10.2.min.js" defer></script>
-        <script src="../js/bootstrap-3.0.3.min.js" defer></script>
+        <script src="../js/bootstrap.min.js" defer></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
         <script>hljs.initHighlightingOnLoad();</script> 
     </head>
 
     <body>
-
-        <div class="navbar navbar-default navbar-fixed-top" role="navigation">
+        <div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
             <div class="container">
-
-                <!-- Collapsed navigation -->
-                <div class="navbar-header">
-                    <!-- Expander button -->
-                    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
-                        <span class="sr-only">Toggle navigation</span>
-                        <span class="icon-bar"></span>
-                        <span class="icon-bar"></span>
-                        <span class="icon-bar"></span>
-                    </button>
-                    <a class="navbar-brand" href="..">ColonyScanalyser</a>
-                </div>
+                <a class="navbar-brand" href="..">ColonyScanalyser</a>
+                <!-- Expander button -->
+                <button type="button" class="navbar-toggler" data-toggle="collapse" data-target="#navbar-collapse">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
 
                 <!-- Expanded navigation -->
-                <div class="navbar-collapse collapse">
+                <div id="navbar-collapse" class="navbar-collapse collapse">
                         <!-- Main navigation -->
                         <ul class="nav navbar-nav">
-                            <li >
-                                <a href="..">Home</a>
+                            <li class="navitem">
+                                <a href=".." class="nav-link">Home</a>
                             </li>
                             <li class="dropdown active">
-                                <a href="#" class="dropdown-toggle" data-toggle="dropdown">User guide <b class="caret"></b></a>
+                                <a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown">User guide <b class="caret"></b></a>
                                 <ul class="dropdown-menu">
                                     
-<li >
-    <a href="../quick_start/">Quick Start Guide</a>
+<li>
+    <a href="../quick_start/" class="dropdown-item">Quick Start Guide</a>
 </li>
                                     
-<li >
-    <a href="../installation/">Installation</a>
+<li>
+    <a href="../installation/" class="dropdown-item">Installation</a>
 </li>
                                     
-<li >
-    <a href="../command_line_arguments/">Command Line Arguments</a>
+<li>
+    <a href="../command_line_arguments/" class="dropdown-item">Command Line Arguments</a>
 </li>
                                     
-<li >
-    <a href="../image_specifications/">Image Specifications</a>
+<li>
+    <a href="../image_specifications/" class="dropdown-item">Image Specifications</a>
 </li>
                                     
-<li >
-    <a href="../colony_filtering/">Colony Filtering Criteria</a>
+<li>
+    <a href="../colony_filtering/" class="dropdown-item">Colony Filtering Criteria</a>
 </li>
                                     
-<li class="active">
-    <a href="./">Example Output</a>
+<li>
+    <a href="./" class="dropdown-item active">Example Output</a>
 </li>
                                 </ul>
                             </li>
                             <li class="dropdown">
-                                <a href="#" class="dropdown-toggle" data-toggle="dropdown">About <b class="caret"></b></a>
+                                <a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown">About <b class="caret"></b></a>
                                 <ul class="dropdown-menu">
                                     
-<li >
-    <a href="../CONTRIBUTING/">Contributing</a>
+<li>
+    <a href="../CONTRIBUTING/" class="dropdown-item">Contributing</a>
 </li>
                                     
-<li >
-    <a href="../CHANGELOG/">Release Notes</a>
+<li>
+    <a href="../CHANGELOG/" class="dropdown-item">Release Notes</a>
 </li>
                                     
-<li >
-    <a href="../LICENSE/">License</a>
+<li>
+    <a href="../LICENSE/" class="dropdown-item">License</a>
 </li>
                                 </ul>
                             </li>
                         </ul>
 
-                    <ul class="nav navbar-nav navbar-right">
-                        <li>
-                            <a href="#" data-toggle="modal" data-target="#mkdocs_search_modal">
+                    <ul class="nav navbar-nav ml-auto">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-toggle="modal" data-target="#mkdocs_search_modal">
                                 <i class="fa fa-search"></i> Search
                             </a>
                         </li>
-                            <li >
-                                <a rel="next" href="../colony_filtering/">
+                            <li class="nav-item">
+                                <a rel="prev" href="../colony_filtering/" class="nav-link">
                                     <i class="fa fa-arrow-left"></i> Previous
                                 </a>
                             </li>
-                            <li >
-                                <a rel="prev" href="../CONTRIBUTING/">
+                            <li class="nav-item">
+                                <a rel="next" href="../CONTRIBUTING/" class="nav-link">
                                     Next <i class="fa fa-arrow-right"></i>
                                 </a>
                             </li>
-                            <li>
-                                <a href="https://github.com/Erik-White/ColonyScanalyser/edit/master/docs/example_output.md"><i class="fa fa-github"></i> Edit on GitHub</a>
+                            <li class="nav-item">
+                                <a href="https://github.com/Erik-White/ColonyScanalyser/edit/master/docs/example_output.md" class="nav-link"><i class="fa fa-github"></i> Edit on GitHub</a>
                             </li>
                     </ul>
                 </div>
@@ -122,15 +109,38 @@
         </div>
 
         <div class="container">
-                <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
-    <ul class="nav bs-sidenav">
-        <li class="main active"><a href="#example-output">Example output</a></li>
-            <li><a href="#plate-identification">Plate identification</a></li>
-            <li><a href="#plots">Plots</a></li>
-            <li><a href="#data">Data</a></li>
-    </ul>
+            <div class="row">
+                    <div class="col-md-3"><div class="navbar-light navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+    <div class="navbar-header">
+        <button type="button" class="navbar-toggler collapsed" data-toggle="collapse" data-target="#toc-collapse" title="Table of Contents">
+            <span class="fa fa-angle-down"></span>
+        </button>
+    </div>
+
+    
+    <div id="toc-collapse" class="navbar-collapse collapse card bg-secondary">
+        <ul class="nav flex-column">
+            
+            <li class="nav-item" data-level="1"><a href="#example-output" class="nav-link">Example output</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-level="2"><a href="#plate-identification" class="nav-link">Plate identification</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#plots" class="nav-link">Plots</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#data" class="nav-link">Data</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+        </ul>
+    </div>
 </div></div>
-                <div class="col-md-9" role="main">
+                    <div class="col-md-9" role="main">
 
 <h1 id="example-output">Example output</h1>
 <p>A few simple plots are saved to allow quick comparison of the different plates. Increasing the <code>save_plots</code> argument will increase the number and detail of plots that are output, see the <a href="../command_line_arguments/">command line arguments</a> for more detail.</p>
@@ -148,10 +158,10 @@
 <p>A 'map' of the identified plates and colonies will be output to show how they have been identified. This can be useful for correlating data from individual colonies with the specific colony on the plate. Note that colonies are shown at their final measurement size, which may be smaller than the colony in the image. Measurements are stopped if colonies merge, or if they do not meet other criteria e.g. they display low circularity.</p>
 <h2 id="plots">Plots</h2>
 <p>At the default level, a few comparison plots are output to the <code>plots</code> folder in your image folder. Theses allow quick verification and comparison of the data.</p>
-<p>Increasing the level of <code>save_plots</code> will output plots for each individual plate.
+<p>Increasing the level of <code>plots</code> will output plots for each individual plate.
 <img align="right" src="../images/time_of_appearance_small.png"></p>
-<p>At the highest level of <code>save_plots</code>, an image plot showing colony segmentation at each timepoint, for each plate will be output. This may be useful for viewing how the image segmentation criteria have identified objects as colonies.</p>
-<p>Note: extra filtering is applied after image segmentation so not all objects that appear in the segmented image plots will be included in the aggregated data. See <a href="../colony_filtering/">colony filtering criteria</a> for more detail.</p>
+<p>At the highest level of <code>plots</code>, a separate animated gif image of each plate is output. This may be useful for viewing the progression of colonies through their growth period, as well as for comparing growth in differing plate conditions.</p>
+<p>Only the measured plate area is shown in the animations. The area defined by <code>plate_edge_cut</code> is excluded.</p>
 <h2 id="data">Data</h2>
 <p>All the data gathered during analysis is output to the <code>data</code> folder in your images folder. Data is output as CSV files which is compatible with almost all data packages.</p>
 <p>The data is collated in two files for each plate, one with aggregate data for each colony and another with colony data at every image time point:</p>
@@ -165,6 +175,7 @@ plate3_colony_timepoints.csv
 </code></pre>
 
 <p>A single compressed data file, <code>processed_data.xz</code>, is also saved. This contains all the data objects from analysis and can be used by the package to quickly recreate the plots and data files.</p></div>
+            </div>
         </div>
 
         <footer class="col-md-12">
@@ -178,19 +189,19 @@ plate3_colony_timepoints.csv
         <script src="../js/base.js" defer></script>
         <script src="../search/main.js" defer></script>
 
-        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="Search Modal" aria-hidden="true">
-    <div class="modal-dialog">
+        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="searchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
+                <h4 class="modal-title" id="searchModalLabel">Search</h4>
                 <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
-                <h4 class="modal-title" id="exampleModalLabel">Search</h4>
             </div>
             <div class="modal-body">
                 <p>
                     From here you can search these documents. Enter
                     your search terms below.
                 </p>
-                <form role="form">
+                <form>
                     <div class="form-group">
                         <input type="text" class="form-control" placeholder="Search..." id="mkdocs-search-query" title="Type search term here">
                     </div>
@@ -201,12 +212,12 @@ plate3_colony_timepoints.csv
             </div>
         </div>
     </div>
-</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="Keyboard Shortcuts Modal" aria-hidden="true">
+</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="keyboardModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
+                <h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
                 <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
-                <h4 class="modal-title" id="exampleModalLabel">Keyboard Shortcuts</h4>
             </div>
             <div class="modal-body">
               <table class="table">

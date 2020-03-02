@@ -9,112 +9,99 @@
         
         <link rel="shortcut icon" href="../img/favicon.ico">
         <title>Command Line Arguments - ColonyScanalyser</title>
-        <link href="../css/bootstrap-custom.min.css" rel="stylesheet">
+        <link href="../css/bootstrap.min.css" rel="stylesheet">
         <link href="../css/font-awesome.min.css" rel="stylesheet">
         <link href="../css/base.css" rel="stylesheet">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
-        <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
-        <!--[if lt IE 9]>
-            <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
-            <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
-        <![endif]-->
 
         <script src="../js/jquery-1.10.2.min.js" defer></script>
-        <script src="../js/bootstrap-3.0.3.min.js" defer></script>
+        <script src="../js/bootstrap.min.js" defer></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
         <script>hljs.initHighlightingOnLoad();</script> 
     </head>
 
     <body>
-
-        <div class="navbar navbar-default navbar-fixed-top" role="navigation">
+        <div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
             <div class="container">
-
-                <!-- Collapsed navigation -->
-                <div class="navbar-header">
-                    <!-- Expander button -->
-                    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
-                        <span class="sr-only">Toggle navigation</span>
-                        <span class="icon-bar"></span>
-                        <span class="icon-bar"></span>
-                        <span class="icon-bar"></span>
-                    </button>
-                    <a class="navbar-brand" href="..">ColonyScanalyser</a>
-                </div>
+                <a class="navbar-brand" href="..">ColonyScanalyser</a>
+                <!-- Expander button -->
+                <button type="button" class="navbar-toggler" data-toggle="collapse" data-target="#navbar-collapse">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
 
                 <!-- Expanded navigation -->
-                <div class="navbar-collapse collapse">
+                <div id="navbar-collapse" class="navbar-collapse collapse">
                         <!-- Main navigation -->
                         <ul class="nav navbar-nav">
-                            <li >
-                                <a href="..">Home</a>
+                            <li class="navitem">
+                                <a href=".." class="nav-link">Home</a>
                             </li>
                             <li class="dropdown active">
-                                <a href="#" class="dropdown-toggle" data-toggle="dropdown">User guide <b class="caret"></b></a>
+                                <a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown">User guide <b class="caret"></b></a>
                                 <ul class="dropdown-menu">
                                     
-<li >
-    <a href="../quick_start/">Quick Start Guide</a>
+<li>
+    <a href="../quick_start/" class="dropdown-item">Quick Start Guide</a>
 </li>
                                     
-<li >
-    <a href="../installation/">Installation</a>
+<li>
+    <a href="../installation/" class="dropdown-item">Installation</a>
 </li>
                                     
-<li class="active">
-    <a href="./">Command Line Arguments</a>
+<li>
+    <a href="./" class="dropdown-item active">Command Line Arguments</a>
 </li>
                                     
-<li >
-    <a href="../image_specifications/">Image Specifications</a>
+<li>
+    <a href="../image_specifications/" class="dropdown-item">Image Specifications</a>
 </li>
                                     
-<li >
-    <a href="../colony_filtering/">Colony Filtering Criteria</a>
+<li>
+    <a href="../colony_filtering/" class="dropdown-item">Colony Filtering Criteria</a>
 </li>
                                     
-<li >
-    <a href="../example_output/">Example Output</a>
+<li>
+    <a href="../example_output/" class="dropdown-item">Example Output</a>
 </li>
                                 </ul>
                             </li>
                             <li class="dropdown">
-                                <a href="#" class="dropdown-toggle" data-toggle="dropdown">About <b class="caret"></b></a>
+                                <a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown">About <b class="caret"></b></a>
                                 <ul class="dropdown-menu">
                                     
-<li >
-    <a href="../CONTRIBUTING/">Contributing</a>
+<li>
+    <a href="../CONTRIBUTING/" class="dropdown-item">Contributing</a>
 </li>
                                     
-<li >
-    <a href="../CHANGELOG/">Release Notes</a>
+<li>
+    <a href="../CHANGELOG/" class="dropdown-item">Release Notes</a>
 </li>
                                     
-<li >
-    <a href="../LICENSE/">License</a>
+<li>
+    <a href="../LICENSE/" class="dropdown-item">License</a>
 </li>
                                 </ul>
                             </li>
                         </ul>
 
-                    <ul class="nav navbar-nav navbar-right">
-                        <li>
-                            <a href="#" data-toggle="modal" data-target="#mkdocs_search_modal">
+                    <ul class="nav navbar-nav ml-auto">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-toggle="modal" data-target="#mkdocs_search_modal">
                                 <i class="fa fa-search"></i> Search
                             </a>
                         </li>
-                            <li >
-                                <a rel="next" href="../installation/">
+                            <li class="nav-item">
+                                <a rel="prev" href="../installation/" class="nav-link">
                                     <i class="fa fa-arrow-left"></i> Previous
                                 </a>
                             </li>
-                            <li >
-                                <a rel="prev" href="../image_specifications/">
+                            <li class="nav-item">
+                                <a rel="next" href="../image_specifications/" class="nav-link">
                                     Next <i class="fa fa-arrow-right"></i>
                                 </a>
                             </li>
-                            <li>
-                                <a href="https://github.com/Erik-White/ColonyScanalyser/edit/master/docs/command_line_arguments.md"><i class="fa fa-github"></i> Edit on GitHub</a>
+                            <li class="nav-item">
+                                <a href="https://github.com/Erik-White/ColonyScanalyser/edit/master/docs/command_line_arguments.md" class="nav-link"><i class="fa fa-github"></i> Edit on GitHub</a>
                             </li>
                     </ul>
                 </div>
@@ -122,21 +109,26 @@
         </div>
 
         <div class="container">
-                <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
-    <ul class="nav bs-sidenav">
-        <li class="main active"><a href="#command-line-arguments">Command Line Arguments</a></li>
-            <li><a href="#help">Help</a></li>
-            <li><a href="#information-output">Information output</a></li>
-            <li><a href="#image-density">Image density</a></li>
-            <li><a href="#plate-size">Plate size</a></li>
-            <li><a href="#plate-edge-cut">Plate edge cut</a></li>
-            <li><a href="#plate-holder-shape">Plate holder shape</a></li>
-            <li><a href="#plot-images-output">Plot images output</a></li>
-            <li><a href="#cached-data">Cached data</a></li>
-            <li><a href="#multiprocessing">Multiprocessing</a></li>
-    </ul>
+            <div class="row">
+                    <div class="col-md-3"><div class="navbar-light navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+    <div class="navbar-header">
+        <button type="button" class="navbar-toggler collapsed" data-toggle="collapse" data-target="#toc-collapse" title="Table of Contents">
+            <span class="fa fa-angle-down"></span>
+        </button>
+    </div>
+
+    
+    <div id="toc-collapse" class="navbar-collapse collapse card bg-secondary">
+        <ul class="nav flex-column">
+            
+            <li class="nav-item" data-level="1"><a href="#command-line-arguments" class="nav-link">Command Line Arguments</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+        </ul>
+    </div>
 </div></div>
-                <div class="col-md-9" role="main">
+                    <div class="col-md-9" role="main">
 
 <h1 id="command-line-arguments">Command Line Arguments</h1>
 <p>A list of optional arguments, and their default values, that affect the way ColonyScanalyser is run. Some arguments have a 'shorthand' version that saves having to type the full command. Shorthand arguments are prefixed by a single dash <code>-</code>, while normal arguments are prefixed by two dashes <code>--</code></p>
@@ -145,22 +137,13 @@
 </code></pre>
 
 <p>You can add as many optional arguments as you like:</p>
-<pre><code>scanalyser /path/to/images --use_saved false -mp true -dpi 2540 --plate_lattice 2 3
+<pre><code>scanalyser /path/to/images --use_saved false -mp true -dpi 300 --plate_lattice 2 3
 </code></pre>
 
 <h3 id="help">Help</h3>
 <p>A full list of available arguments, along with their default values</p>
 <pre><code>-h
 --help
-</code></pre>
-
-<h3 id="information-output">Information output</h3>
-<p>The level of information output to the command line. Default level is <code>1</code>, increase to see more information. Output can be silenced with <code>0</code></p>
-<ul>
-<li>input: integer</li>
-</ul>
-<pre><code>-v
---verbose
 </code></pre>
 
 <h3 id="image-density">Image density</h3>
@@ -172,12 +155,24 @@
 --dots_per_inch
 </code></pre>
 
-<h3 id="plate-size">Plate size</h3>
-<p>The diameter of the plates used, in millimeters. It is important to set this correctly otherwise the plates may be located incorrectly in the images.</p>
+<h3 id="multiprocessing">Multiprocessing</h3>
+<p>This technique utilises all of the available processors that your computer has to analyse images in parallel. Since most computers now have at least 2 or 4 processors, this can greatly reduce the time needed to process a set of images.</p>
+<p>This technique is however quite resource intensive for your computer so you may wish to disable it.</p>
 <ul>
-<li>input: integer</li>
+<li>input: boolean</li>
 </ul>
-<pre><code>--plate_size
+<pre><code>-mp
+--multiprocessing
+</code></pre>
+
+<h3 id="plot-images-output">Plot images output</h3>
+<p>The level of detail required when saving plot images after analysis. At the default level (<code>1</code>), a few summary plots are saved to give a quick overview of the data. If the output level is increased, individual plots for each plate will be saved.</p>
+<p>At the highest level (currently <code>4</code>), animations of plate images are created in <code>gif</code> format. These may take several minutes to create and the process can be quite resource intensive.</p>
+<ul>
+<li>input: boolean</li>
+</ul>
+<pre><code>-p
+--plots
 </code></pre>
 
 <h3 id="plate-edge-cut">Plate edge cut</h3>
@@ -186,6 +181,17 @@
 <li>input: integer</li>
 </ul>
 <pre><code>--plate_edge_cut
+</code></pre>
+
+<h3 id="plate-labels">Plate labels</h3>
+<p>A list of labels to identify each plate. The label is used in file names and the plate map.</p>
+<p>Plates are ordered from top left, in rows, and labels must be provided in that order.</p>
+<p>Labels are separated with spaces. To use a space within a label, wrap that label in quotes</p>
+<p>Example: <code>--plate_labels first second third "label with spaces" fifth sixth</code></p>
+<ul>
+<li>input: list</li>
+</ul>
+<pre><code>--plate_labels
 </code></pre>
 
 <h3 id="plate-holder-shape">Plate holder shape</h3>
@@ -197,13 +203,12 @@
 <pre><code>--plate_lattice
 </code></pre>
 
-<h3 id="plot-images-output">Plot images output</h3>
-<p>The level of detail required when saving plot images after analysis. At the default level (<code>1</code>), a few summary plots are saved to give a quick overview of the data. If the output level is increased, individual plots for each plate will be saved.</p>
-<p>Warning: increasing the number of plots can greatly increase the time taken for the image analysis</p>
+<h3 id="plate-size">Plate size</h3>
+<p>The diameter of the plates used, in millimeters. It is important to set this correctly otherwise the plates may be located incorrectly in the images.</p>
 <ul>
-<li>input: boolean</li>
+<li>input: integer</li>
 </ul>
-<pre><code>--save_plots
+<pre><code>--plate_size
 </code></pre>
 
 <h3 id="cached-data">Cached data</h3>
@@ -214,15 +219,15 @@
 <pre><code>--use_cached_data
 </code></pre>
 
-<h3 id="multiprocessing">Multiprocessing</h3>
-<p>This technique utilises all of the available processors that your computer has to analyse images in parallel. Since most computers now have at least 2 or 4 processors, this can greatly reduce the time needed to process a set of images.</p>
-<p>This technique is however quite resource intensive for your computer so you may wish to disable it.</p>
+<h3 id="information-output">Information output</h3>
+<p>The level of information output to the command line. Default level is <code>1</code>, increase to see more information. Output can be silenced with <code>0</code></p>
 <ul>
-<li>input: boolean</li>
+<li>input: integer</li>
 </ul>
-<pre><code>-mp
---multiprocessing
+<pre><code>-v
+--verbose
 </code></pre></div>
+            </div>
         </div>
 
         <footer class="col-md-12">
@@ -236,19 +241,19 @@
         <script src="../js/base.js" defer></script>
         <script src="../search/main.js" defer></script>
 
-        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="Search Modal" aria-hidden="true">
-    <div class="modal-dialog">
+        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="searchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
+                <h4 class="modal-title" id="searchModalLabel">Search</h4>
                 <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
-                <h4 class="modal-title" id="exampleModalLabel">Search</h4>
             </div>
             <div class="modal-body">
                 <p>
                     From here you can search these documents. Enter
                     your search terms below.
                 </p>
-                <form role="form">
+                <form>
                     <div class="form-group">
                         <input type="text" class="form-control" placeholder="Search..." id="mkdocs-search-query" title="Type search term here">
                     </div>
@@ -259,12 +264,12 @@
             </div>
         </div>
     </div>
-</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="Keyboard Shortcuts Modal" aria-hidden="true">
+</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="keyboardModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
+                <h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
                 <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
-                <h4 class="modal-title" id="exampleModalLabel">Keyboard Shortcuts</h4>
             </div>
             <div class="modal-body">
               <table class="table">
