@@ -7,7 +7,7 @@ scanalyser /path/to/images --use_saved false
 ```
 You can add as many optional arguments as you like:
 ```
-scanalyser /path/to/images --use_saved false -mp true -dpi 2540 --plate_lattice 2 3
+scanalyser /path/to/images --use_saved false -mp true -dpi 300 --plate_lattice 2 3
 ```
 ### Help
 A full list of available arguments, along with their default values
