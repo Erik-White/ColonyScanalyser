@@ -296,6 +296,10 @@ def main():
 
         # Group Timepoints by centres and create Colony objects
         for plate_id, plate_timepoints in plate_timepoints.items():
+            # If no objects are found
+            if not len(plate_timepoints) > 0:
+                break
+
             plate = plates.get_item(plate_id)
             plate.items = colonies_from_timepoints(plate_timepoints, distance_tolerance = 8)
             if VERBOSE >= 3:
