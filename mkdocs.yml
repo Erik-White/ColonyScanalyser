@@ -10,7 +10,24 @@ nav:
         - "Image Specifications": "image_specifications.md"
         - "Colony Filtering Criteria": "colony_filtering.md"
         - "Example Output": "example_output.md"
+    - API Reference:
+        - "base": "api/base.md"
+        - "geometry": "api/geometry.md"
+        - "utilities": "api/utilities.md"
+        - "file_access": "api/file_access.md"
+        - "imaging": "api/imaging.md"
+        - "image_file": "api/image_file.md"
+        - "plate": "api/plate.md"
+        - "colony": "api/colony.md"
+        - "plotting": "api/plotting.md"
+        - "plots": "api/plots.md"
+        - "main": "api/main.md"
     - About:
         - "Contributing": "CONTRIBUTING.md"
         - "Release Notes": "CHANGELOG.md"
         - "License": "LICENSE.md"
+markdown_extensions:
+  - mkautodoc
+extra_css:
+  - css/api.css
+

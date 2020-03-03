@@ -40,12 +40,19 @@ setup(
             "flake8",
             "check-manifest",
             "pytest",
-            "pytest-cov"
+            "pytest-cov",
+            "mkdoc",
+            "mkautodoc"
         ],
         "test": [
             "flake8",
             "pytest",
             "pytest-cov"
+        ],
+        "docs": [
+            "flake8",
+            "mkdoc",
+            "mkautodoc"
         ],
     },
     entry_points={

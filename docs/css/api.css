@@ -1,0 +1,18 @@
+div.autodoc {
+    padding-left: 10px;
+    margin-bottom: 30px;
+    border-left: 5px solid rgba(230, 230, 230);
+  }
+  
+div.autodoc-docstring {
+    padding-left: 20px;
+  }
+  
+div.autodoc-members {
+    padding-left: 20px;
+    margin-bottom: 15px;
+  }
+
+em.autodoc-param {
+    color: darkcyan;
+  }
