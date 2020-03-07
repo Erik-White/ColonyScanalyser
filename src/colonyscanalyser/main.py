@@ -134,7 +134,7 @@ def main():
     parser.add_argument("--plate_lattice", type = int, nargs = 2, default = (3, 2),
                         metavar = ("ROW", "COL"),
                         help = "The row and column co-ordinate layout of plates. Example usage: --plate_lattice 3 3")
-    parser.add_argument("--plate_size", type = int, default = 100,
+    parser.add_argument("--plate_size", type = int, default = 90,
                         help = "The plate diameter, in millimetres")
     parser.add_argument("--use_cached_data", type = strtobool, default = False,
                         help = "Allow use of previously calculated data")
