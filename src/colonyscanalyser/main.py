@@ -26,48 +26,47 @@ from .colony import Colony, timepoints_from_image, colonies_from_timepoints, tim
 
 def segment_image(
     plate_image: ndarray,
-    plate_mask: ndarray,
-    plate_noise_mask: ndarray,
+    plate_mask: ndarray = None,
+    plate_noise_mask: ndarray = None,
     area_min: float = 5
 ) -> ndarray:
     """
-    Attempts to find and label all colonies on a plate
+    Attempts to separate and label all colonies on a plate
 
-    :param plate_image: a black and white image as a numpy array
-    :param plate_mask: a black and white image as a numpy array
+    :param plate_image: an image containing colonies
+    :param plate_mask: a boolean image mask to remove from the original image
     :param plate_noise_mask: a black and white image as a numpy array
     :param area_min: the minimum area for a colony, in pixels
     :returns: a segmented and labelled image as a numpy array
     """
     from math import pi
-    from scipy.ndimage.morphology import binary_fill_holes
     from skimage.morphology import remove_small_objects
     from skimage.measure import regionprops, label
-    from skimage.segmentation import clear_border
 
-    plate_image = imaging.remove_background_mask(plate_image, plate_mask)
-    plate_noise_mask = imaging.remove_background_mask(plate_noise_mask, plate_mask)
+    plate_image = imaging.remove_background_mask(plate_image, smoothing = 0.5)
 
-    # Subtract an image of the first (i.e. empty) plate to remove static noise
-    plate_image[plate_noise_mask] = 0
+    if plate_noise_mask is not None:
+        # Subtract an image of the first (i.e. empty) plate to remove static noise
+        plate_noise_mask = imaging.remove_background_mask(plate_noise_mask, smoothing = 0.5)
+        plate_image[plate_noise_mask] = 0
 
-    # Fill any small gaps
-    plate_image = binary_fill_holes(plate_image)
+    if plate_mask is not None:
+        plate_image = plate_image & plate_mask
+
+    colonies = label(plate_image, connectivity = 2)
 
     # Remove background noise
     plate_image = remove_small_objects(plate_image, min_size = area_min)
-
-    colonies = label(plate_image)
-
-    # Remove colonies that are on the edge of the plate image
-    colonies = clear_border(colonies, buffer_size = 1, mask = plate_mask)
 
     # Exclude objects that are too eccentric
     rps = regionprops(colonies)
     for rp in rps:
         # Eccentricity of zero is a perfect circle
         # Circularity of 1 is a perfect circle
-        circularity = (4 * pi * rp.area) / (rp.perimeter * rp.perimeter)
+        if rp.perimeter != 0:
+            circularity = (4 * pi * rp.area) / (rp.perimeter * rp.perimeter)
+        else:
+            circularity = 1 - rp.eccentricity
 
         if rp.eccentricity > 0.5 or circularity < 0.65:
             colonies[colonies == rp.label] = 0
@@ -103,7 +102,7 @@ def image_file_to_timepoints(
     for plate_id, plate_image in plate_images.items():
         plate_image_gray = rgb2gray(plate_image)
         # Segment each image
-        plate_images[plate_id] = segment_image(plate_image_gray, plate_image_gray > 0, plate_images_mask[plate_id], area_min = 8)
+        plate_images[plate_id] = segment_image(plate_image_gray, plate_noise_mask = plate_images_mask[plate_id], area_min = 2)
         # Create Timepoint objects for each plate
         plate_timepoints[plate_id].extend(timepoints_from_image(plate_images[plate_id], image_file.timestamp_elapsed, image = plate_image))
         # Save segmented image plot, if required
@@ -301,7 +300,7 @@ def main():
                 break
 
             plate = plates.get_item(plate_id)
-            plate.items = colonies_from_timepoints(plate_timepoints, distance_tolerance = 8)
+            plate.items = colonies_from_timepoints(plate_timepoints, distance_tolerance = 4)
             if VERBOSE >= 3:
                 print(f"{plate.count} colonies located on plate {plate.id}, before filtering")
 
