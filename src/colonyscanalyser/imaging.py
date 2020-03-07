@@ -240,40 +240,44 @@ def circles_radius_median(cx, cy, radii, circle_count):
     return (cx, cy, radii)
 
 
-def remove_background_mask(image: ndarray, mask: ndarray, smoothing: float = 0.5, **filter_args) -> ndarray:
+def remove_background_mask(image: ndarray, smoothing: float = 1, **filter_args) -> ndarray:
     """
-    Process an image by removing a background mask
+    Separate the image foreground from the background
 
-    :param image: a greyscale image as a numpy array
-    :param mask: a greyscale image mask as a numpy array
+    Returns a boolean mask of the foreground
+
+    :param image: an image as a numpy array
     :param smoothing: a sigma value for the gaussian filter
     :param filter_args: arguments to pass to the gaussian filter
-    :returns: an image with the background mask removed
+    :returns: a boolean image mask of the foreground
     """
-    from skimage.filters import gaussian
+    from skimage import img_as_float, img_as_bool
+    from skimage.filters import gaussian, threshold_minimum
+    from skimage.morphology import reconstruction
 
-    if image.size == 0 or mask.size == 0:
-        raise ValueError("The supplied image or mask cannot be empty")
-    if image.shape != mask.shape:
-        raise ValueError(f"The supplied image ({image.shape}) and mask ({mask.shape}) must be the same shape")
-    image = image.copy()
-    mask = mask.copy()
+    if image.size == 0:
+        raise ValueError("The supplied image cannot be empty")
+
+    image = img_as_float(image).copy()
 
     # Do not process the image if it is empty
     if not image.any():
-        return image
+        return img_as_bool(image)
 
-    # Get background mask intensity
-    background = image[mask & (image > 0.05)].mean()
+    image = gaussian(image, smoothing, **filter_args)
 
-    # Determine image foreground
-    ind = gaussian(image, smoothing, preserve_range = True, **filter_args) > background + 0.03
+    seed = image.copy()
+    seed[1:-1, 1:-1] = image.min()
+
+    dilated = reconstruction(seed, image, method = "dilation")
 
     # Subtract the mask, returning only the foreground
-    return mask & ind
+    image = (image - dilated) > threshold_minimum(image)
+
+    return image
 
 
-def watershed_separation(image: ndarray, smoothing: float = 0.5) -> ndarray:
+def watershed_separation(image: ndarray, smoothing: float = 0.5, **kwargs) -> ndarray:
     """
     Returns a labelled image where merged objects are separated
 
@@ -297,9 +301,7 @@ def watershed_separation(image: ndarray, smoothing: float = 0.5) -> ndarray:
     distance = gaussian(distance, smoothing)
 
     # Find image peaks, returned as a boolean array
-    local_maxi = peak_local_max(distance, indices = False, footprint = ones((3, 3)), labels = img)
+    local_maxi = peak_local_max(distance, indices = False, footprint = ones((3, 3)), labels = img, **kwargs)
 
     # Find the borders around the peaks
-    img = watershed(-distance, label(local_maxi), mask = img)
-
-    return img
+    return watershed(-distance, label(local_maxi), mask = img)
