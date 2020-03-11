@@ -1,5 +1,5 @@
 import pytest
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from colonyscanalyser.colony import (
     Colony,
@@ -25,12 +25,10 @@ centers = [
 @pytest.fixture(params = [centers])
 def timepoints(request):
     timepoints = list()
-    date_time = datetime.now()
 
     for i, center in enumerate(centers, start = 1):
         timepoints.append(Colony.Timepoint(
-            date_time = date_time + timedelta(seconds = i),
-            elapsed_minutes = i,
+            timestamp = timedelta(seconds = i),
             area = i,
             center = center,
             diameter = i * 1.0,
@@ -80,18 +78,18 @@ class TestTimepointsFromImage():
         yield request.param
 
     def test_image_grayscale(self, image, centers_expected):
-        timepoints = timepoints_from_image(image, datetime.now(), 0)
+        timepoints = timepoints_from_image(image, timedelta.min)
         assert len(timepoints) == 3
         assert [timepoint.center in centers_expected for timepoint in timepoints]
 
     def test_image_rgb(self, image, image_rgb, centers_expected):
-        timepoints = timepoints_from_image(image, datetime.now(), 0, image = image_rgb)
+        timepoints = timepoints_from_image(image, timedelta.min, image = image_rgb)
         assert len(timepoints) == 3
         assert [timepoint.center in centers_expected for timepoint in timepoints]
 
     def test_image_shape(self, image):
         with pytest.raises(ValueError):
-            timepoints_from_image(image, datetime.now(), 0, image[:1])
+            timepoints_from_image(image, timedelta.min, image[:1])
 
 
 class TestColony():
@@ -100,7 +98,7 @@ class TestColony():
         if request.param == list:
             yield timepoints
         elif request.param == dict:
-            yield {t.date_time: t for t in timepoints}
+            yield {t.timestamp: t for t in timepoints}
         else:
             yield request.param
 
@@ -110,7 +108,7 @@ class TestColony():
 
     @pytest.fixture
     def timepoint_empty(self):
-        yield Colony.Timepoint(datetime.now(), 0, 0, (0, 0), 0, 0, (0, 0, 0))
+        yield Colony.Timepoint(timedelta.min, 0, (0, 0), 0, 0, (0, 0, 0))
 
     class TestInitialize():
         @pytest.mark.parametrize("timepoints_iter", [list, dict], indirect = True)
@@ -134,7 +132,7 @@ class TestColony():
 
     class TestProperties():
         def test_iterable(self, colony):
-            assert len([*colony.__iter__()]) == 18
+            assert len([*colony.__iter__()]) == 16
 
         def test_timepoints(self, timepoints, colony):
             assert len(colony.timepoints) == len(timepoints)
@@ -149,25 +147,11 @@ class TestColony():
             for i, coord in enumerate(colony.center):
                 assert round(coord, 4) == round(mean([t.center[i] for t in timepoints]), 4)
 
-        def test_growth_rate(self, timepoints, timepoint_empty):
-            colony = Colony(1, timepoints)
-            colony_empty = Colony(1, [timepoint_empty])
-
-            assert colony.growth_rate == len(timepoints) - 1
-            assert colony_empty.growth_rate == 0
-
-        def test_growth_rate_average(self, timepoints, timepoint_empty):
-            colony = Colony(1, timepoints)
-            colony_empty = Colony(1, [timepoint_empty])
-
-            assert colony.growth_rate_average == ((timepoints[-1].area - timepoints[0].area) ** (1 / len(timepoints))) - 1
-            assert colony_empty.growth_rate_average == 0
-
     class TestTimepoint():
         def test_iterable(self, timepoints):
             from dataclasses import fields
 
-            assert len([*timepoints[0].__iter__()]) == 7
+            assert len([*timepoints[0].__iter__()]) == 6
             for value, field in zip([*timepoints[0].__iter__()], fields(Colony.Timepoint)):
                 assert isinstance(value, field.type)
 
@@ -175,7 +159,7 @@ class TestColony():
         def test_get_timepoint(self, timepoints):
             colony = Colony(1, timepoints)
 
-            assert colony.get_timepoint(timepoints[0].date_time) == timepoints[0]
+            assert colony.get_timepoint(timepoints[0].timestamp) == timepoints[0]
             with pytest.raises(ValueError):
                 colony.get_timepoint(None)
 
@@ -183,7 +167,7 @@ class TestColony():
             colony = Colony(1, timepoints)
             colony.append_timepoint(timepoint_empty)
 
-            assert timepoint_empty.date_time in colony.timepoints
+            assert timepoint_empty.timestamp in colony.timepoints
             with pytest.raises(ValueError):
                 colony.append_timepoint(timepoints[0])
 
@@ -193,78 +177,18 @@ class TestColony():
             colony.update_timepoint(timepoints[0], timepoint_empty)
             assert colony.timepoint_first == timepoint_empty
 
-        def test_remove_timepoint(self, timepoints,):
+        def test_remove_timepoint(self, timepoints):
             colony = Colony(1, timepoints)
-            colony.remove_timepoint(timepoints[0].date_time)
+            colony.remove_timepoint(timepoints[0].timestamp)
 
-            assert timepoints[0].date_time not in colony.timepoints
+            assert timepoints[0].timestamp not in colony.timepoints
 
         @pytest.mark.parametrize("timepoint_index, expected", [(0, 12.57), (-1, 1.4)])
         def test_circularity(self, timepoints, timepoint_index, expected):
             colony = Colony(1, timepoints)
-            circularity = colony.get_circularity_at_timepoint(timepoints[timepoint_index].date_time)
+            circularity = colony.get_circularity_at_timepoint(timepoints[timepoint_index].timestamp)
 
             assert round(circularity, 2) == expected
-
-        @pytest.mark.parametrize("timepoints_iter", [list, None], indirect = True)
-        @pytest.mark.parametrize("elapsed_minutes", [True, False])
-        @pytest.mark.parametrize(
-            "window, expected, expected_minutes",
-            [
-                (1, timedelta(seconds = 5, microseconds = 884948), 5.88),
-                (3, timedelta(seconds = 5, microseconds = 128535), 5.13),
-                (5, timedelta(seconds = 4, microseconds = 273778), 4.27)
-            ])
-        def test_doubling_time(self, timepoints_iter, timepoint_empty, window, elapsed_minutes, expected, expected_minutes):
-            colony = Colony(1, timepoints_iter)
-            colony_empty = Colony(1, [timepoint_empty])
-
-            if timepoints_iter is not None:
-                doubling_times = colony.get_doubling_times(window = window, elapsed_minutes = elapsed_minutes)
-
-                if elapsed_minutes:
-                    doubling_times = [round(t, 2) for t in doubling_times]
-                    expected = expected_minutes
-
-                assert max(doubling_times) == expected
-                assert colony_empty.get_doubling_times() == list()
-
-            else:
-                with pytest.raises(ValueError):
-                    colony.get_doubling_times(window = window, elapsed_minutes = elapsed_minutes)
-
-        @pytest.mark.parametrize("timepoints_iter", [list, None], indirect = True)
-        @pytest.mark.parametrize("elapsed_minutes", [True, False])
-        @pytest.mark.parametrize(
-            "window, expected, expected_minutes",
-            [
-                (1, timedelta(seconds = 3, microseconds = 449924), 3.45),
-                (3, timedelta(seconds = 3, microseconds = 339683), 3.34),
-                (5, timedelta(seconds = 3, microseconds = 126998), 3.13)
-            ])
-        def test_doubling_time_average(
-                self, timepoints_iter, timepoint_empty, window, elapsed_minutes, expected, expected_minutes):
-            colony = Colony(1, timepoints_iter)
-            colony_empty = Colony(1, [timepoint_empty])
-
-            if timepoints_iter is not None:
-                doubling_time_average = colony.get_doubling_time_average(window = window, elapsed_minutes = elapsed_minutes)
-
-                if elapsed_minutes:
-                    doubling_time_average = round(doubling_time_average, 2)
-                    expected = expected_minutes
-
-                assert doubling_time_average == expected
-                assert colony_empty.get_doubling_time_average() == 0
-
-            else:
-                with pytest.raises(ValueError):
-                    colony.get_doubling_time_average(window = window, elapsed_minutes = elapsed_minutes)
-
-        def test_local_doubling_time(self, timepoint_empty):
-            colony = Colony(1, [timepoint_empty])
-
-            assert colony._Colony__local_doubling_time(0, [0], [0], window = 0) == 0
 
 
 class TestColoniesFromTimepoints():

@@ -1,22 +1,26 @@
-﻿from datetime import datetime, timedelta
-from math import pi, log
+﻿from typing import Union, Dict, List, Tuple
+from datetime import timedelta
 from dataclasses import dataclass
-from typing import Union, List, Tuple
 from collections.abc import Collection
+from functools import total_ordering
 from numpy import ndarray
 from .base import Identified, Named
 from .utilities import round_tuple_floats
 from .imaging import rgb_to_name
+from .growth_curve import GrowthCurve
 
 
-class Colony(Identified, Named):
+class Colony(Identified, Named, GrowthCurve):
     """
     An object to hold information on a single colony over time
     """
     @dataclass
+    @total_ordering
     class Timepoint:
-        date_time: datetime
-        elapsed_minutes: int
+        """
+        Colony growth parameters at timed intervals
+        """
+        timestamp: timedelta
         area: int
         center: tuple
         diameter: float
@@ -25,14 +29,22 @@ class Colony(Identified, Named):
 
         def __iter__(self):
             return iter([
-                self.date_time,
-                self.elapsed_minutes,
+                self.timestamp,
                 self.area,
                 round_tuple_floats(self.center, 2),
                 round(self.diameter, 2),
                 round(self.perimeter, 2),
                 round_tuple_floats(self.color_average, 2),
             ])
+
+        def __eq__(self, other):
+            return (self.timestamp == other.timestamp)
+
+        def __ne__(self, other):
+            return not (self == other)
+
+        def __lt__(self, other):
+            return (self.timestamp < other.timestamp)
 
     def __init__(self, id: int, timepoints: Collection = None):
         self.id = id
@@ -45,21 +57,19 @@ class Colony(Identified, Named):
         return iter([
             self.id,
             self.time_of_appearance,
-            self.timepoint_first.elapsed_minutes,
+            self.timepoint_first.timestamp,
             round_tuple_floats(self.center, 2),
             self.color_name,
             round_tuple_floats(self.color, 2),
-            round(self.growth_rate_average, 2),
-            round(self.growth_rate, 2),
-            round(self.get_doubling_time_average(elapsed_minutes = True), 2),
-            round_tuple_floats(tuple(self.get_doubling_times(elapsed_minutes = True)), 2),
-            self.timepoint_first.elapsed_minutes,
-            round_tuple_floats(self.timepoint_first.center, 2),
-            self.timepoint_first.area,
+            self.lag_time,
+            round(self.growth_rate, 4),
+            round(self.carrying_capacity, 2),
+            self.doubling_time,
+            self.timepoint_first.timestamp,
+            round(self.timepoint_first.area, 2),
             round(self.timepoint_first.diameter, 2),
-            self.timepoint_last.elapsed_minutes,
-            round_tuple_floats(self.timepoint_last.center, 2),
-            self.timepoint_last.area,
+            self.timepoint_last.timestamp,
+            round(self.timepoint_last.area, 2),
             round(self.timepoint_last.diameter, 2)
         ])
 
@@ -78,23 +88,18 @@ class Colony(Identified, Named):
         return rgb_to_name(self.color, color_spec = "css3")
 
     @property
-    def growth_rate(self) -> float:
-        try:
-            return (self.timepoint_last.area - self.timepoint_first.area) / self.timepoint_first.area
-        except ZeroDivisionError:
-            return 0
+    def growth_curve_data(self) -> Dict[timedelta, List[float]]:
+        """
+        A set of growth measurements over time
+        """
+        from math import log
 
-    @property
-    def growth_rate_average(self) -> float:
-        if self.growth_rate == 0:
-            return 0
-        else:
-            return ((self.timepoint_last.area - self.timepoint_first.area) ** (1 / len(self.timepoints))) - 1
+        return {timepoint.timestamp: log(2) * timepoint.area for timepoint in self.timepoints.values()}
 
     @property
     def timepoints(self):
         if len(self.__timepoints) > 0:
-            return self.__timepoints
+            return {timepoint.timestamp: timepoint for timepoint in sorted(self.__timepoints.values())}
         else:
             raise ValueError("No time points are stored for this colony")
 
@@ -103,7 +108,7 @@ class Colony(Identified, Named):
         if isinstance(val, dict):
             self.__timepoints = val
         elif isinstance(val, Collection) and not isinstance(val, str):
-            self.__timepoints = {timepoint.date_time: timepoint for timepoint in val}
+            self.__timepoints = {timepoint.timestamp: timepoint for timepoint in val}
         else:
             raise ValueError("Timepoints must be supplied as a Dict or other Collection")
 
@@ -116,8 +121,8 @@ class Colony(Identified, Named):
         return self.get_timepoint(max(self.timepoints.keys()))
 
     @property
-    def time_of_appearance(self) -> datetime:
-        return self.timepoint_first.date_time
+    def time_of_appearance(self) -> timedelta:
+        return self.timepoint_first.timestamp
 
     def append_timepoint(self, timepoint: Timepoint):
         """
@@ -125,82 +130,41 @@ class Colony(Identified, Named):
 
         :param timepoint: a Timepoint object
         """
-        if timepoint.date_time not in self.__timepoints:
-            self.__timepoints[timepoint.date_time] = timepoint
+        if timepoint.timestamp not in self.__timepoints:
+            self.__timepoints[timepoint.timestamp] = timepoint
         else:
-            raise ValueError(f"This time point ({timepoint.date_time})  already exists")
+            raise ValueError(f"This time point ({timepoint.timestamp})  already exists")
 
-    def get_circularity_at_timepoint(self, date_time: datetime) -> float:
+    def get_circularity_at_timepoint(self, timestamp: timedelta) -> float:
         """
         Calculate the circularity of the colony at a specified timepoint
 
-        :param date_time: the datetime key for specific Timepoint in the Colony timepoints collection
+        :param timestamp: the timedelta key for specific Timepoint in the Colony timepoints collection
         :returns: the circularity of the colony as a float
         """
-        return self.__circularity(self.get_timepoint(date_time).area, self.get_timepoint(date_time).perimeter)
+        from .geometry import circularity
 
-    def get_doubling_times(self, window: int = 10, elapsed_minutes: bool = False) -> Union[List[datetime], List[float]]:
-        """
-        Calculate the colony area doubling times over the specified number of time points
+        return circularity(self.get_timepoint(timestamp).area, self.get_timepoint(timestamp).perimeter)
 
-        :param window: the number of time points to calculate the doubling times over
-        :param elapsed_minutes: return the timestamps in minutes since starting, instead of absolute DateTimes
-        :returns: a list of doubling times local to the specified timepoint window
-        """
-        timepoint_count = len(self.timepoints)
-        if timepoint_count <= 1:
-            return list()
-
-        if window > timepoint_count:
-            window = timepoint_count - 1
-
-        if elapsed_minutes:
-            x_pts = [value.elapsed_minutes for key, value in self.timepoints.items()]
-        else:
-            x_pts = [value.date_time for key, value in self.timepoints.items()]
-        y_pts = [value.area for key, value in self.timepoints.items()]
-
-        return [self.__local_doubling_time(i, x_pts, y_pts, window = window) for i in range(len(x_pts) - window)]
-
-    def get_doubling_time_average(self, window: int = 10, elapsed_minutes: bool = False) -> Union[timedelta, float]:
-        """
-        Calculate an average of the colony area doubling times over the specified number of time points
-
-        :param window: the number of time points to calculate the doubling times over
-        :param elapsed_minutes: return the timestamps in minutes since starting, instead of absolute DateTimes
-        :returns: the mean of doubling times local to the specified timepoint window
-        """
-        doubling_times = self.get_doubling_times(window = window, elapsed_minutes = elapsed_minutes)
-
-        if not len(doubling_times) > 0:
-            return 0
-
-        if elapsed_minutes:
-            time_sum = sum(doubling_times)
-        else:
-            time_sum = sum(doubling_times, timedelta())
-
-        return time_sum / len(doubling_times)
-
-    def get_timepoint(self, date_time: datetime) -> "Timepoint":
+    def get_timepoint(self, timestamp: timedelta) -> "Timepoint":
         """
         Returns a Timepoint object from the Colony timepoints collection
 
-        :param date_time: the datetime key for specific Timepoint in the Colony timepoints collection
+        :param timestamp: the timedelta key for specific Timepoint in the Colony timepoints collection
         :returns: a Timepoint object from the Colony timepoints collection
         """
-        if date_time in self.__timepoints:
-            return self.timepoints[date_time]
+        if timestamp in self.__timepoints:
+            return self.timepoints[timestamp]
         else:
-            raise ValueError(f"The requested time point ({date_time}) does not exist")
+            raise ValueError(f"The requested time point ({timestamp}) does not exist")
 
-    def remove_timepoint(self, date_time: datetime):
+    def remove_timepoint(self, timestamp: timedelta):
         """
         Remove a specified Timepoint from the Colony timepoints collection
 
-        :param date_time: the datetime key for specific Timepoint in the Colony timepoints collection
+        :param timestamp: the timedelta key for specific Timepoint in the Colony timepoints collection
         """
-        del self.timepoints[date_time]
+        del self.timepoints[timestamp]
 
     def update_timepoint(self, timepoint_original: Timepoint, timepoint_new: Timepoint):
         """
@@ -209,52 +173,12 @@ class Colony(Identified, Named):
         :param timepoint_original: a Timepoint that exists in the Colony timepoints collection
         :param timepoint_new: a Timepoint object to replace the existing Timepoint
         """
-        self.timepoints[timepoint_original.date_time] = timepoint_new
-
-    @staticmethod
-    def __circularity(area: float, perimeter: float) -> float:
-        """
-        Calculate how closely the shape of an object approaches that of a mathematically perfect circle
-
-        A mathematically perfect circle has a circularity of 1
-
-        :param area: the size of the region enclosed by the perimeter
-        :param perimeter: the total distance along the edge of a shape
-        :returns: a ratio of area to perimiter as a float
-        """
-        return (4 * pi * area) / (perimeter * perimeter)
-
-    @staticmethod
-    def __local_doubling_time(
-        index: int,
-        x_pts: list,
-        y_pts: List[float],
-        window: int = 10
-    ) -> Union[List[datetime], List[float]]:
-        """
-        Calculate the doubling times over the specified number of sequence points
-
-        :param index: the index key for the starting point in both x_pts and y_pts
-        :param x_pts: a list of x-axis data points, usually DateTimes
-        :param y_pts: a list of y-axis data points
-        :param window: the number of time points to calculate the doubling times over
-        :returns: a list of doubling times local to the specified timepoint window
-        """
-        x1 = x_pts[index]
-        y1 = y_pts[index]
-        x2 = x_pts[index + window]
-        y2 = y_pts[index + window]
-
-        try:
-            return (x2 - x1) * log(2) / log(y2 / y1)
-        except ZeroDivisionError:
-            return 0
+        self.timepoints[timepoint_original.timestamp] = timepoint_new
 
 
 def timepoints_from_image(
     image_segmented: ndarray,
-    time_point: datetime,
-    elapsed_minutes: int,
+    timestamp: timedelta,
     image: ndarray = None
 ) -> List[Colony.Timepoint]:
     """
@@ -263,8 +187,7 @@ def timepoints_from_image(
     Optionally include the original un-segmented image to provide colony colour information
 
     :param image_segmented: a segmented and labelled image as a numpy array
-    :param time_point: a datetime object corresponding to the image
-    :param elapsed_minutes: an integer representing the number of minutes since starting
+    :param timestamp: a timedelta object corresponding to the image
     :param image: a colour image that image_segmented is derived from
     :returns: a list of colony objects
     """
@@ -294,8 +217,7 @@ def timepoints_from_image(
 
         # Create a new time point object to store colony data
         timepoint_data = Colony.Timepoint(
-            date_time = time_point,
-            elapsed_minutes = elapsed_minutes,
+            timestamp = timestamp,
             area = rp.area,
             center = rp.centroid,
             diameter = rp.equivalent_diameter,
@@ -344,8 +266,8 @@ def colonies_from_timepoints(
 
     # Create a colony object for each group of centres
     for i, timepoint_objects in enumerate(colony_centers, start = 1):
-        # Create a Dict of timepoints with date_time as the keys
-        timepoints_dict = {timepoint.date_time: timepoint for timepoint in timepoint_objects}
+        # Create a Dict of timepoints with timestamp as the keys
+        timepoints_dict = {timepoint.timestamp: timepoint for timepoint in timepoint_objects}
         # Create the Colony object with the Timepoints
         colonies.append(Colony(i, timepoints_dict))
 

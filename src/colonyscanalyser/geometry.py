@@ -100,3 +100,16 @@ class Circle(Shape):
     @property
     def width(self) -> float:
         return self.diameter
+
+
+def circularity(area: float, perimeter: float) -> float:
+    """
+    Calculate how closely the shape of an object approaches that of a mathematically perfect circle
+
+    A mathematically perfect circle has a circularity of 1
+
+    :param area: the size of the region enclosed by the perimeter
+    :param perimeter: the total distance along the edge of a shape
+    :returns: a ratio of area to perimiter as a float
+    """
+    return (4 * pi * area) / (perimeter * perimeter)
