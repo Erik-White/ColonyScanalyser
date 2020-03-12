@@ -1,5 +1,4 @@
 from typing import Any, Optional, Iterable, Dict, List, Tuple
-from contextlib import suppress
 from math import e, exp, log
 from datetime import timedelta
 
@@ -80,7 +79,6 @@ class GrowthCurve:
 
         :param initial_params: initial estimate of parameters for the growth model
         """
-        from scipy.optimize import OptimizeWarning
         from numpy import isinf, sqrt, diag
 
         timestamps = [timestamp.total_seconds() for timestamp in sorted(self.growth_curve_data.keys())]
@@ -90,13 +88,12 @@ class GrowthCurve:
         if initial_params is None:
             initial_params = [min(measurements), lag_time, growth_rate, carrying_capacity]
 
-        with suppress(OptimizeWarning):
-            results = self.__fit_curve(
-                self.gompertz,
-                timestamps,
-                measurements,
-                initial_params = initial_params
-            )
+        results = self.__fit_curve(
+            self.gompertz,
+            timestamps,
+            measurements,
+            initial_params = initial_params
+        )
 
         if results is not None:
             (_, lag_time, growth_rate, carrying_capacity), conf = results
@@ -224,10 +221,12 @@ class GrowthCurve:
         :param kwargs: arguments to pass to scipy.optimize.curve_fit
         :returns: a tuple containing optimal result parameters
         """
+        import warnings
         from scipy.optimize import curve_fit, OptimizeWarning
 
         try:
-            with suppress(OptimizeWarning):
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", OptimizeWarning)
                 return curve_fit(curve_function, timestamps, measurements, p0 = initial_params, **kwargs)
         except RuntimeError:
             return None
