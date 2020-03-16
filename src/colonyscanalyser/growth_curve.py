@@ -1,5 +1,5 @@
 from typing import Any, Optional, Iterable, Dict, List, Tuple
-from math import e, exp, log
+from math import e, exp, log, log10, sqrt
 from datetime import timedelta
 
 
@@ -205,7 +205,7 @@ class GrowthCurve:
                     # scipy.special.logsumexp is used to minimise overflow errors
                     -logsumexp((
                         ((growth_rate * e) / carrying_capacity) * (lag_time - elapsed_time)
-                    ) + 1)
+                    ) + log10((3 + sqrt(5)) / 2))
                 )
             )
         except OverflowError:
