@@ -83,9 +83,9 @@ class GrowthCurve:
 
         timestamps = [timestamp.total_seconds() for timestamp in sorted(self.growth_curve_data.keys())]
         measurements = [val for _, val in sorted(self.growth_curve_data.items())]
-        lag_time, growth_rate, carrying_capacity = GrowthCurve.estimate_parameters(timestamps, measurements)
 
         if initial_params is None:
+            lag_time, growth_rate, carrying_capacity = GrowthCurve.estimate_parameters(timestamps, measurements)
             initial_params = [min(measurements), lag_time, growth_rate, carrying_capacity]
 
         results = self.__fit_curve(
@@ -113,18 +113,21 @@ class GrowthCurve:
         self.__carrying_capacity = carrying_capacity
 
     @staticmethod
-    def estimate_parameters(timestamps: Iterable[float], measurements: Iterable[float]) -> float:
+    def estimate_parameters(timestamps: Iterable[float], measurements: Iterable[float], window: int = 10) -> Tuple[float]:
         """
         Estimate the initial parameters for curve fitting
 
         Lag time:
             Approximates the inflection point in the growth curve as the timestamp where the
             difference in measurements is greater than the mean difference between all measurements,
-            plus the standard deviation
+            plus the standard deviation.
+
+            If the growth rate can be found with linear regression, the intercept of the slope of
+            the maximum specific growth rate with the time is taken instead
 
         Growth rate:
-            Approximates the maximum specific growth rate as maximum change in growth measurement
-            after the lag time
+            Approximates the maximum specific growth rate as maximum growth rate measured over a
+            sliding window, after the lag time
 
         Carrying capacity:
             Approximates the asymptote approached by the growth curve at the maximal measurement as
@@ -133,14 +136,17 @@ class GrowthCurve:
 
         :param timestamps: a collections of time values as floats
         :param measurements: a collection of growth measurements corresponding to timestamps
+        :param window: the window size used for finding the maximum growth rate
         :returns: estimation of lag time, growth rate and carrying capacity
         """
         from numpy import diff
+        from scipy.stats import linregress
 
-        if len(timestamps) != len(measurements):
+        if len(timestamps) != len(measurements) or len(timestamps) < window:
             raise ValueError(
                 f"The timestamps ({len(timestamps)} elements) and measurements"
-                f" ({len(measurements)} elements) must contain the same number of elements"
+                f" ({len(measurements)} elements) must contain the same number of elements,"
+                f" and contain at least as many elements as the window size ({window})"
             )
 
         diffs = diff(measurements)
@@ -154,16 +160,20 @@ class GrowthCurve:
                 break
 
         # Lag time and growth rate
-        inflection = diffs.mean() + diffs.std()
-        lag_time = 0
-        growth_rate = 0
-        for i, difference in enumerate(diffs):
-            if difference > inflection:
-                if i == 0:
-                    i += 1
-                lag_time = timestamps[i - 1]
-                growth_rate = max(diffs[i - 1: -1])
-                break
+        inflection = list(diffs).index(diffs[diffs > diffs.mean() + diffs.std()][0])
+        slopes = list()
+        for i in range(inflection, len(timestamps) - window):
+            # Find the slope at the exponential growth phase over a sliding window
+            slope, intercept, *__ = linregress(timestamps[i: i + window], measurements[i: i + window])
+            slopes.append((slope, intercept))
+
+        if len(slopes) > 0:
+            slope, intercept = max(slopes)
+            lag_time = - intercept / slope
+            growth_rate = slope * 3600
+        else:
+            lag_time = timestamps[inflection // 2]
+            growth_rate = max(diffs)
 
         return lag_time, growth_rate, carrying_capacity
 
@@ -174,7 +184,7 @@ class GrowthCurve:
         lag_time: float,
         growth_rate: float,
         carrying_capacity: float
-    ):
+    ) -> float:
         """
         Parametrized version of the Gompertz function
 
