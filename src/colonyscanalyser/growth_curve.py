@@ -130,9 +130,8 @@ class GrowthCurve:
             sliding window, after the lag time
 
         Carrying capacity:
-            Approximates the asymptote approached by the growth curve at the maximal measurement as
-            the timestamp where the measurement is between the standard deviation of the difference
-            to the maximum measurement
+            Approximates the asymptote approached by the growth curve as the maximal measurement plus
+            the standard deviation of the differences between measurements
 
         :param timestamps: a collections of time values as floats
         :param measurements: a collection of growth measurements corresponding to timestamps
@@ -155,12 +154,7 @@ class GrowthCurve:
         diffs = diff(measurements)
 
         # Carrying capacity
-        carrying_capacity = measurements[-1]
-        capacity_low, capacity_high = carrying_capacity - diffs.std(), carrying_capacity + diffs.std()
-        for measurement in measurements:
-            if capacity_low <= measurement <= capacity_high:
-                carrying_capacity = measurement
-                break
+        carrying_capacity = max(measurements) + diffs.std()
 
         # Lag time and growth rate
         inflection = list(diffs).index(diffs[diffs > diffs.mean() + diffs.std()][0])
