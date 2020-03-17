@@ -3,7 +3,7 @@ from datetime import timedelta
 from dataclasses import dataclass
 from collections.abc import Collection
 from functools import total_ordering
-from numpy import ndarray
+from numpy import ndarray, log2
 from .base import Identified, Named
 from .utilities import round_tuple_floats
 from .imaging import rgb_to_name
@@ -92,9 +92,7 @@ class Colony(Identified, Named, GrowthCurve):
         """
         A set of growth measurements over time
         """
-        from math import log
-
-        return {timepoint.timestamp: log(2) * timepoint.area for timepoint in self.timepoints.values()}
+        return {timepoint.timestamp: log2(timepoint.area) for timepoint in self.timepoints.values()}
 
     @property
     def timepoints(self):
