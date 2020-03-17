@@ -83,30 +83,30 @@ class GrowthCurve:
 
         timestamps = [timestamp.total_seconds() for timestamp in sorted(self.growth_curve_data.keys())]
         measurements = [val for _, val in sorted(self.growth_curve_data.items())]
+        carrying_capacity = 0
+        growth_rate = 0
+        lag_time = 0
 
-        if initial_params is None:
-            lag_time, growth_rate, carrying_capacity = GrowthCurve.estimate_parameters(timestamps, measurements)
-            initial_params = [min(measurements), lag_time, growth_rate, carrying_capacity]
+        if len(timestamps) > 0 and len(measurements) > 0:
+            if initial_params is None:
+                lag_time, growth_rate, carrying_capacity = GrowthCurve.estimate_parameters(timestamps, measurements)
+                initial_params = [min(measurements), lag_time, growth_rate, carrying_capacity]
 
-        results = self.__fit_curve(
-            self.gompertz,
-            timestamps,
-            measurements,
-            initial_params = initial_params
-        )
+            results = self.__fit_curve(
+                self.gompertz,
+                timestamps,
+                measurements,
+                initial_params = initial_params
+            )
 
-        if results is not None:
-            (_, lag_time, growth_rate, carrying_capacity), conf = results
+            if results is not None:
+                (_, lag_time, growth_rate, carrying_capacity), conf = results
 
-            # Calculate standard deviation if results provided
-            if not (isinf(conf)).all():
-                conf = sqrt(diag(conf.clip(min = 0)))
-            else:
-                conf = None
-        else:
-            carrying_capacity = 0
-            growth_rate = 0
-            lag_time = 0
+                # Calculate standard deviation if results provided
+                if not (isinf(conf)).all():
+                    conf = sqrt(diag(conf.clip(min = 0)))
+                else:
+                    conf = None
 
         self.__lag_time = timedelta(seconds = lag_time)
         self.__growth_rate = growth_rate
@@ -141,6 +141,9 @@ class GrowthCurve:
         """
         from numpy import diff
         from scipy.stats import linregress
+
+        if not len(timestamps) > 0 or not len(measurements) > 0:
+            return 0, 0, 0
 
         if len(timestamps) != len(measurements) or len(timestamps) < window:
             raise ValueError(
