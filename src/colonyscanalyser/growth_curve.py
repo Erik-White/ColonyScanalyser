@@ -20,6 +20,8 @@ class GrowthCurve:
         The maximal population size, A
 
         Defined as the asymtote approached by the maximal growth measurement
+
+        :returns: the maximal colony area, in units of log2[area]
         """
         if self.__carrying_capacity is None:
             self.fit_growth_curve()
@@ -32,18 +34,22 @@ class GrowthCurve:
         The doubling time at the maximal growth rate
 
         Defined as ln2 / μmax
+
+        :returns: the minimum time taken for a colony to double in size as a timedelta
         """
-        doubling_seconds = 0
+        doubling = 0
 
         if self.growth_rate > 0:
-            doubling_seconds = log(2) / self.growth_rate
+            doubling = log(2) / self.growth_rate
 
-        return timedelta(seconds = doubling_seconds)
+        return timedelta(seconds = doubling)
 
     @property
-    def growth_curve_data(self) -> Dict[timedelta, List[float]]:
+    def growth_curve_data(self) -> Dict[timedelta, float]:
         """
         A set of growth measurements over time
+
+        :returns: a dictionary of measurements at time intervals
         """
         raise NotImplementedError("This property must be implemented in a derived class")
 
@@ -53,6 +59,8 @@ class GrowthCurve:
         The maximum specific growth rate, μmax
 
         Defined as the tangent in the inflection point of the growth curve
+
+        :returns: the maximal growth rate in units of log2[area] / second
         """
         if self.__growth_rate is None:
             self.fit_growth_curve()
@@ -65,6 +73,8 @@ class GrowthCurve:
         The lag time, λ
 
         Defined as the x-axis intercept of the maximal growth rate (μmax)
+
+        :returns: the lag phase of growth as a timedelta
         """
         if self.__lag_time is None:
             self.fit_growth_curve()
@@ -90,7 +100,7 @@ class GrowthCurve:
         if len(timestamps) > 0 and len(measurements) > 0:
             if initial_params is None:
                 lag_time, growth_rate, carrying_capacity = GrowthCurve.estimate_parameters(timestamps, measurements)
-                initial_params = [min(measurements), lag_time, growth_rate, carrying_capacity]
+                initial_params = [min(measurements), lag_time, growth_rate * 3600, carrying_capacity]
 
             results = self.__fit_curve(
                 self.gompertz,
@@ -109,7 +119,7 @@ class GrowthCurve:
                     conf = None
 
         self.__lag_time = timedelta(seconds = lag_time)
-        self.__growth_rate = growth_rate
+        self.__growth_rate = growth_rate / 3600
         self.__carrying_capacity = carrying_capacity
 
     @staticmethod
@@ -141,10 +151,10 @@ class GrowthCurve:
         from numpy import diff
         from scipy.stats import linregress
 
-        if not len(timestamps) > 0 or not len(measurements) > 0:
+        if not len(timestamps) > 0 or not len(measurements) > 0 or len(timestamps) < window:
             return 0, 0, 0
 
-        if len(timestamps) != len(measurements) or len(timestamps) < window:
+        if len(timestamps) != len(measurements):
             raise ValueError(
                 f"The timestamps ({len(timestamps)} elements) and measurements"
                 f" ({len(measurements)} elements) must contain the same number of elements,"
@@ -165,9 +175,8 @@ class GrowthCurve:
             slopes.append((slope, intercept))
 
         if len(slopes) > 0:
-            slope, intercept = max(slopes)
-            lag_time = - intercept / slope
-            growth_rate = slope * 3600
+            growth_rate, intercept = max(slopes)
+            lag_time = -intercept / growth_rate
         else:
             lag_time = timestamps[inflection // 2]
             growth_rate = max(diffs)
@@ -192,7 +201,7 @@ class GrowthCurve:
         :param growth_rate: the maximum specific growth rate, μmax
         :param lag_time: the time at the inflection point in the growth curve
         :param carrying_capacity: the maximal population size, A
-        :returns:
+        :returns: a value for the colony area at elapsed_time, in units of log2[area]
         """
         from scipy.special import logsumexp
 
@@ -226,7 +235,7 @@ class GrowthCurve:
         :param measurements: a list of growth observations
         :param initial_params: initial estimate for the parameters of curve_function
         :param kwargs: arguments to pass to scipy.optimize.curve_fit
-        :returns: a tuple containing optimal result parameters
+        :returns: a tuple containing optimal result parameters, or None if no fit could be made
         """
         import warnings
         from scipy.optimize import curve_fit, OptimizeWarning
