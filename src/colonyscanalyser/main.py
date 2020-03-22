@@ -345,6 +345,9 @@ def main():
         # Save data for each colony on a plate
         plate.colonies_timepoints_to_csv(save_path)
 
+    # Save summarised data for all plates
+    plates.plates_to_csv(save_path)
+
     # Only generate plots when working with original images
     # Can't guarantee that the original images and full list of time points
     # will be available when using cached data

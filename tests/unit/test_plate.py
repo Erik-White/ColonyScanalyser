@@ -61,7 +61,7 @@ class TestPlate():
 
     class TestProperties():
         def test_iterable(self, plate):
-            assert len([*plate.__iter__()]) == 7
+            assert len([*plate.__iter__()]) == 11
 
         @pytest.mark.parametrize(
             "colonies, edge_cut, name",

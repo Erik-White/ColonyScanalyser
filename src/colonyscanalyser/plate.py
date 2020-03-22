@@ -3,10 +3,11 @@ from typing import Union, Dict, List, Tuple
 from collections.abc import Collection
 from datetime import timedelta
 from pathlib import Path, PurePath
+from statistics import median
 from numpy import ndarray
 from .base import Identified, IdentifiedCollection, Named
 from .geometry import Circle
-from .file_access import save_to_csv
+from .file_access import save_to_csv, file_safe_name
 from .growth_curve import GrowthCurve
 
 
@@ -39,14 +40,24 @@ class Plate(GrowthCurve, Identified, IdentifiedCollection, Named, Circle):
         self.name = name
 
     def __iter__(self):
+        appearance = [colony.time_of_appearance.total_seconds() // 60 for colony in self.items]
+        if len(appearance) > 0:
+            appearance = median(appearance)
+        else:
+            appearance = 0
+
         return iter([
             self.id,
             self.name,
             self.center,
             self.diameter,
-            self.area,
             self.edge_cut,
-            self.count
+            self.count,
+            appearance,
+            self.lag_time.total_seconds() // 60,
+            round(self.growth_rate * 60, 5),
+            round(self.carrying_capacity, 2),
+            self.doubling_time.total_seconds() // 60
         ])
 
     @property
@@ -86,8 +97,6 @@ class Plate(GrowthCurve, Identified, IdentifiedCollection, Named, Circle):
         :param headers: a list of strings to use as column headers
         :returns: a Path representing the new file, if successful
         """
-        from .file_access import file_safe_name
-
         if headers is None:
             headers = [
                 "Colony ID",
@@ -123,8 +132,6 @@ class Plate(GrowthCurve, Identified, IdentifiedCollection, Named, Circle):
         :param headers: a list of strings to use as column headers
         :returns: a Path representing the new file, if successful
         """
-        from .file_access import file_safe_name
-
         if headers is None:
             headers = [
                 "Colony ID",
@@ -302,6 +309,36 @@ class PlateCollection(IdentifiedCollection):
             ))
 
         return plates
+
+    def plates_to_csv(self, save_path: Path, headers: List[str] = None) -> Path:
+        """
+        Output summarised data from the plate and colony collection to a CSV file
+
+        :param save_path: the location to save the CSV data file
+        :param headers: a list of strings to use as column headers
+        :returns: a Path representing the new file, if successful
+        """
+        if headers is None:
+            headers = [
+                "Plate ID",
+                "Plate label",
+                "Center (row, column)",
+                "Diameter (pixels)",
+                "Edge cut (pixels)",
+                "Colony count",
+                "Time of appearance (minutes)",
+                "Lag time (minutes)",
+                "Growth rate (log2[Area] / minute)",
+                "Carrying capacity (log2[Area])",
+                "Doubling time (minutes)"
+            ]
+
+        return Plate._Plate__collection_to_csv(
+            save_path,
+            file_safe_name(["plates_summary"]),
+            self.items,
+            headers
+        )
 
     def slice_plate_image(self, image: ndarray, background_color: Tuple = 0) -> Dict[int, ndarray]:
         """
