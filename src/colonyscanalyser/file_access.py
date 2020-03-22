@@ -252,7 +252,7 @@ def save_to_csv(data: Collection, headers: List[str], save_path: Union[Path, str
             else:
                 writer.writerows(data)
 
-    except Exception:
+    except (Exception, csv.Error):
         raise IOError(f"Unable to save data to CSV file at {save_path}")
 
     return save_path
