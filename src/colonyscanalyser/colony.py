@@ -50,37 +50,39 @@ class Colony(Identified, Named, GrowthCurve):
         self.id = id
         # Can't set argument default otherwise it is shared across all class instances
         if timepoints is None:
-            timepoints = dict()
+            timepoints = list()
         self.timepoints = timepoints
 
     def __iter__(self):
         return iter([
             self.id,
             self.time_of_appearance,
-            self.timepoint_first.timestamp,
+            self.time_of_appearance.total_seconds() // 60,
             round_tuple_floats(self.center, 2),
             self.color_name,
             round_tuple_floats(self.color, 2),
-            self.lag_time,
-            round(self.growth_rate, 4),
+            self.lag_time.total_seconds() // 60,
+            round(self.growth_rate * 60, 5),
             round(self.carrying_capacity, 2),
-            self.doubling_time,
-            self.timepoint_first.timestamp,
+            self.doubling_time.total_seconds() // 60,
+            self.timepoint_first.timestamp.total_seconds() // 60,
             round(self.timepoint_first.area, 2),
             round(self.timepoint_first.diameter, 2),
-            self.timepoint_last.timestamp,
+            self.timepoint_last.timestamp.total_seconds() // 60,
             round(self.timepoint_last.area, 2),
             round(self.timepoint_last.diameter, 2)
         ])
 
     @property
     def center(self) -> Union[Tuple[float, float], Tuple[float, float, float]]:
-        centers = [x.center for x in self.timepoints.values()]
+        centers = [x.center for x in self.timepoints]
+
         return tuple(sum(x) / len(self.timepoints) for x in zip(*centers))
 
     @property
     def color(self) -> Tuple[float, float, float]:
-        color_averages = [x.color_average for x in self.timepoints.values()]
+        color_averages = [timepoint.color_average for timepoint in self.timepoints]
+
         return tuple(sum(x) / len(self.timepoints) for x in zip(*color_averages))
 
     @property
@@ -88,35 +90,37 @@ class Colony(Identified, Named, GrowthCurve):
         return rgb_to_name(self.color, color_spec = "css3")
 
     @property
-    def growth_curve_data(self) -> Dict[timedelta, List[float]]:
+    def growth_curve_data(self) -> Dict[timedelta, float]:
         """
         A set of growth measurements over time
+
+        :returns: a dictionary of measurements at time intervals
         """
-        return {timepoint.timestamp: log2(timepoint.area) for timepoint in self.timepoints.values()}
+        return {timepoint.timestamp: log2(timepoint.area) for timepoint in self.timepoints}
 
     @property
     def timepoints(self):
         if len(self.__timepoints) > 0:
-            return {timepoint.timestamp: timepoint for timepoint in sorted(self.__timepoints.values())}
+            return sorted(self.__timepoints)
         else:
             raise ValueError("No time points are stored for this colony")
 
     @timepoints.setter
     def timepoints(self, val: Collection):
         if isinstance(val, dict):
-            self.__timepoints = val
+            self.__timepoints = list(val.values())
         elif isinstance(val, Collection) and not isinstance(val, str):
-            self.__timepoints = {timepoint.timestamp: timepoint for timepoint in val}
+            self.__timepoints = [timepoint for timepoint in val]
         else:
             raise ValueError("Timepoints must be supplied as a Dict or other Collection")
 
     @property
     def timepoint_first(self) -> "Timepoint":
-        return self.get_timepoint(min(self.timepoints.keys()))
+        return min(self.timepoints)
 
     @property
     def timepoint_last(self) -> "Timepoint":
-        return self.get_timepoint(max(self.timepoints.keys()))
+        return max(self.timepoints)
 
     @property
     def time_of_appearance(self) -> timedelta:
@@ -128,21 +132,10 @@ class Colony(Identified, Named, GrowthCurve):
 
         :param timepoint: a Timepoint object
         """
-        if timepoint.timestamp not in self.__timepoints:
-            self.__timepoints[timepoint.timestamp] = timepoint
+        if timepoint not in self.timepoints:
+            self.__timepoints.append(timepoint)
         else:
-            raise ValueError(f"This time point ({timepoint.timestamp})  already exists")
-
-    def get_circularity_at_timepoint(self, timestamp: timedelta) -> float:
-        """
-        Calculate the circularity of the colony at a specified timepoint
-
-        :param timestamp: the timedelta key for specific Timepoint in the Colony timepoints collection
-        :returns: the circularity of the colony as a float
-        """
-        from .geometry import circularity
-
-        return circularity(self.get_timepoint(timestamp).area, self.get_timepoint(timestamp).perimeter)
+            raise ValueError(f"This time point at {timepoint.timestamp}  already exists")
 
     def get_timepoint(self, timestamp: timedelta) -> "Timepoint":
         """
@@ -151,10 +144,7 @@ class Colony(Identified, Named, GrowthCurve):
         :param timestamp: the timedelta key for specific Timepoint in the Colony timepoints collection
         :returns: a Timepoint object from the Colony timepoints collection
         """
-        if timestamp in self.__timepoints:
-            return self.timepoints[timestamp]
-        else:
-            raise ValueError(f"The requested time point ({timestamp}) does not exist")
+        return next((timepoint for timepoint in self.timepoints if timepoint.timestamp == timestamp), None)
 
     def remove_timepoint(self, timestamp: timedelta):
         """
@@ -162,16 +152,8 @@ class Colony(Identified, Named, GrowthCurve):
 
         :param timestamp: the timedelta key for specific Timepoint in the Colony timepoints collection
         """
-        del self.timepoints[timestamp]
-
-    def update_timepoint(self, timepoint_original: Timepoint, timepoint_new: Timepoint):
-        """
-        Replace a Timepoint from the Colony timepoints collection with a new Timepoint
-
-        :param timepoint_original: a Timepoint that exists in the Colony timepoints collection
-        :param timepoint_new: a Timepoint object to replace the existing Timepoint
-        """
-        self.timepoints[timepoint_original.timestamp] = timepoint_new
+        timepoint = self.get_timepoint(timestamp)
+        del self.__timepoints[self.__timepoints.index(timepoint)]
 
 
 def timepoints_from_image(

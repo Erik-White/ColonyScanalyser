@@ -71,7 +71,6 @@ class IdentifiedCollection:
     def items(self, val: Collection):
         if isinstance(val, dict):
             val = list(val.values())
-
         if val is None:
             self.__items = list()
         elif isinstance(val, Collection) and not isinstance(val, str):

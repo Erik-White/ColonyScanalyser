@@ -1,14 +1,16 @@
 from __future__ import annotations
 from typing import Union, Dict, List, Tuple
 from collections.abc import Collection
+from datetime import timedelta
 from pathlib import Path, PurePath
 from numpy import ndarray
 from .base import Identified, IdentifiedCollection, Named
 from .geometry import Circle
 from .file_access import save_to_csv
+from .growth_curve import GrowthCurve
 
 
-class Plate(Identified, IdentifiedCollection, Named, Circle):
+class Plate(GrowthCurve, Identified, IdentifiedCollection, Named, Circle):
     """
     An object to hold information about an agar plate and a collection of Colony objects
     """
@@ -63,6 +65,19 @@ class Plate(Identified, IdentifiedCollection, Named, Circle):
     def edge_cut(self, val: float):
         self.__edge_cut = val
 
+    @property
+    def growth_curve_data(self) -> Dict[timedelta, float]:
+        """
+        A set of growth measurements over time
+
+        :returns: a dictionary of measurements at time intervals
+        """
+        from .utilities import average_median_dicts_values_by_key
+
+        timepoints_areas = [colony.growth_curve_data for colony in self.items]
+
+        return average_median_dicts_values_by_key(timepoints_areas)
+
     def colonies_to_csv(self, save_path: Path, headers: List[str] = None) -> Path:
         """
         Output the data from the colonies collection to a CSV file
@@ -76,21 +91,19 @@ class Plate(Identified, IdentifiedCollection, Named, Circle):
         if headers is None:
             headers = [
                 "Colony ID",
-                "Time of appearance",
+                "Time of appearance (elapsed time)",
                 "Time of appearance (elapsed minutes)",
                 "Center point averaged (row, column)",
                 "Colour averaged name",
                 "Colour averaged (R,G,B)",
-                "Growth rate average",
-                "Growth rate",
-                "Doubling time average (minutes)",
-                "Doubling times (minutes)",
+                "Lag time (minutes)",
+                "Growth rate (log2[Area] / minute)",
+                "Carrying capacity (log2[Area])",
+                "Doubling time (minutes)",
                 "First detection (elapsed minutes)",
-                "First center point (row, column)",
                 "First area (pixels)",
                 "First diameter (pixels)",
                 "Final detection (elapsed minutes)",
-                "Final center point (row, column)",
                 "Final area (pixels)",
                 "Final diameter (pixels)"
             ]
@@ -115,7 +128,6 @@ class Plate(Identified, IdentifiedCollection, Named, Circle):
         if headers is None:
             headers = [
                 "Colony ID",
-                "Date/Time",
                 "Elapsed time (minutes)",
                 "Area (pixels)",
                 "Center (row, column)",
@@ -127,12 +139,11 @@ class Plate(Identified, IdentifiedCollection, Named, Circle):
         # Unpack timepoint properties to a flat list
         colony_timepoints = list()
         for colony in self.items:
-            for timepoint in colony.timepoints.values():
+            for timepoint in colony.timepoints:
                 colony_timepoints.append([colony.id, *timepoint])
 
         return self.__collection_to_csv(
             save_path,
-            # "_".join(filter(None, [f"plate{str(self.id)}", self.name.replace(" ", "_"), "colony", "timepoints"])),
             file_safe_name([f"plate{str(self.id)}", self.name, "colony", "timepoints"]),
             colony_timepoints,
             headers

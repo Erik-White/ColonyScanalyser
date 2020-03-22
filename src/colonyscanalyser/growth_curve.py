@@ -79,7 +79,10 @@ class GrowthCurve:
         if self.__lag_time is None:
             self.fit_growth_curve()
 
-        return self.__lag_time
+        if self.__lag_time.total_seconds() < 0:
+            return timedelta(seconds = 0)
+        else:
+            return self.__lag_time
 
     def fit_growth_curve(self, initial_params: List[float] = None):
         """

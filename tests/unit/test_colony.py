@@ -18,7 +18,9 @@ centers = [
     (2.5, 2.99),
     (4, 3.9),
     (3, 10),
-    (0, 4.4)
+    (0, 4.4),
+    (4.2, 3.1),
+    (4, 4)
 ]
 
 
@@ -115,7 +117,7 @@ class TestColony():
         def test_init(self, timepoints_iter):
             colony = Colony(1, timepoints_iter)
 
-            assert isinstance(colony.timepoints, dict)
+            assert isinstance(colony.timepoints, list)
             assert len(colony.timepoints) == len(timepoints_iter)
 
         @pytest.mark.parametrize("timepoints_iter", [int, str], indirect = True)
@@ -160,39 +162,25 @@ class TestColony():
             colony = Colony(1, timepoints)
 
             assert colony.get_timepoint(timepoints[0].timestamp) == timepoints[0]
-            with pytest.raises(ValueError):
-                colony.get_timepoint(None)
+            assert colony.get_timepoint(timedelta(seconds = -1)) is None
 
         def test_append_timepoint(self, timepoints, timepoint_empty):
             colony = Colony(1, timepoints)
             colony.append_timepoint(timepoint_empty)
 
-            assert timepoint_empty.timestamp in colony.timepoints
+            assert timepoint_empty in colony.timepoints
             with pytest.raises(ValueError):
                 colony.append_timepoint(timepoints[0])
-
-        def test_update_timepoint(self, timepoints, timepoint_empty):
-            colony = Colony(1, timepoints)
-
-            colony.update_timepoint(timepoints[0], timepoint_empty)
-            assert colony.timepoint_first == timepoint_empty
 
         def test_remove_timepoint(self, timepoints):
             colony = Colony(1, timepoints)
             colony.remove_timepoint(timepoints[0].timestamp)
 
-            assert timepoints[0].timestamp not in colony.timepoints
-
-        @pytest.mark.parametrize("timepoint_index, expected", [(0, 12.57), (-1, 1.4)])
-        def test_circularity(self, timepoints, timepoint_index, expected):
-            colony = Colony(1, timepoints)
-            circularity = colony.get_circularity_at_timepoint(timepoints[timepoint_index].timestamp)
-
-            assert round(circularity, 2) == expected
+            assert timepoints[0] not in colony.timepoints
 
 
 class TestColoniesFromTimepoints():
-    @pytest.fixture(params = [[9, 6, 4, 3, 3]])
+    @pytest.fixture(params = [[11, 7, 4, 3, 3]])
     def group_expected(self, request):
         yield request.param
 
@@ -212,7 +200,7 @@ class TestColoniesFromTimepoints():
 
 
 class TestGroupTimepointsByCenter():
-    @pytest.fixture(params = [[7, 4, 3, 2, 2]])
+    @pytest.fixture(params = [[8, 4, 3, 2, 2]])
     def group_expected(self, request):
         yield request.param
 

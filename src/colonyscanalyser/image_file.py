@@ -146,7 +146,7 @@ class ImageFileCollection(IdentifiedCollection):
             image_file.timestamp_initial = val
 
     @property
-    def timestamps_elapsed(self) -> List[datetime]:
+    def timestamps_elapsed(self) -> List[timedelta]:
         return [image_file.timestamp_elapsed for image_file in self.items]
 
     @property
