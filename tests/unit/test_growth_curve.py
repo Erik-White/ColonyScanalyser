@@ -23,6 +23,12 @@ def growth_curve_child(request, timestamps, measurements):
     yield GrowthCurveChild(times = timestamps, signals = measurements)
 
 
+class GrowthCurveBase(GrowthCurve):
+    @property
+    def growth_curve_data(self):
+        raise NotImplementedError
+
+
 class GrowthCurveChild(GrowthCurve):
     def __init__(self, times, signals):
         self.times = times
@@ -36,8 +42,7 @@ class GrowthCurveChild(GrowthCurve):
 class TestGrowthCurve:
     class TestInitialize:
         def test_init(self):
-            growth_curve = GrowthCurve()
-            growth_curve.__init_subclass__()
+            growth_curve = GrowthCurveBase()
 
             assert growth_curve._GrowthCurve__lag_time is None
             assert growth_curve._GrowthCurve__growth_rate is None

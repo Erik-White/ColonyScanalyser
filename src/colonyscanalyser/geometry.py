@@ -1,12 +1,14 @@
 from typing import Union, Tuple
+from abc import ABC, abstractmethod
 from math import pi
 
 
-class Shape:
+class Shape(ABC):
     """
     An abstract class to provide the fundamental properties of a surface
     """
     @property
+    @abstractmethod
     def area(self) -> float:
         raise NotImplementedError("This property must be implemented in a derived class")
 
@@ -44,6 +46,7 @@ class Shape:
         self.__height = val
 
     @property
+    @abstractmethod
     def perimeter(self) -> float:
         raise NotImplementedError("This property must be implemented in a derived class")
 

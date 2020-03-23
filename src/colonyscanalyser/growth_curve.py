@@ -1,9 +1,10 @@
 from typing import Any, Optional, Iterable, Dict, List, Tuple
+from abc import ABC, abstractmethod
 from math import e, exp, log, log10, sqrt
 from datetime import timedelta
 
 
-class GrowthCurve:
+class GrowthCurve(ABC):
     """
     An abstract class to provide growth curve fitting and parameters
     """
@@ -45,6 +46,7 @@ class GrowthCurve:
         return timedelta(seconds = doubling)
 
     @property
+    @abstractmethod
     def growth_curve_data(self) -> Dict[timedelta, float]:
         """
         A set of growth measurements over time
