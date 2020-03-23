@@ -9,7 +9,7 @@ class GrowthCurve:
     """
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
-        cls.__doubling_time = None
+
         cls.__growth_rate = None
         cls.__carrying_capacity = None
         cls.__lag_time = None
@@ -84,18 +84,23 @@ class GrowthCurve:
         else:
             return self.__lag_time
 
-    def fit_growth_curve(self, initial_params: List[float] = None):
+    def fit_growth_curve(self, growth_model: callable = None, initial_params: List[float] = None):
         """
         Fit a parametrized version of the Gompertz function to data
 
         Ref: Modeling of the Bacterial Growth Curve, Zwietering et al 1990
 
+        :param growth_model: optionally specify a different growth model
         :param initial_params: initial estimate of parameters for the growth model
         """
         from numpy import isinf, sqrt, diag
 
+        if growth_model is None:
+            growth_model = self.gompertz
+
         timestamps = [timestamp.total_seconds() for timestamp in sorted(self.growth_curve_data.keys())]
         measurements = [val for _, val in sorted(self.growth_curve_data.items())]
+
         carrying_capacity = 0
         growth_rate = 0
         lag_time = 0
@@ -106,7 +111,7 @@ class GrowthCurve:
                 initial_params = [min(measurements), lag_time, growth_rate * 3600, carrying_capacity]
 
             results = self.__fit_curve(
-                self.gompertz,
+                growth_model,
                 timestamps,
                 measurements,
                 initial_params = initial_params
@@ -217,7 +222,7 @@ class GrowthCurve:
                     ) + log10((3 + sqrt(5)) / 2))
                 )
             )
-        except OverflowError:
+        except (OverflowError, ZeroDivisionError):
             return 0
 
     @staticmethod

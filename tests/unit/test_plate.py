@@ -1,4 +1,5 @@
 import pytest
+from datetime import timedelta
 
 from colonyscanalyser.plate import (
     Plate,
@@ -36,6 +37,8 @@ class Colony():
     def __init__(self, id):
         self.id = id
         self.timepoints = {str(id): str(id)}
+        self.time_of_appearance = timedelta(seconds = id)
+        self.growth_curve_data = {self.time_of_appearance: id}
 
     def __iter__(self):
         return iter([
@@ -60,7 +63,9 @@ class TestPlate():
                 Plate(id, diameter)
 
     class TestProperties():
-        def test_iterable(self, plate):
+        def test_iterable(self, plate, colonies):
+            plate.items = colonies
+
             assert len([*plate.__iter__()]) == 11
 
         @pytest.mark.parametrize(
@@ -202,13 +207,28 @@ class TestPlateCollection:
         def test_plates_from_image_invalid(self, image_circle):
             plates = PlateCollection()
 
-            print(plates.shape)
-            print(PlateCollection.coordinate_to_index(plates.shape))
             with pytest.raises(ValueError):
                 plates.plates_from_image(
                     image = image_circle,
                     diameter = 180
                 )
+
+        def test_plates_to_csv(self, image_circle, tmp_path):
+            import csv
+
+            plates = PlateCollection.from_image(
+                shape = (1, 1),
+                image = image_circle,
+                diameter = 180,
+            )
+            result = plates.plates_to_csv(tmp_path)
+
+            # Check all rows were written correctly
+            with open(result, 'r') as csvfile:
+                reader = list(csv.reader(csvfile))
+
+                assert len(reader) == plates.count + 1
+                assert reader[1] == ["1", "", "(102, 102)", "160", "0", "0", "0", "0.0", "0.0", "0", "0.0"]
 
         def test_slice_plate_image(self, image_circle):
             plates = PlateCollection(shape = (1, 1))

@@ -40,11 +40,7 @@ class Plate(GrowthCurve, Identified, IdentifiedCollection, Named, Circle):
         self.name = name
 
     def __iter__(self):
-        appearance = [colony.time_of_appearance.total_seconds() // 60 for colony in self.items]
-        if len(appearance) > 0:
-            appearance = median(appearance)
-        else:
-            appearance = 0
+        appearance = [colony.time_of_appearance.total_seconds() // 60 for colony in self.items] or [0]
 
         return iter([
             self.id,
@@ -53,7 +49,7 @@ class Plate(GrowthCurve, Identified, IdentifiedCollection, Named, Circle):
             self.diameter,
             self.edge_cut,
             self.count,
-            appearance,
+            median(appearance),
             self.lag_time.total_seconds() // 60,
             round(self.growth_rate * 60, 5),
             round(self.carrying_capacity, 2),
