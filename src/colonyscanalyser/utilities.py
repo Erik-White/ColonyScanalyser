@@ -1,4 +1,4 @@
-﻿from typing import Tuple, List, Dict
+﻿from typing import Collection, Tuple, List, Dict
 
 
 def round_tuple_floats(tuple_item: Tuple[float], precision: int = 2) -> Tuple[float]:
@@ -37,39 +37,48 @@ def progress_bar(bar_progress: float, bar_length: float = 30, message: str = "")
     stdout.flush()
 
 
-def average_dicts_values_by_key(dicts: List[Dict]) -> Dict:
+def dicts_merge(dicts: List[dict]):
+    """
+    Combine values by key from multiple dicts
+
+    :param dicts: a list of dicts to merge
+    :returns: a dict containing combined lists of values
+    """
+    from collections import defaultdict
+    from itertools import chain
+    from operator import methodcaller
+
+    results = defaultdict(list)
+
+    dict_items = map(methodcaller('items'), dicts)
+    for key, value in chain.from_iterable(dict_items):
+        if isinstance(value, Collection) and not isinstance(value, str):
+            results[key].extend(value)
+        else:
+            results[key].append(value)
+
+    return results
+
+
+def dicts_mean(dicts: List[Dict]) -> Dict:
     """
     Mean average values across multiple dicts with the same key
 
     :param dicts: a list of dictionaries
     :returns: a dictionary of averaged values
     """
-    from collections import Counter
+    from statistics import mean
 
-    sums = Counter()
-    counters = Counter()
-    for itemset in dicts:
-        sums.update(itemset)
-        counters.update(itemset.keys())
-
-    return {x: float(sums[x]) / counters[x] for x in sums.keys()}
+    return {key: mean(value) for key, value in dicts_merge(dicts).items()}
 
 
-def average_median_dicts_values_by_key(dicts: List[Dict]) -> Dict:
+def dicts_median(dicts: List[Dict]) -> Dict:
     """
     Median average values across multiple dicts with the same key
 
     :param dicts: a list of dictionaries
     :returns: a dictionary of averaged values
     """
-    from numpy import median
-    from collections import defaultdict
+    from statistics import median
 
-    values = defaultdict(list)
-
-    # Assemble a dict containing all values
-    for itemset in dicts:
-        for key, value in itemset.items():
-            values[key].append(value)
-
-    return {key: median(value) for key, value in values.items()}
+    return {key: median(value) for key, value in dicts_merge(dicts).items()}
