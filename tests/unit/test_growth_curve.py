@@ -45,8 +45,11 @@ class TestGrowthCurve:
             growth_curve = GrowthCurveBase()
 
             assert growth_curve._GrowthCurve__lag_time is None
+            assert growth_curve._GrowthCurve__lag_time_std is None
             assert growth_curve._GrowthCurve__growth_rate is None
+            assert growth_curve._GrowthCurve__growth_rate_std is None
             assert growth_curve._GrowthCurve__carrying_capacity is None
+            assert growth_curve._GrowthCurve__carrying_capacity_std is None
             with pytest.raises(NotImplementedError):
                 growth_curve.growth_curve_data()
 
@@ -55,9 +58,13 @@ class TestGrowthCurve:
 
             assert len(growth_curve.growth_curve_data) == 0
             assert growth_curve.lag_time.total_seconds() == 0
+            assert growth_curve.lag_time_std.total_seconds() == 0
             assert growth_curve.growth_rate == 0
+            assert growth_curve.growth_rate_std == 0
             assert growth_curve.doubling_time.total_seconds() == 0
+            assert growth_curve.doubling_time_std.total_seconds() == 0
             assert growth_curve.carrying_capacity == 0
+            assert growth_curve.carrying_capacity_std == 0
 
     class TestProperties:
         def test_growth_curve_data(self, growth_curve_child, timestamps):
@@ -68,17 +75,35 @@ class TestGrowthCurve:
             assert isinstance(growth_curve_child.lag_time, timedelta)
             assert growth_curve_child.lag_time.total_seconds() == 3.318548
 
+        def test_lag_time_std(self, growth_curve_child):
+            assert isinstance(growth_curve_child.lag_time_std, timedelta)
+            assert growth_curve_child.lag_time_std.total_seconds() == 0
+
         def test_growth_rate(self, growth_curve_child):
             assert isinstance(growth_curve_child.growth_rate, float)
             assert growth_curve_child.growth_rate == 3.6072727272727265
+
+        def test_growth_rate_std(self, growth_curve_child):
+            assert isinstance(growth_curve_child.growth_rate_std, float)
+            assert growth_curve_child.growth_rate_std == 0
 
         def test_doubling_time(self, growth_curve_child):
             assert isinstance(growth_curve_child.doubling_time, timedelta)
             assert growth_curve_child.doubling_time.total_seconds() == 0.192153
 
+        def test_doubling_time_std(self, growth_curve_child):
+            growth_curve_child._GrowthCurve__growth_rate_std = 1
+
+            assert isinstance(growth_curve_child.doubling_time_std, timedelta)
+            assert growth_curve_child.doubling_time_std.total_seconds() == 0.693147
+
         def test_carrying_capacity(self, growth_curve_child):
             assert isinstance(growth_curve_child.carrying_capacity, float)
             assert growth_curve_child.carrying_capacity == 45.25146120997929
+
+        def test_carrying_capacity_std(self, growth_curve_child):
+            assert isinstance(growth_curve_child.carrying_capacity_std, float)
+            assert growth_curve_child.carrying_capacity_std == 0
 
     class TestMethods():
         def test_fit_growth_curve(self, growth_curve_child):
@@ -88,8 +113,11 @@ class TestGrowthCurve:
             growth_curve_child.fit_growth_curve(initial_params = [1, 1, 1, 1])
 
             assert growth_curve_child._GrowthCurve__lag_time
+            assert growth_curve_child._GrowthCurve__lag_time_std.total_seconds() >= 0
             assert growth_curve_child._GrowthCurve__growth_rate
+            assert growth_curve_child._GrowthCurve__growth_rate_std >= 0
             assert growth_curve_child._GrowthCurve__carrying_capacity
+            assert growth_curve_child._GrowthCurve__carrying_capacity_std >= 0
 
         def test_estimate_parameters(self, timestamps, measurements):
             assert GrowthCurve.estimate_parameters(timestamps, list()) == (0, 0, 0)

@@ -51,9 +51,13 @@ class Plate(GrowthCurve, Identified, IdentifiedCollection, Named, Circle):
             self.count,
             median(appearance),
             self.lag_time.total_seconds() // 60,
+            self.lag_time_std.total_seconds() // 60,
             round(self.growth_rate * 60, 5),
+            round(self.growth_rate_std * 60, 7),
             round(self.carrying_capacity, 2),
-            self.doubling_time.total_seconds() // 60
+            round(self.carrying_capacity_std, 4),
+            self.doubling_time.total_seconds() // 60,
+            self.doubling_time_std.total_seconds() // 60
         ])
 
     @property
@@ -73,17 +77,15 @@ class Plate(GrowthCurve, Identified, IdentifiedCollection, Named, Circle):
         self.__edge_cut = val
 
     @property
-    def growth_curve_data(self) -> Dict[timedelta, float]:
+    def growth_curve_data(self) -> Dict[timedelta, Union[float, List[float]]]:
         """
         A set of growth measurements over time
 
         :returns: a dictionary of measurements at time intervals
         """
-        from .utilities import average_median_dicts_values_by_key
+        from .utilities import dicts_merge
 
-        timepoints_areas = [colony.growth_curve_data for colony in self.items]
-
-        return average_median_dicts_values_by_key(timepoints_areas)
+        return dicts_merge([colony.growth_curve_data for colony in self.items])
 
     def colonies_to_csv(self, save_path: Path, headers: List[str] = None) -> Path:
         """
@@ -102,9 +104,13 @@ class Plate(GrowthCurve, Identified, IdentifiedCollection, Named, Circle):
                 "Colour averaged name",
                 "Colour averaged (R,G,B)",
                 "Lag time (minutes)",
+                "Lag time standard deviation (minutes)",
                 "Growth rate (log2[Area] / minute)",
+                "Growth rate standard deviation (log2[Area] / minute)",
                 "Carrying capacity (log2[Area])",
+                "Carrying capacity standard deviation (log2[Area])",
                 "Doubling time (minutes)",
+                "Doubling time standard deviation(minutes)",
                 "First detection (elapsed minutes)",
                 "First area (pixels)",
                 "First diameter (pixels)",
@@ -324,9 +330,13 @@ class PlateCollection(IdentifiedCollection):
                 "Colony count",
                 "Time of appearance (minutes)",
                 "Lag time (minutes)",
+                "Lag time standard deviation (minutes)",
                 "Growth rate (log2[Area] / minute)",
+                "Growth rate standard deviation (log2[Area] / minute)",
                 "Carrying capacity (log2[Area])",
-                "Doubling time (minutes)"
+                "Carrying capacity standard deviation (log2[Area])",
+                "Doubling time (minutes)",
+                "Doubling time standard deviation (minutes)"
             ]
 
         return Plate._Plate__collection_to_csv(

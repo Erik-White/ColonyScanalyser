@@ -134,7 +134,7 @@ class TestColony():
 
     class TestProperties():
         def test_iterable(self, colony):
-            assert len([*colony.__iter__()]) == 16
+            assert len([*colony.__iter__()]) == 20
 
         def test_timepoints(self, timepoints, colony):
             assert len(colony.timepoints) == len(timepoints)

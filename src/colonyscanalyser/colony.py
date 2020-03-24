@@ -62,9 +62,13 @@ class Colony(Identified, Named, GrowthCurve):
             self.color_name,
             round_tuple_floats(self.color, 2),
             self.lag_time.total_seconds() // 60,
+            self.lag_time_std.total_seconds() // 60,
             round(self.growth_rate * 60, 5),
+            round(self.growth_rate_std * 60, 7),
             round(self.carrying_capacity, 2),
+            round(self.carrying_capacity_std, 4),
             self.doubling_time.total_seconds() // 60,
+            self.doubling_time_std.total_seconds() // 60,
             self.timepoint_first.timestamp.total_seconds() // 60,
             round(self.timepoint_first.area, 2),
             round(self.timepoint_first.diameter, 2),
@@ -90,7 +94,7 @@ class Colony(Identified, Named, GrowthCurve):
         return rgb_to_name(self.color, color_spec = "css3")
 
     @property
-    def growth_curve_data(self) -> Dict[timedelta, float]:
+    def growth_curve_data(self) -> Dict[timedelta, Union[float, List[float]]]:
         """
         A set of growth measurements over time
 

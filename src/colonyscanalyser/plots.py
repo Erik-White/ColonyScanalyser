@@ -320,13 +320,15 @@ def growth_curve(
     :param scatter_color: a Colormap color
     :param line_color: a Colormap color for the median
     """
+    from statistics import median
+
     if line_color is None:
         line_color = scatter_color
 
     for colony in plate.items:
         ax.scatter(
             # Matplotlib does not yet support timedeltas so we have to convert manually to float
-            [td.total_seconds() / 3600 for td in colony.growth_curve_data.keys()],
+            [td.total_seconds() / 3600 for td in sorted(colony.growth_curve_data.keys())],
             list(colony.growth_curve_data.values()),
             color = scatter_color,
             marker = "o",
@@ -334,10 +336,10 @@ def growth_curve(
             alpha = 0.25
         )
 
-    # Plot the mean
+    # Plot the median
     ax.plot(
         [td.total_seconds() / 3600 for td in sorted(plate.growth_curve_data.keys())],
-        [val for _, val in sorted(plate.growth_curve_data.items())],
+        [median(val) for _, val in sorted(plate.growth_curve_data.items())],
         color = line_color,
         label = f"Plate {plate.id}",
         linewidth = 2

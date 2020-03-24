@@ -66,7 +66,7 @@ class TestPlate():
         def test_iterable(self, plate, colonies):
             plate.items = colonies
 
-            assert len([*plate.__iter__()]) == 11
+            assert len([*plate.__iter__()]) == 15
 
         @pytest.mark.parametrize(
             "colonies, edge_cut, name",
@@ -228,7 +228,7 @@ class TestPlateCollection:
                 reader = list(csv.reader(csvfile))
 
                 assert len(reader) == plates.count + 1
-                assert reader[1] == ["1", "", "(102, 102)", "160", "0", "0", "0", "0.0", "0.0", "0", "0.0"]
+                assert reader[1] == ["1", "", "(102, 102)", "160", "0", "0", "0", "0.0", "0.0", "0.0", "0.0", "0.0", "0.0", "0.0", "0.0"]
 
         def test_slice_plate_image(self, image_circle):
             plates = PlateCollection(shape = (1, 1))

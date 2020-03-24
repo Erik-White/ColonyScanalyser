@@ -1,4 +1,4 @@
-from typing import Any, Optional, Iterable, Dict, List, Tuple
+from typing import Any, Union, Optional, Iterable, Dict, List, Tuple
 from abc import ABC, abstractmethod
 from math import e, exp, log, log10, sqrt
 from datetime import timedelta
@@ -12,8 +12,11 @@ class GrowthCurve(ABC):
         super().__init_subclass__(**kwargs)
 
         cls.__growth_rate = None
+        cls.__growth_rate_std = None
         cls.__carrying_capacity = None
+        cls.__carrying_capacity_std = None
         cls.__lag_time = None
+        cls.__lag_time_std = None
 
     @property
     def carrying_capacity(self) -> float:
@@ -28,6 +31,18 @@ class GrowthCurve(ABC):
             self.fit_growth_curve()
 
         return self.__carrying_capacity
+
+    @property
+    def carrying_capacity_std(self) -> float:
+        """
+        The standard deviation of the maximal population size, A
+
+        :returns: standard deviation of carrying_capacity, in units of log2[area]
+        """
+        if self.__carrying_capacity_std is None:
+            self.fit_growth_curve()
+
+        return self.__carrying_capacity_std
 
     @property
     def doubling_time(self) -> timedelta:
@@ -46,8 +61,22 @@ class GrowthCurve(ABC):
         return timedelta(seconds = doubling)
 
     @property
+    def doubling_time_std(self) -> timedelta:
+        """
+        The standard deviation of the doubling time at the maximal growth rate
+
+        :returns: standard deviation of doubling_time as a timedelta
+        """
+        doubling = 0
+
+        if self.growth_rate_std > 0:
+            doubling = log(2) / self.growth_rate_std
+
+        return timedelta(seconds = doubling)
+
+    @property
     @abstractmethod
-    def growth_curve_data(self) -> Dict[timedelta, float]:
+    def growth_curve_data(self) -> Dict[timedelta, Union[float, List[float]]]:
         """
         A set of growth measurements over time
 
@@ -70,6 +99,18 @@ class GrowthCurve(ABC):
         return self.__growth_rate
 
     @property
+    def growth_rate_std(self) -> float:
+        """
+        The standard deviation of the maximum specific growth rate, μmax
+
+        :returns: the standard deviation of growth_rate, in units of log2[area] / second
+        """
+        if self.__growth_rate_std is None:
+            self.fit_growth_curve()
+
+        return self.__growth_rate_std
+
+    @property
     def lag_time(self) -> timedelta:
         """
         The lag time, λ
@@ -86,6 +127,18 @@ class GrowthCurve(ABC):
         else:
             return self.__lag_time
 
+    @property
+    def lag_time_std(self) -> timedelta:
+        """
+        The standard deviation of the lag time, λ
+
+        :returns: the lag phase of growth as a timedelta
+        """
+        if self.__lag_time_std is None:
+            self.fit_growth_curve()
+
+        return self.__lag_time_std
+
     def fit_growth_curve(self, growth_model: callable = None, initial_params: List[float] = None):
         """
         Fit a parametrized version of the Gompertz function to data
@@ -95,29 +148,43 @@ class GrowthCurve(ABC):
         :param growth_model: optionally specify a different growth model
         :param initial_params: initial estimate of parameters for the growth model
         """
-        from numpy import isinf, sqrt, diag
+        from statistics import median
+        from numpy import errstate, isinf, sqrt, diag, std
 
         if growth_model is None:
             growth_model = self.gompertz
 
         timestamps = [timestamp.total_seconds() for timestamp in sorted(self.growth_curve_data.keys())]
         measurements = [val for _, val in sorted(self.growth_curve_data.items())]
+        measurements_std = None
 
-        carrying_capacity = 0
-        growth_rate = 0
-        lag_time = 0
+        lag_time = 0.0
+        lag_time_std = 0.0
+        growth_rate = 0.0
+        growth_rate_std = 0.0
+        carrying_capacity = 0.0
+        carrying_capacity_std = 0.0
 
-        if len(timestamps) > 0 and len(measurements) > 0:
+        if timestamps and measurements:
+            # Calculate standard deviation
+            if all(isinstance(m, Iterable) for m in measurements):
+                measurements_std = [std(m, axis = 0) for m in measurements]
+                measurements = [median(val) for val in measurements]
+
             if initial_params is None:
                 lag_time, growth_rate, carrying_capacity = GrowthCurve.estimate_parameters(timestamps, measurements)
                 initial_params = [min(measurements), lag_time, growth_rate * 3600, carrying_capacity]
 
-            results = self.__fit_curve(
-                growth_model,
-                timestamps,
-                measurements,
-                initial_params = initial_params
-            )
+            # Suppress divide by zero errors caused by zeroes in sigma values
+            with errstate(divide = "ignore"):
+                results = self.__fit_curve(
+                    growth_model,
+                    timestamps,
+                    measurements,
+                    initial_params = initial_params,
+                    sigma = measurements_std,
+                    absolute_sigma = True
+                )
 
             if results is not None:
                 (_, lag_time, growth_rate, carrying_capacity), conf = results
@@ -125,12 +192,14 @@ class GrowthCurve(ABC):
                 # Calculate standard deviation if results provided
                 if not (isinf(conf)).all():
                     conf = sqrt(diag(conf.clip(min = 0)))
-                else:
-                    conf = None
+                    _, lag_time_std, growth_rate_std, carrying_capacity_std = conf
 
         self.__lag_time = timedelta(seconds = lag_time)
+        self.__lag_time_std = timedelta(seconds = lag_time_std)
         self.__growth_rate = growth_rate / 3600
+        self.__growth_rate_std = growth_rate_std / 3600
         self.__carrying_capacity = carrying_capacity
+        self.__carrying_capacity_std = carrying_capacity_std
 
     @staticmethod
     def estimate_parameters(timestamps: Iterable[float], measurements: Iterable[float], window: int = 10) -> Tuple[float]:
