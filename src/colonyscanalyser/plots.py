@@ -341,7 +341,7 @@ def growth_curve(
         [td.total_seconds() / 3600 for td in sorted(plate.growth_curve.data.keys())],
         [median(val) for _, val in sorted(plate.growth_curve.data.items())],
         color = line_color,
-        label = f"Plate {plate.id}",
+        label = "Median" if growth_params else f"Plate {plate.id}",
         linewidth = 2
     )
 
@@ -511,7 +511,7 @@ def plot_doubling_map(plates: List[Plate], save_path: Path) -> Path:
         origin = "lower"
     )
 
-    plt.xlim(bottom = 0)
+    plt.xlim(left = 0)
     plt.ylim(bottom = 0)
     plt.title("Appearance and doubling time distribution")
 
