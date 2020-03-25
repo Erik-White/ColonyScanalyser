@@ -1,4 +1,5 @@
 import pytest
+from unittest.mock import patch
 from datetime import timedelta
 
 from colonyscanalyser.plate import (
@@ -28,22 +29,36 @@ def plate(request, id, diameter):
 def colonies(request):
     colonies = list()
     for i in range(1, 10):
-        colonies.append(Colony(i))
+        colonies.append(ColonyMock(i))
 
     yield colonies
 
 
-class Colony():
+'''
+class Colony:
     def __init__(self, id):
         self.id = id
         self.timepoints = {str(id): str(id)}
         self.time_of_appearance = timedelta(seconds = id)
-        self.growth_curve_data = {self.time_of_appearance: id}
+        self.growth_curve = object()
+        #self.growth_curve.data = {self.time_of_appearance: id}
 
     def __iter__(self):
         return iter([
             self.id
         ])
+'''
+
+
+def ColonyMock(id):
+    patcher = patch(
+        "colonyscanalyser.colony.Colony",
+        id = id,
+        timepoints = {str(id): str(id)},
+        time_of_appearance = timedelta(seconds = id)
+    )
+
+    return patcher.start()
 
 
 class TestPlate():
