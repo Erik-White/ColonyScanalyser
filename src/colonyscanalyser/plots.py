@@ -328,8 +328,8 @@ def growth_curve(
     for colony in plate.items:
         ax.scatter(
             # Matplotlib does not yet support timedeltas so we have to convert manually to float
-            [td.total_seconds() / 3600 for td in sorted(colony.growth_curve_data.keys())],
-            list(colony.growth_curve_data.values()),
+            [td.total_seconds() / 3600 for td in sorted(colony.growth_curve.data.keys())],
+            list(colony.growth_curve.data.values()),
             color = scatter_color,
             marker = "o",
             s = 1,
@@ -338,8 +338,8 @@ def growth_curve(
 
     # Plot the median
     ax.plot(
-        [td.total_seconds() / 3600 for td in sorted(plate.growth_curve_data.keys())],
-        [median(val) for _, val in sorted(plate.growth_curve_data.items())],
+        [td.total_seconds() / 3600 for td in sorted(plate.growth_curve.data.keys())],
+        [median(val) for _, val in sorted(plate.growth_curve.data.items())],
         color = line_color,
         label = f"Plate {plate.id}",
         linewidth = 2
@@ -347,19 +347,18 @@ def growth_curve(
 
     if growth_params:
         # Plot lag, vmax and carrying capacity lines
-        plate.fit_growth_curve()
-        if plate.lag_time.total_seconds() > 0:
-            line = ax.axvline(plate.lag_time.total_seconds() / 3600, color = "grey", linestyle = "dashed", alpha = 0.5)
+        if plate.growth_curve.lag_time.total_seconds() > 0:
+            line = ax.axvline(plate.growth_curve.lag_time.total_seconds() / 3600, color = "grey", linestyle = "dashed", alpha = 0.5)
             line.set_label("Lag time")
 
-        if plate.carrying_capacity > 0:
-            line = ax.axhline(plate.carrying_capacity, color = "blue", linestyle = "dashed", alpha = 0.5)
+        if plate.growth_curve.carrying_capacity > 0:
+            line = ax.axhline(plate.growth_curve.carrying_capacity, color = "blue", linestyle = "dashed", alpha = 0.5)
             line.set_label("Carrying\ncapacity")
 
-        if plate.growth_rate > 0:
-            y0, y1 = 0, plate.carrying_capacity
-            x0 = plate.lag_time.total_seconds() / 3600
-            x1 = ((y1 - y0) / (plate.growth_rate * 3600)) + x0
+        if plate.growth_curve.growth_rate > 0:
+            y0, y1 = 0, plate.growth_curve.carrying_capacity
+            x0 = plate.growth_curve.lag_time.total_seconds() / 3600
+            x1 = ((y1 - y0) / (plate.growth_curve.growth_rate * 3600)) + x0
             ax.plot([x0, x1], [y0, y1], color = "red", linestyle = "dashed", alpha = 0.5, label = "Maximum\ngrowth rate")
 
 
@@ -494,7 +493,7 @@ def plot_doubling_map(plates: List[Plate], save_path: Path) -> Path:
         if not plate.count > 0:
             return
         x.extend([colony.time_of_appearance.total_seconds() / 3600 for colony in plate.items])
-        y.extend([colony.doubling_time.total_seconds() / 60 for colony in plate.items])
+        y.extend([colony.growth_curve.doubling_time.total_seconds() / 60 for colony in plate.items])
 
     # Normalise
     weights = zeros_like(x) + 1. / len(x)

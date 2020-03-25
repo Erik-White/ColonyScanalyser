@@ -50,14 +50,14 @@ class Plate(GrowthCurve, Identified, IdentifiedCollection, Named, Circle):
             self.edge_cut,
             self.count,
             median(appearance),
-            self.lag_time.total_seconds() // 60,
-            self.lag_time_std.total_seconds() // 60,
-            round(self.growth_rate * 60, 5),
-            round(self.growth_rate_std * 60, 7),
-            round(self.carrying_capacity, 2),
-            round(self.carrying_capacity_std, 4),
-            self.doubling_time.total_seconds() // 60,
-            self.doubling_time_std.total_seconds() // 60
+            self.growth_curve.lag_time.total_seconds() // 60,
+            self.growth_curve.lag_time_std.total_seconds() // 60,
+            round(self.growth_curve.growth_rate * 60, 5),
+            round(self.growth_curve.growth_rate_std * 60, 7),
+            round(self.growth_curve.carrying_capacity, 2),
+            round(self.growth_curve.carrying_capacity_std, 4),
+            self.growth_curve.doubling_time.total_seconds() // 60,
+            self.growth_curve.doubling_time_std.total_seconds() // 60
         ])
 
     @property
@@ -77,15 +77,17 @@ class Plate(GrowthCurve, Identified, IdentifiedCollection, Named, Circle):
         self.__edge_cut = val
 
     @property
-    def growth_curve_data(self) -> Dict[timedelta, Union[float, List[float]]]:
+    def _growth_curve_data(self) -> Dict[timedelta, Union[float, List[float]]]:
         """
         A set of growth measurements over time
+
+        Provides data for growth_curve.fit_curve
 
         :returns: a dictionary of measurements at time intervals
         """
         from .utilities import dicts_merge
 
-        return dicts_merge([colony.growth_curve_data for colony in self.items])
+        return dicts_merge([colony.growth_curve.data for colony in self.items])
 
     def colonies_to_csv(self, save_path: Path, headers: List[str] = None) -> Path:
         """

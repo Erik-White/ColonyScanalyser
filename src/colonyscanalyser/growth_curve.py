@@ -11,12 +11,45 @@ class GrowthCurve(ABC):
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
 
-        cls.__growth_rate = None
-        cls.__growth_rate_std = None
-        cls.__carrying_capacity = None
-        cls.__carrying_capacity_std = None
-        cls.__lag_time = None
-        cls.__lag_time_std = None
+        cls._growth_curve = None
+
+    @property
+    def growth_curve(self) -> "GrowthCurveModel":
+        if self._growth_curve is None:
+            # Pass the parent instance to allow access to _growth_curve_data
+            self._growth_curve = GrowthCurveModel(parent = self)
+
+        return self._growth_curve
+
+    @property
+    @abstractmethod
+    def _growth_curve_data(self) -> Dict[timedelta, Union[float, List[float]]]:
+        """
+        A set of growth measurements over time
+
+        Provides data for GrowthCurveModel.fit_curve
+
+        :returns: a dictionary of measurements at time intervals
+        """
+        raise NotImplementedError("This property must be implemented in a derived class")
+
+
+class GrowthCurveModel:
+    """
+    Provides growth curve fitting and parameters for GrowthCurve
+    """
+    def __init__(self, parent: GrowthCurve):
+        if not isinstance(parent, GrowthCurve):
+            raise ValueError(f"The enclosing class must be an instance of GrowthCurve, not {type(parent)}")
+        self._parent = parent
+
+        self._model = None
+        self._growth_rate = None
+        self._growth_rate_std = None
+        self._carrying_capacity = None
+        self._carrying_capacity_std = None
+        self._lag_time = None
+        self._lag_time_std = None
 
     @property
     def carrying_capacity(self) -> float:
@@ -27,10 +60,10 @@ class GrowthCurve(ABC):
 
         :returns: the maximal colony area, in units of log2[area]
         """
-        if self.__carrying_capacity is None:
-            self.fit_growth_curve()
+        if self._carrying_capacity is None:
+            self.fit_curve()
 
-        return self.__carrying_capacity
+        return self._carrying_capacity
 
     @property
     def carrying_capacity_std(self) -> float:
@@ -39,10 +72,10 @@ class GrowthCurve(ABC):
 
         :returns: standard deviation of carrying_capacity, in units of log2[area]
         """
-        if self.__carrying_capacity_std is None:
-            self.fit_growth_curve()
+        if self._carrying_capacity_std is None:
+            self.fit_curve()
 
-        return self.__carrying_capacity_std
+        return self._carrying_capacity_std
 
     @property
     def doubling_time(self) -> timedelta:
@@ -75,14 +108,13 @@ class GrowthCurve(ABC):
         return timedelta(seconds = doubling)
 
     @property
-    @abstractmethod
-    def growth_curve_data(self) -> Dict[timedelta, Union[float, List[float]]]:
+    def data(self) -> Dict[timedelta, Union[float, List[float]]]:
         """
         A set of growth measurements over time
 
         :returns: a dictionary of measurements at time intervals
         """
-        raise NotImplementedError("This property must be implemented in a derived class")
+        return self._parent._growth_curve_data
 
     @property
     def growth_rate(self) -> float:
@@ -93,10 +125,10 @@ class GrowthCurve(ABC):
 
         :returns: the maximal growth rate in units of log2[area] / second
         """
-        if self.__growth_rate is None:
-            self.fit_growth_curve()
+        if self._growth_rate is None:
+            self.fit_curve()
 
-        return self.__growth_rate
+        return self._growth_rate
 
     @property
     def growth_rate_std(self) -> float:
@@ -105,10 +137,10 @@ class GrowthCurve(ABC):
 
         :returns: the standard deviation of growth_rate, in units of log2[area] / second
         """
-        if self.__growth_rate_std is None:
-            self.fit_growth_curve()
+        if self._growth_rate_std is None:
+            self.fit_curve()
 
-        return self.__growth_rate_std
+        return self._growth_rate_std
 
     @property
     def lag_time(self) -> timedelta:
@@ -119,13 +151,13 @@ class GrowthCurve(ABC):
 
         :returns: the lag phase of growth as a timedelta
         """
-        if self.__lag_time is None:
-            self.fit_growth_curve()
+        if self._lag_time is None:
+            self.fit_curve()
 
-        if self.__lag_time.total_seconds() < 0:
+        if self._lag_time.total_seconds() < 0:
             return timedelta(seconds = 0)
         else:
-            return self.__lag_time
+            return self._lag_time
 
     @property
     def lag_time_std(self) -> timedelta:
@@ -134,28 +166,42 @@ class GrowthCurve(ABC):
 
         :returns: the lag phase of growth as a timedelta
         """
-        if self.__lag_time_std is None:
-            self.fit_growth_curve()
+        if self._lag_time_std is None:
+            self.fit_curve()
 
-        return self.__lag_time_std
+        return self._lag_time_std
 
-    def fit_growth_curve(self, growth_model: callable = None, initial_params: List[float] = None):
+    @property
+    def model(self) -> callable:
         """
-        Fit a parametrized version of the Gompertz function to data
+        A three parameter growth model to be used by fit_curve
 
-        Ref: Modeling of the Bacterial Growth Curve, Zwietering et al 1990
+        Defaults to the Gompertz function
 
-        :param growth_model: optionally specify a different growth model
+        :returns: a growth model function
+        """
+        if self._model is None:
+            self._model = self._gompertz
+
+        return self._model
+
+    @model.setter
+    def model(self, val: callable):
+        self._model = val
+
+    def fit_curve(self, initial_params: List[float] = None):
+        """
+        Fit a growth model to data
+
+        Growth data must be provided by _growth_curve_data in the implementing class
+
         :param initial_params: initial estimate of parameters for the growth model
         """
         from statistics import median
         from numpy import errstate, isinf, sqrt, diag, std
 
-        if growth_model is None:
-            growth_model = self.gompertz
-
-        timestamps = [timestamp.total_seconds() for timestamp in sorted(self.growth_curve_data.keys())]
-        measurements = [val for _, val in sorted(self.growth_curve_data.items())]
+        timestamps = [timestamp.total_seconds() for timestamp in sorted(self.data.keys())]
+        measurements = [val for _, val in sorted(self.data.items())]
         measurements_std = None
 
         lag_time = 0.0
@@ -172,13 +218,13 @@ class GrowthCurve(ABC):
                 measurements = [median(val) for val in measurements]
 
             if initial_params is None:
-                lag_time, growth_rate, carrying_capacity = GrowthCurve.estimate_parameters(timestamps, measurements)
+                lag_time, growth_rate, carrying_capacity = self.estimate_parameters(timestamps, measurements)
                 initial_params = [min(measurements), lag_time, growth_rate * 3600, carrying_capacity]
 
             # Suppress divide by zero errors caused by zeroes in sigma values
             with errstate(divide = "ignore"):
-                results = self.__fit_curve(
-                    growth_model,
+                results = self._fit_curve(
+                    self.model,
                     timestamps,
                     measurements,
                     initial_params = initial_params,
@@ -194,12 +240,12 @@ class GrowthCurve(ABC):
                     conf = sqrt(diag(conf.clip(min = 0)))
                     _, lag_time_std, growth_rate_std, carrying_capacity_std = conf
 
-        self.__lag_time = timedelta(seconds = lag_time)
-        self.__lag_time_std = timedelta(seconds = lag_time_std)
-        self.__growth_rate = growth_rate / 3600
-        self.__growth_rate_std = growth_rate_std / 3600
-        self.__carrying_capacity = carrying_capacity
-        self.__carrying_capacity_std = carrying_capacity_std
+        self._lag_time = timedelta(seconds = lag_time)
+        self._lag_time_std = timedelta(seconds = lag_time_std)
+        self._growth_rate = growth_rate / 3600
+        self._growth_rate_std = growth_rate_std / 3600
+        self._carrying_capacity = carrying_capacity
+        self._carrying_capacity_std = carrying_capacity_std
 
     @staticmethod
     def estimate_parameters(timestamps: Iterable[float], measurements: Iterable[float], window: int = 10) -> Tuple[float]:
@@ -250,7 +296,7 @@ class GrowthCurve(ABC):
         slopes = list()
         for i in range(inflection, len(timestamps) - window):
             # Find the slope at the exponential growth phase over a sliding window
-            slope, intercept, *__ = linregress(timestamps[i: i + window], measurements[i: i + window])
+            slope, intercept, *_ = linregress(timestamps[i: i + window], measurements[i: i + window])
             slopes.append((slope, intercept))
 
         if len(slopes) > 0:
@@ -263,7 +309,7 @@ class GrowthCurve(ABC):
         return lag_time, growth_rate, carrying_capacity
 
     @staticmethod
-    def gompertz(
+    def _gompertz(
         elapsed_time: float,
         initial_size: float,
         lag_time: float,
@@ -297,7 +343,7 @@ class GrowthCurve(ABC):
             return 0
 
     @staticmethod
-    def __fit_curve(
+    def _fit_curve(
         curve_function: callable,
         timestamps: List[float],
         measurements: List[float],

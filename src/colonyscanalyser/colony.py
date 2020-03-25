@@ -61,14 +61,14 @@ class Colony(Identified, Named, GrowthCurve):
             round_tuple_floats(self.center, 2),
             self.color_name,
             round_tuple_floats(self.color, 2),
-            self.lag_time.total_seconds() // 60,
-            self.lag_time_std.total_seconds() // 60,
-            round(self.growth_rate * 60, 5),
-            round(self.growth_rate_std * 60, 7),
-            round(self.carrying_capacity, 2),
-            round(self.carrying_capacity_std, 4),
-            self.doubling_time.total_seconds() // 60,
-            self.doubling_time_std.total_seconds() // 60,
+            self.growth_curve.lag_time.total_seconds() // 60,
+            self.growth_curve.lag_time_std.total_seconds() // 60,
+            round(self.growth_curve.growth_rate * 60, 5),
+            round(self.growth_curve.growth_rate_std * 60, 7),
+            round(self.growth_curve.carrying_capacity, 2),
+            round(self.growth_curve.carrying_capacity_std, 4),
+            self.growth_curve.doubling_time.total_seconds() // 60,
+            self.growth_curve.doubling_time_std.total_seconds() // 60,
             self.timepoint_first.timestamp.total_seconds() // 60,
             round(self.timepoint_first.area, 2),
             round(self.timepoint_first.diameter, 2),
@@ -92,15 +92,6 @@ class Colony(Identified, Named, GrowthCurve):
     @property
     def color_name(self) -> str:
         return rgb_to_name(self.color, color_spec = "css3")
-
-    @property
-    def growth_curve_data(self) -> Dict[timedelta, Union[float, List[float]]]:
-        """
-        A set of growth measurements over time
-
-        :returns: a dictionary of measurements at time intervals
-        """
-        return {timepoint.timestamp: log2(timepoint.area) for timepoint in self.timepoints}
 
     @property
     def timepoints(self):
@@ -129,6 +120,17 @@ class Colony(Identified, Named, GrowthCurve):
     @property
     def time_of_appearance(self) -> timedelta:
         return self.timepoint_first.timestamp
+
+    @property
+    def _growth_curve_data(self) -> Dict[timedelta, Union[float, List[float]]]:
+        """
+        A set of growth measurements over time
+
+        Provides data for growth_curve.fit_curve
+
+        :returns: a dictionary of measurements at time intervals
+        """
+        return {timepoint.timestamp: log2(timepoint.area) for timepoint in self.timepoints}
 
     def append_timepoint(self, timepoint: Timepoint):
         """
