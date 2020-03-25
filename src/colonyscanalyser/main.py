@@ -309,6 +309,8 @@ def main():
             plate.items = list(filter(lambda colony:
                 # Remove objects that do not have sufficient data points, usually just noise
                 len(colony.timepoints) > image_files.count * 0.2 and
+                # Remove object that do not show growth, these are not colonies
+                colony.timepoint_last.area > 2 * colony.timepoint_first.area and
                 # Colonies that appear with a large initial area are most likely merged colonies, not new colonies
                 colony.timepoint_first.area < 50,
                 plate.items
