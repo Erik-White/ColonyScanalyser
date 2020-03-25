@@ -4,14 +4,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.4.0] - 2020-02-26
+## [0.4.0] - 2020-03-26
 ### Added
 - `plate_labels` command line argument
 - `base` module with base classes to provide core functionality throughout the package
 - `geometry` module with base shape classes
 - `plate` module with `Plate` and `PlateCollection` classes
 - `image_file` module with `ImageFile` and `ImageFileCollection` classes
+- `growth_curve` module to provide curve fitting and parameters
 - `plot_plate_images_animation` outputs animated gifs for each plate in two sizes
+- Output a summary of plate properties to `plates_summary.csv`
 - Full type hinting for all modules
 ### Changed
 - Extended compatibility to Python 3.8
@@ -21,6 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `save_plots` command line argument renamed to `plots`
 - Refactored most of the functions from `main` as static methods in the `plate` or `image_file` modules
 - Improved flexibility when detecting date and time stamp information in file names
+- Replaced growth properties in `Colony`, now implemented as `growth_curve.GrowthCurveModel`
+- Modified plots to use new `GrowthCurveModel` properties
 ### Fixed
 - A rare error when opening images using skimage.io.imread
 - Corrected default DPI settings and conversion factor
