@@ -6,11 +6,11 @@ An image analysis tool for measuring microorganism colony growth.
 
 ColonyScanalyser will analyse and collate statistical data from agar plate images. It provides fast, high-throughput image processing.
 
-<img align="right" src="docs/images/growth_curve_small.png">
+<img align="right" src="docs/images/growth_curve_linear_small.png">
 
 ColonyScanalyser can provide information on:
 * Colony appearance time
-* Colony growth over time
+* Growth parameters (lag time, rate, carrying capacity)
 * Growth and appearance time distribution
 * Colony colour (e.g. staining or other visual indicators)
 

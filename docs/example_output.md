@@ -20,7 +20,7 @@ A 'map' of the identified plates and colonies will be output to show how they ha
 At the default level, a few comparison plots are output to the `plots` folder in your image folder. Theses allow quick verification and comparison of the data.
 
 Increasing the level of `plots` will output plots for each individual plate.
-<img align="right" src="../images/time_of_appearance_small.png">
+<img align="right" src="../images/time_of_appearance_bar_small.png">
 
 At the highest level of `plots`, a separate animated gif image of each plate is output. This may be useful for viewing the progression of colonies through their growth period, as well as for comparing growth in differing plate conditions.
 
@@ -29,7 +29,9 @@ Only the measured plate area is shown in the animations. The area defined by `pl
 ## Data
 All the data gathered during analysis is output to the `data` folder in your images folder. Data is output as CSV files which is compatible with almost all data packages.
 
-The data is collated in two files for each plate, one with aggregate data for each colony and another with colony data at every image time point:
+Summarised data of all plates is saved as `plates_summary.csv`
+
+Additionally, data is collated in two files for each plate, one with aggregate data for each colony and another with colony data at every image time point:
 
 ```
 plate1_colonies.csv

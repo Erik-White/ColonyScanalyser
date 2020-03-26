@@ -1,13 +1,12 @@
 from typing import Dict, List, Tuple
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
-from numpy import ndarray
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from matplotlib.axes import Axes
+from numpy import ndarray
 
-from .utilities import average_dicts_values_by_key
-from .plotting import rc_to_xy, axis_minutes_to_hours
+from .plotting import rc_to_xy
 from .plate import Plate, PlateCollection
 from .image_file import ImageFile, ImageFileCollection
 
@@ -259,29 +258,35 @@ def plot_plate_images_animation(
         return save_paths
 
 
-def plot_growth_curve(plates: List[Plate], time_points_elapsed: List[int], save_path: Path) -> Path:
+def plot_growth_curve(plates: List[Plate], save_path: Path) -> Path:
     """
     Growth curves for either a single plate, or all plates on the lattice
 
     :param plates: a list of Plate instances
-    :param time_points_elapsed: a list of elapsed time values
     :param save_path: the directory to save the plot image
     :returns: a file path object if the plot was saved sucessfully
     """
     _, ax = plt.subplots()
     colormap = cm.get_cmap("plasma")
+    growth_params = True
 
     for plate in plates:
         if len(plates) > 1:
             # Get a color from the colourmap
             cm_scatter = colormap(0.2 + (0.65 - 0.2) * (plate.id / len(plates)))
             cm_line = None
+            growth_params = False
         else:
             cm_scatter = "Mediumpurple"
             cm_line = "Purple"
 
         # Add the growth curve plot for this plate
-        growth_curve(ax, plate, time_points_elapsed, cm_scatter, cm_line)
+        growth_curve(ax, plate, cm_scatter, cm_line, growth_params = growth_params)
+
+    ax.set_xlabel("Elapsed time (hours)")
+    ax.set_xlim(0)
+    ax.set_ylabel("log2[Colony area]")
+    ax.set_ylim(0)
 
     lgd = ax.legend(loc = 'center right', fontsize = 8, bbox_to_anchor = (1.25, 0.5))
     save_params = {
@@ -303,82 +308,88 @@ def plot_growth_curve(plates: List[Plate], time_points_elapsed: List[int], save_
 def growth_curve(
     ax: Axes,
     plate: Plate,
-    time_points_elapsed: List[int],
     scatter_color: str,
-    line_color: str = None
+    line_color: str = None,
+    growth_params: bool = True
 ):
     """
-    Add a growth curve scatter plot, with mean, to an axis
+    Add a growth curve scatter plot, with median, to an axis
 
     :param ax: a Matplotlib Axes object to add a plot to
     :param plate: a Plate instance
-    :param time_points_elapsed: a list of elapsed time values
     :param scatter_color: a Colormap color
-    :param line_color: a Colormap color
+    :param line_color: a Colormap color for the median
     """
-    areas_average = list()
+    from statistics import median
 
     if line_color is None:
         line_color = scatter_color
 
     for colony in plate.items:
-        # Map areas to a dictionary of all timepoints
-        time_points_dict = dict.fromkeys(time_points_elapsed)
-        for timepoint in colony.timepoints.values():
-            time_points_dict[timepoint.elapsed_minutes] = timepoint.area
-
-        # Store dictionary for averaging, keeping only elements with a value
-        areas_average.append(dict(filter(lambda elem: elem[1] is not None, time_points_dict.items())))
-
-        # Use zip to return a sorted list of tuples (key, value) from the dictionary
         ax.scatter(
-            *zip(*sorted(time_points_dict.items())),
+            # Matplotlib does not yet support timedeltas so we have to convert manually to float
+            [td.total_seconds() / 3600 for td in sorted(colony.growth_curve.data.keys())],
+            list(colony.growth_curve.data.values()),
             color = scatter_color,
             marker = "o",
             s = 1,
             alpha = 0.25
         )
 
-    # Plot the mean
-    areas_averages = average_dicts_values_by_key(areas_average)
+    # Plot the median
     ax.plot(
-        *zip(*sorted(areas_averages.items())),
+        [td.total_seconds() / 3600 for td in sorted(plate.growth_curve.data.keys())],
+        [median(val) for _, val in sorted(plate.growth_curve.data.items())],
         color = line_color,
-        label = f"Plate {plate.id}",
+        label = "Median" if growth_params else f"Plate {plate.id}",
         linewidth = 2
     )
 
-    # Format x-axis labels as integer hours
-    ax.set_xticklabels(axis_minutes_to_hours(ax.get_xticks()))
-    ax.set_xlabel("Elapsed time (hours)")
-    ax.set_ylabel("Colony area (pixels)")
+    if growth_params:
+        # Plot lag, vmax and carrying capacity lines
+        if plate.growth_curve.lag_time.total_seconds() > 0:
+            line = ax.axvline(plate.growth_curve.lag_time.total_seconds() / 3600, color = "grey", linestyle = "dashed", alpha = 0.5)
+            line.set_label("Lag time")
+
+        if plate.growth_curve.carrying_capacity > 0:
+            line = ax.axhline(plate.growth_curve.carrying_capacity, color = "blue", linestyle = "dashed", alpha = 0.5)
+            line.set_label("Carrying\ncapacity")
+
+        if plate.growth_curve.growth_rate > 0:
+            y0, y1 = 0, plate.growth_curve.carrying_capacity
+            x0 = plate.growth_curve.lag_time.total_seconds() / 3600
+            x1 = ((y1 - y0) / (plate.growth_curve.growth_rate * 3600)) + x0
+            ax.plot([x0, x1], [y0, y1], color = "red", linestyle = "dashed", alpha = 0.5, label = "Maximum\ngrowth rate")
 
 
-def plot_appearance_frequency(plates: List[Plate], time_points_elapsed, save_path, bar = False) -> Path:
+def plot_appearance_frequency(plates: List[Plate], save_path: str, timestamps: List[timedelta] = None, bar = False) -> Path:
     """
     Time of appearance frequency for either a single plate, or all plates on the lattice
 
     :param plates: a list of Plate instances
-    :param time_points_elapsed: a list of elapsed time values
     :param save_path: the directory to save the plot image
+    :param timestamps: a list of timedeltas used to rescale the plot
     :param bar: if a bar plot should be used instead of the default line plot
     :returns: a file path object if the plot was saved sucessfully
     """
     _, ax = plt.subplots()
     colormap = cm.get_cmap("plasma")
+    figures = list()
+
+    if len(plates) == 1 and not plates[0].count > 0:
+        return
 
     for plate in plates:
+        if not plate.count > 0:
+            continue
         if len(plates) > 1:
             # Get a color from the colourmap
             cm_plate = colormap(0.2 + (0.65 - 0.2) * (plate.id / len(plates)))
-            plot_total = len(plates)
         else:
             cm_plate = "Purple"
-            plot_total = None
 
-        if not plate.count < 1:
-            # Plot frequency for each time point
-            time_of_appearance_frequency(ax, plate, time_points_elapsed, cm_plate, plot_total, bar = bar)
+        # Plot frequency for each time point
+        figures.extend(time_of_appearance_frequency(ax, plate, cm_plate, timestamps = timestamps, bar = bar))
 
     lgd = ax.legend(loc = 'center right', fontsize = 8, bbox_to_anchor = (1.25, 0.5))
     save_params = {
@@ -387,7 +398,15 @@ def plot_appearance_frequency(plates: List[Plate], time_points_elapsed, save_pat
         "bbox_inches": "tight"
     }
 
-    plt.ylim(ymin = 0)
+    alpha = 1 / (0.25 * len(plates))
+    if alpha > 1:
+        alpha = 0.8
+    for item in figures:
+        item.set_alpha(alpha)
+
+    plt.ylim(bottom = 0)
+    if timestamps is not None:
+        plt.xlim(min(timestamps).total_seconds() / 3600, max(timestamps).total_seconds() / 3600)
     plt.title("Time of appearance")
     if bar:
         save_name = "time_of_appearance_bar.png"
@@ -407,69 +426,58 @@ def plot_appearance_frequency(plates: List[Plate], time_points_elapsed, save_pat
 def time_of_appearance_frequency(
     ax: Axes,
     plate: Plate,
-    time_points_elapsed: List[int],
     plot_color: str,
-    plot_total: int = None,
+    timestamps: List[timedelta] = None,
     bar: bool = False
-):
+) -> List:
     """
     Add a time of appearance frequency bar or line plot to an axis
 
     :param ax: a Matplotlib Axes object to add a plot to
     :param plate: a Plate instance
-    :param time_points_elapsed: a list of elapsed time values
     :param plot_color: a Colormap color
-    :param plot_total: the total number of plots on the Axes
+    :param timestamps: a list of timedeltas used to rescale the plot
     :param bar: if a bar plot should be used instead of the default line plot
+    :returns: either a list of matplotlib.lines.Line2D or matplotlib.patches.Rectangle objects
     """
-    time_points_dict = dict()
-    for colony in plate.items:
-        key = colony.timepoint_first.elapsed_minutes
-        if key not in time_points_dict:
-            time_points_dict[key] = 0
-        time_points_dict[key] += 1
+    from collections import Counter
+
+    timestamps = dict.fromkeys([timestamp.total_seconds() / 3600 for timestamp in timestamps], 0)
+    appearance_counts = Counter(colony.time_of_appearance for colony in plate.items)
 
     # Normalise counts to frequency
-    time_points_dict = {key: value / len(time_points_dict) for key, value in time_points_dict.items()}
+    appearance_counts = {
+        timestamp.total_seconds() / 3600: count / sum(appearance_counts.values())
+        for timestamp, count in appearance_counts.items()
+    }
 
-    if not bar:
-        ax.plot(
-            *zip(*sorted(time_points_dict.items())),
-            color = plot_color,
-            label = f"Plate {plate.id}",
-            alpha = 0.9
-        )
-    else:
-        if plot_total is not None:
-            width = plot_total + 1
-            # Offset x positions so bars aren't obscured
-            x = [x + ((plate.id - 1) * width) for x in sorted(time_points_dict.keys())]
-        else:
-            width = 14
-            x = [x for x in sorted(time_points_dict.keys())]
+    # Merge counts into default values dictionary
+    appearance_counts = {**timestamps, **appearance_counts}
 
-        y = [time_points_dict[key] for key in sorted(time_points_dict.keys())]
-
-        ax.bar(
-            x,
-            y,
-            width = width,
-            color = plot_color,
-            label = f"Plate {plate.id}"
-        )
-
-    # Format x-axis labels as integer hours
-    ax.set_xticklabels(axis_minutes_to_hours(ax.get_xticks()))
     ax.set_xlabel("Elapsed time (hours)")
     ax.set_ylabel("Frequency")
 
+    if bar:
+        return ax.bar(
+            *zip(*sorted(appearance_counts.items())),
+            color = plot_color,
+            label = f"Plate {plate.id}",
+            alpha = 0.8
+        )
+    else:
+        return ax.plot(
+            *zip(*sorted(appearance_counts.items())),
+            color = plot_color,
+            label = f"Plate {plate.id}",
+            alpha = 0.8
+        )
 
-def plot_doubling_map(plates: List[Plate], time_points_elapsed: List[int], save_path: Path) -> Path:
+
+def plot_doubling_map(plates: List[Plate], save_path: Path) -> Path:
     """
     Heatmap of doubling time vs time of appearance
 
     :param plates: a list of Plate instances
-    :param time_points_elapsed: a list of elapsed time values
     :param save_path: the directory to save the plot image
     :returns: a file path object if the plot was saved sucessfully
     """
@@ -482,9 +490,10 @@ def plot_doubling_map(plates: List[Plate], time_points_elapsed: List[int], save_
     y = [0]
 
     for plate in plates:
-        for colony in plate.items:
-            x.append(colony.timepoint_first.elapsed_minutes)
-            y.append(colony.get_doubling_time_average(elapsed_minutes = True))
+        if not plate.count > 0:
+            return
+        x.extend([colony.time_of_appearance.total_seconds() / 3600 for colony in plate.items])
+        y.extend([colony.growth_curve.doubling_time.total_seconds() / 60 for colony in plate.items])
 
     # Normalise
     weights = zeros_like(x) + 1. / len(x)
@@ -497,12 +506,13 @@ def plot_doubling_map(plates: List[Plate], time_points_elapsed: List[int], save_
     img = plt.imshow(
         heatmap,
         cmap = "RdPu",
+        aspect = "auto",
         extent = extent,
         origin = "lower"
     )
 
-    plt.xlim(xmin = 0)
-    plt.ylim(ymin = 0)
+    plt.xlim(left = 0)
+    plt.ylim(bottom = 0)
     plt.title("Appearance and doubling time distribution")
 
     # Add a divider so the colorbar will match the plot size
@@ -511,10 +521,8 @@ def plot_doubling_map(plates: List[Plate], time_points_elapsed: List[int], save_
     cb = plt.colorbar(img, cax)
     cb.set_label('Frequency')
 
-    ax.set_xticklabels(axis_minutes_to_hours(ax.get_xticks()))
-    ax.set_yticklabels(axis_minutes_to_hours(ax.get_yticks()))
     ax.set_xlabel("Time of appearance (hours)")
-    ax.set_ylabel("Average doubling time (hours)")
+    ax.set_ylabel("Doubling time (minutes)")
 
     plt.tight_layout()
 

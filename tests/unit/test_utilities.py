@@ -3,8 +3,9 @@ import pytest
 from colonyscanalyser.utilities import (
     round_tuple_floats,
     progress_bar,
-    average_dicts_values_by_key,
-    average_median_dicts_values_by_key
+    dicts_merge,
+    dicts_mean,
+    dicts_median
 )
 
 
@@ -61,72 +62,64 @@ class TestProgressBar():
         assert captured.out[slice(-len(message) - 1, -1, 1)] == message
 
 
-class TestAverageDictsByKeys():
-    @pytest.fixture(
-        params = [[{
-            "key1": 5,
-            "key2": 1,
-            "key3": 0,
-            "key4": -1
-        }, {
-            "key1": 10,
-            "key2": 2,
-            "key3": 0,
-            "key4": 1,
-            "key5": 100
-        }]])
-    def dicts(self, request):
-        yield request.param
+class TestDictsMerge():
+    @pytest.mark.parametrize(
+        "dicts, expected",
+        [
+            ([{"one": 1}], {"one": [1]}),
+            ([{"one": 1}, {"one": 1, "two": 2}], {"one": [1, 1], "two": [2]}),
+            ([{"one": 1, "two": 0.0}, {"three": 1}], {"one": [1], "two": [0.0], "three": [1]}),
+        ]
+    )
+    def test_values(self, dicts, expected):
+        assert dicts_merge(dicts) == expected
 
-    @pytest.fixture(
-        params = [{
-            "key1": 7.5,
-            "key2": 1.5,
-            "key3": 0,
-            "key4": 0,
-            "key5": 100
-        }])
-    def dicts_averaged(self, request):
-        yield request.param
-
-    def test_average(self, dicts, dicts_averaged):
-        print(average_dicts_values_by_key(dicts))
-        assert average_dicts_values_by_key(dicts) == dicts_averaged
+    @pytest.mark.parametrize(
+        "dicts, expected",
+        [
+            ([{"one": "one"}], {"one": ["one"]}),
+            ([{"one": [1, 2]}, {"one": [3], "two": 2}], {"one": [1, 2, 3], "two": [2]}),
+            ([{"one": 1, "three": 0.0}, {"three": [1, 2]}, {"three": [[1], 3]}], {"one": [1], "three": [0.0, 1, 2, [1], 3]})
+        ]
+    )
+    def test_iterables(self, dicts, expected):
+        assert dicts_merge(dicts) == expected
 
     def test_empty_dicts(self):
-        assert average_dicts_values_by_key([{}, {}]) == {}
+        assert dicts_merge([{}, {}]) == {}
 
 
-class TestAverageMedianDictsByKeys():
-    @pytest.fixture(
-        params = [[{
-            "key1": 5,
-            "key2": 1,
-            "key3": 0,
-            "key4": -1
-        }, {
-            "key1": 10,
-            "key2": 2,
-            "key3": 0,
-            "key4": 1,
-            "key5": 100
-        }]])
-    def dicts(self, request):
-        yield request.param
-
-    @pytest.fixture(
-        params = [{
-            "key1": 7.5,
-            "key2": 1.5,
-            "key3": 0,
-            "key4": 0,
-            "key5": 100
-        }])
-    def dicts_averaged(self, request):
-        yield request.param
-
-    def test_average(self, dicts, dicts_averaged):
-        assert average_median_dicts_values_by_key(dicts) == dicts_averaged
+class TestDictsMean():
+    @pytest.mark.parametrize(
+        "dicts, expected",
+        [(
+            [
+                {"key1": 5, "key2": 1, "key3": 0, "key4": -1},
+                {"key1": 10, "key2": 2, "key3": 0, "key4": 1.0, "key5": 100}
+            ],
+            {"key1": 7.5, "key2": 1.5, "key3": 0, "key4": 0, "key5": 100}
+        )]
+    )
+    def test_average(self, dicts, expected):
+        assert dicts_mean(dicts) == expected
 
     def test_empty_dicts(self):
-        assert average_median_dicts_values_by_key([{}, {}]) == {}
+        assert dicts_mean([{}, {}]) == {}
+
+
+class TestDictsMedian():
+    @pytest.mark.parametrize(
+        "dicts, expected",
+        [(
+            [
+                {"key1": 5, "key2": 1, "key3": 0, "key4": -1},
+                {"key1": 10, "key2": 2, "key3": 0, "key4": 1.0, "key5": 100}
+            ],
+            {"key1": 7.5, "key2": 1.5, "key3": 0, "key4": 0, "key5": 100}
+        )]
+    )
+    def test_average(self, dicts, expected):
+        assert dicts_median(dicts) == expected
+
+    def test_empty_dicts(self):
+        assert dicts_median([{}, {}]) == {}

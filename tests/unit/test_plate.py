@@ -1,4 +1,6 @@
 import pytest
+from unittest.mock import patch
+from datetime import timedelta
 
 from colonyscanalyser.plate import (
     Plate,
@@ -27,20 +29,36 @@ def plate(request, id, diameter):
 def colonies(request):
     colonies = list()
     for i in range(1, 10):
-        colonies.append(Colony(i))
+        colonies.append(ColonyMock(i))
 
     yield colonies
 
 
-class Colony():
+'''
+class Colony:
     def __init__(self, id):
         self.id = id
         self.timepoints = {str(id): str(id)}
+        self.time_of_appearance = timedelta(seconds = id)
+        self.growth_curve = object()
+        #self.growth_curve.data = {self.time_of_appearance: id}
 
     def __iter__(self):
         return iter([
             self.id
         ])
+'''
+
+
+def ColonyMock(id):
+    patcher = patch(
+        "colonyscanalyser.colony.Colony",
+        id = id,
+        timepoints = {str(id): str(id)},
+        time_of_appearance = timedelta(seconds = id)
+    )
+
+    return patcher.start()
 
 
 class TestPlate():
@@ -60,8 +78,10 @@ class TestPlate():
                 Plate(id, diameter)
 
     class TestProperties():
-        def test_iterable(self, plate):
-            assert len([*plate.__iter__()]) == 7
+        def test_iterable(self, plate, colonies):
+            plate.items = colonies
+
+            assert len([*plate.__iter__()]) == 15
 
         @pytest.mark.parametrize(
             "colonies, edge_cut, name",
@@ -202,13 +222,28 @@ class TestPlateCollection:
         def test_plates_from_image_invalid(self, image_circle):
             plates = PlateCollection()
 
-            print(plates.shape)
-            print(PlateCollection.coordinate_to_index(plates.shape))
             with pytest.raises(ValueError):
                 plates.plates_from_image(
                     image = image_circle,
                     diameter = 180
                 )
+
+        def test_plates_to_csv(self, image_circle, tmp_path):
+            import csv
+
+            plates = PlateCollection.from_image(
+                shape = (1, 1),
+                image = image_circle,
+                diameter = 180,
+            )
+            result = plates.plates_to_csv(tmp_path)
+
+            # Check all rows were written correctly
+            with open(result, 'r') as csvfile:
+                reader = list(csv.reader(csvfile))
+
+                assert len(reader) == plates.count + 1
+                assert reader[1] == ["1", "", "(102, 102)", "160", "0", "0", "0", "0.0", "0.0", "0.0", "0.0", "0.0", "0.0", "0.0", "0.0"]
 
         def test_slice_plate_image(self, image_circle):
             plates = PlateCollection(shape = (1, 1))

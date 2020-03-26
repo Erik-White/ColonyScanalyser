@@ -105,7 +105,7 @@ def image_file_to_timepoints(
         # Segment each image
         plate_images[plate_id] = segment_image(plate_image_gray, plate_image_gray > 0, plate_images_mask[plate_id], area_min = 8)
         # Create Timepoint objects for each plate
-        plate_timepoints[plate_id].extend(timepoints_from_image(plate_images[plate_id], image_file.timestamp, image_file.timestamp_elapsed_minutes, image = plate_image))
+        plate_timepoints[plate_id].extend(timepoints_from_image(plate_images[plate_id], image_file.timestamp_elapsed, image = plate_image))
         # Save segmented image plot, if required
         if plot_path is not None:
             save_path = file_access.create_subdirectory(plot_path, f"plate{plate_id}")
@@ -310,7 +310,7 @@ def main():
                 # Remove objects that do not have sufficient data points, usually just noise
                 len(colony.timepoints) > image_files.count * 0.2 and
                 # Remove object that do not show growth, these are not colonies
-                colony.growth_rate > 1 and
+                colony.timepoint_last.area > 2 * colony.timepoint_first.area and
                 # Colonies that appear with a large initial area are most likely merged colonies, not new colonies
                 colony.timepoint_first.area < 50,
                 plate.items
@@ -347,6 +347,9 @@ def main():
         # Save data for each colony on a plate
         plate.colonies_timepoints_to_csv(save_path)
 
+    # Save summarised data for all plates
+    plates.plates_to_csv(save_path)
+
     # Only generate plots when working with original images
     # Can't guarantee that the original images and full list of time points
     # will be available when using cached data
@@ -356,10 +359,10 @@ def main():
             if VERBOSE >= 1:
                 print("Saving plots")
             # Summary plots for all plates
-            plots.plot_growth_curve(plates.items, image_files.timestamps_elapsed_minutes, save_path)
-            plots.plot_appearance_frequency(plates.items, image_files.timestamps_elapsed_minutes, save_path)
-            plots.plot_appearance_frequency(plates.items, image_files.timestamps_elapsed_minutes, save_path, bar = True)
-            plots.plot_doubling_map(plates.items, image_files.timestamps_elapsed_minutes, save_path)
+            plots.plot_growth_curve(plates.items, save_path)
+            plots.plot_appearance_frequency(plates.items, save_path, timestamps = image_files.timestamps_elapsed)
+            plots.plot_appearance_frequency(plates.items, save_path, timestamps = image_files.timestamps_elapsed, bar = True)
+            plots.plot_doubling_map(plates.items, save_path)
             plots.plot_colony_map(image_files.items[-1].image, plates.items, save_path)
 
         if PLOTS >= 2:
@@ -368,9 +371,9 @@ def main():
                     print(f"Saving plots for plate #{plate.id}")
                 save_path_plate = file_access.create_subdirectory(save_path, file_access.file_safe_name([f"plate{plate.id}", plate.name]))
                 # Plot colony growth curves, ID map and time of appearance for each plate
-                plots.plot_growth_curve([plate], image_files.timestamps_elapsed_minutes, save_path_plate)
-                plots.plot_appearance_frequency([plate], image_files.timestamps_elapsed_minutes, save_path_plate)
-                plots.plot_appearance_frequency([plate], image_files.timestamps_elapsed_minutes, save_path_plate, bar = True)
+                plots.plot_growth_curve([plate], save_path_plate)
+                plots.plot_appearance_frequency([plate], save_path_plate, timestamps = image_files.timestamps_elapsed)
+                plots.plot_appearance_frequency([plate], save_path_plate, timestamps = image_files.timestamps_elapsed, bar = True)
 
         if PLOTS >= 4:
             # Plot individual plate images as an animation

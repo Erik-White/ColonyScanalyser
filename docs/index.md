@@ -1,5 +1,5 @@
 # ColonyScanalyser
-<img align="right" src="images/growth_curve_small.png">
+<img align="right" src="images/growth_curve_linear_small.png">
 An image analysis tool for measuring microorganism colony growth.
 ColonyScanalyser will analyse and collate statistical data from agar plate images.
  It provides fast, high-throughput image processing.
@@ -7,7 +7,7 @@ ColonyScanalyser will analyse and collate statistical data from agar plate image
 ColonyScanalyser can provide information on:
 
 * Colony appearance time
-* Colony growth over time
+* Growth parameters (lag time, rate, carrying capacity)
 * Growth and appearance time distribution
 * Colony colour (e.g. staining or other visual indicator)
 
@@ -17,13 +17,14 @@ pip install colonyscanalyser
 ```
 Full [installation instructions](installation.md).
 
+<img align="right" src="images/growth_curve_small.png">
+
 ## Run
 ```
 scanalyser /path/to/images
 ```
 See the [quick start guide](quick_start.md) for more information on getting up and running with ColonyScanalyser.
 
-<img align="right" src="images/plate_timelapse_tiny.gif">
 ## Image requirements
 ColonyScanalyser is suitable for analysing series of images from a fixed point that show the development of microorganism colonies over time. The [image specifications page](image_specifications.md) has more detail on image requirements.
 

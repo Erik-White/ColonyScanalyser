@@ -1,6 +1,6 @@
 from typing import Optional, List
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timedelta
 from re import search
 from numpy import ndarray
 from skimage.io import imread
@@ -146,7 +146,7 @@ class ImageFileCollection(IdentifiedCollection):
             image_file.timestamp_initial = val
 
     @property
-    def timestamps_elapsed(self) -> List[datetime]:
+    def timestamps_elapsed(self) -> List[timedelta]:
         return [image_file.timestamp_elapsed for image_file in self.items]
 
     @property

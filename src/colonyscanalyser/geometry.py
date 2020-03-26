@@ -1,12 +1,14 @@
 from typing import Union, Tuple
+from abc import ABC, abstractmethod
 from math import pi
 
 
-class Shape:
+class Shape(ABC):
     """
     An abstract class to provide the fundamental properties of a surface
     """
     @property
+    @abstractmethod
     def area(self) -> float:
         raise NotImplementedError("This property must be implemented in a derived class")
 
@@ -44,6 +46,7 @@ class Shape:
         self.__height = val
 
     @property
+    @abstractmethod
     def perimeter(self) -> float:
         raise NotImplementedError("This property must be implemented in a derived class")
 
@@ -100,3 +103,16 @@ class Circle(Shape):
     @property
     def width(self) -> float:
         return self.diameter
+
+
+def circularity(area: float, perimeter: float) -> float:
+    """
+    Calculate how closely the shape of an object approaches that of a mathematically perfect circle
+
+    A mathematically perfect circle has a circularity of 1
+
+    :param area: the size of the region enclosed by the perimeter
+    :param perimeter: the total distance along the edge of a shape
+    :returns: a ratio of area to perimiter as a float
+    """
+    return (4 * pi * area) / (perimeter * perimeter)

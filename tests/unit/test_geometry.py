@@ -3,14 +3,25 @@ import pytest
 from math import pi
 from colonyscanalyser.geometry import (
     Shape,
-    Circle
+    Circle,
+    circularity
 )
+
+
+class ShapeChild(Shape):
+    @property
+    def area(self):
+        raise NotImplementedError
+
+    @property
+    def perimeter(self):
+        raise NotImplementedError
 
 
 class TestShape:
     @pytest.fixture
     def shape(self, request):
-        yield Shape()
+        yield ShapeChild()
 
     @pytest.fixture(params = [0, 1, 1.1, -1])
     def distance(self, request):
@@ -98,3 +109,9 @@ class TestCircle():
     def test_diameter_invalid(self, diameter_invalid):
         with pytest.raises((TypeError, ValueError)):
             Circle(diameter_invalid)
+
+
+class TestCircularity:
+    @pytest.mark.parametrize("area, perimeter, expected", [[10, 2, 31.42], [4, 3, 5.59], [0, 1, 0]])
+    def test_circularity(self, area, perimeter, expected):
+        assert round(circularity(area, perimeter), 2) == expected

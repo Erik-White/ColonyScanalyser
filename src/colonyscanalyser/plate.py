@@ -1,14 +1,17 @@
 from __future__ import annotations
 from typing import Union, Dict, List, Tuple
 from collections.abc import Collection
+from datetime import timedelta
 from pathlib import Path, PurePath
+from statistics import median
 from numpy import ndarray
 from .base import Identified, IdentifiedCollection, Named
 from .geometry import Circle
-from .file_access import save_to_csv
+from .file_access import save_to_csv, file_safe_name
+from .growth_curve import GrowthCurve
 
 
-class Plate(Identified, IdentifiedCollection, Named, Circle):
+class Plate(GrowthCurve, Identified, IdentifiedCollection, Named, Circle):
     """
     An object to hold information about an agar plate and a collection of Colony objects
     """
@@ -37,14 +40,24 @@ class Plate(Identified, IdentifiedCollection, Named, Circle):
         self.name = name
 
     def __iter__(self):
+        appearance = [colony.time_of_appearance.total_seconds() // 60 for colony in self.items] or [0]
+
         return iter([
             self.id,
             self.name,
             self.center,
             self.diameter,
-            self.area,
             self.edge_cut,
-            self.count
+            self.count,
+            median(appearance),
+            self.growth_curve.lag_time.total_seconds() // 60,
+            self.growth_curve.lag_time_std.total_seconds() // 60,
+            round(self.growth_curve.growth_rate * 60, 5),
+            round(self.growth_curve.growth_rate_std * 60, 7),
+            round(self.growth_curve.carrying_capacity, 2),
+            round(self.growth_curve.carrying_capacity_std, 4),
+            self.growth_curve.doubling_time.total_seconds() // 60,
+            self.growth_curve.doubling_time_std.total_seconds() // 60
         ])
 
     @property
@@ -63,6 +76,19 @@ class Plate(Identified, IdentifiedCollection, Named, Circle):
     def edge_cut(self, val: float):
         self.__edge_cut = val
 
+    @property
+    def _growth_curve_data(self) -> Dict[timedelta, Union[float, List[float]]]:
+        """
+        A set of growth measurements over time
+
+        Provides data for growth_curve.fit_curve
+
+        :returns: a dictionary of measurements at time intervals
+        """
+        from .utilities import dicts_merge
+
+        return dicts_merge([colony.growth_curve.data for colony in self.items])
+
     def colonies_to_csv(self, save_path: Path, headers: List[str] = None) -> Path:
         """
         Output the data from the colonies collection to a CSV file
@@ -71,26 +97,26 @@ class Plate(Identified, IdentifiedCollection, Named, Circle):
         :param headers: a list of strings to use as column headers
         :returns: a Path representing the new file, if successful
         """
-        from .file_access import file_safe_name
-
         if headers is None:
             headers = [
                 "Colony ID",
-                "Time of appearance",
+                "Time of appearance (elapsed time)",
                 "Time of appearance (elapsed minutes)",
                 "Center point averaged (row, column)",
                 "Colour averaged name",
                 "Colour averaged (R,G,B)",
-                "Growth rate average",
-                "Growth rate",
-                "Doubling time average (minutes)",
-                "Doubling times (minutes)",
+                "Lag time (minutes)",
+                "Lag time standard deviation (minutes)",
+                "Growth rate (log2[Area] / minute)",
+                "Growth rate standard deviation (log2[Area] / minute)",
+                "Carrying capacity (log2[Area])",
+                "Carrying capacity standard deviation (log2[Area])",
+                "Doubling time (minutes)",
+                "Doubling time standard deviation(minutes)",
                 "First detection (elapsed minutes)",
-                "First center point (row, column)",
                 "First area (pixels)",
                 "First diameter (pixels)",
                 "Final detection (elapsed minutes)",
-                "Final center point (row, column)",
                 "Final area (pixels)",
                 "Final diameter (pixels)"
             ]
@@ -110,12 +136,9 @@ class Plate(Identified, IdentifiedCollection, Named, Circle):
         :param headers: a list of strings to use as column headers
         :returns: a Path representing the new file, if successful
         """
-        from .file_access import file_safe_name
-
         if headers is None:
             headers = [
                 "Colony ID",
-                "Date/Time",
                 "Elapsed time (minutes)",
                 "Area (pixels)",
                 "Center (row, column)",
@@ -127,12 +150,11 @@ class Plate(Identified, IdentifiedCollection, Named, Circle):
         # Unpack timepoint properties to a flat list
         colony_timepoints = list()
         for colony in self.items:
-            for timepoint in colony.timepoints.values():
+            for timepoint in colony.timepoints:
                 colony_timepoints.append([colony.id, *timepoint])
 
         return self.__collection_to_csv(
             save_path,
-            # "_".join(filter(None, [f"plate{str(self.id)}", self.name.replace(" ", "_"), "colony", "timepoints"])),
             file_safe_name([f"plate{str(self.id)}", self.name, "colony", "timepoints"]),
             colony_timepoints,
             headers
@@ -291,6 +313,40 @@ class PlateCollection(IdentifiedCollection):
             ))
 
         return plates
+
+    def plates_to_csv(self, save_path: Path, headers: List[str] = None) -> Path:
+        """
+        Output summarised data from the plate and colony collection to a CSV file
+
+        :param save_path: the location to save the CSV data file
+        :param headers: a list of strings to use as column headers
+        :returns: a Path representing the new file, if successful
+        """
+        if headers is None:
+            headers = [
+                "Plate ID",
+                "Plate label",
+                "Center (row, column)",
+                "Diameter (pixels)",
+                "Edge cut (pixels)",
+                "Colony count",
+                "Time of appearance (minutes)",
+                "Lag time (minutes)",
+                "Lag time standard deviation (minutes)",
+                "Growth rate (log2[Area] / minute)",
+                "Growth rate standard deviation (log2[Area] / minute)",
+                "Carrying capacity (log2[Area])",
+                "Carrying capacity standard deviation (log2[Area])",
+                "Doubling time (minutes)",
+                "Doubling time standard deviation (minutes)"
+            ]
+
+        return Plate._Plate__collection_to_csv(
+            save_path,
+            file_safe_name(["plates_summary"]),
+            self.items,
+            headers
+        )
 
     def slice_plate_image(self, image: ndarray, background_color: Tuple = 0) -> Dict[int, ndarray]:
         """
