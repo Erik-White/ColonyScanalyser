@@ -123,7 +123,7 @@
             
             <li class="nav-item" data-level="1"><a href="#changelog" class="nav-link">Changelog</a>
               <ul class="nav flex-column">
-            <li class="nav-item" data-level="2"><a href="#040-2020-02-26" class="nav-link">[0.4.0] - 2020-02-26</a>
+            <li class="nav-item" data-level="2"><a href="#040-2020-03-26" class="nav-link">[0.4.0] - 2020-03-26</a>
               <ul class="nav flex-column">
               </ul>
             </li>
@@ -174,7 +174,7 @@
 <p>All notable changes to this project will be documented in this file.</p>
 <p>The format is based on <a href="https://keepachangelog.com/en/1.0.0/">Keep a Changelog</a>,
 and this project adheres to <a href="https://semver.org/spec/v2.0.0.html">Semantic Versioning</a>.</p>
-<h2 id="040-2020-02-26">[0.4.0] - 2020-02-26</h2>
+<h2 id="040-2020-03-26">[0.4.0] - 2020-03-26</h2>
 <h3 id="added">Added</h3>
 <ul>
 <li><code>plate_labels</code> command line argument</li>
@@ -182,7 +182,9 @@ and this project adheres to <a href="https://semver.org/spec/v2.0.0.html">Semant
 <li><code>geometry</code> module with base shape classes</li>
 <li><code>plate</code> module with <code>Plate</code> and <code>PlateCollection</code> classes</li>
 <li><code>image_file</code> module with <code>ImageFile</code> and <code>ImageFileCollection</code> classes</li>
+<li><code>growth_curve</code> module to provide curve fitting and parameters</li>
 <li><code>plot_plate_images_animation</code> outputs animated gifs for each plate in two sizes</li>
+<li>Output a summary of plate properties to <code>plates_summary.csv</code></li>
 <li>Full type hinting for all modules</li>
 </ul>
 <h3 id="changed">Changed</h3>
@@ -194,6 +196,8 @@ and this project adheres to <a href="https://semver.org/spec/v2.0.0.html">Semant
 <li><code>save_plots</code> command line argument renamed to <code>plots</code></li>
 <li>Refactored most of the functions from <code>main</code> as static methods in the <code>plate</code> or <code>image_file</code> modules</li>
 <li>Improved flexibility when detecting date and time stamp information in file names</li>
+<li>Replaced growth properties in <code>Colony</code>, now implemented as <code>growth_curve.GrowthCurveModel</code></li>
+<li>Modified plots to use new <code>GrowthCurveModel</code> properties</li>
 </ul>
 <h3 id="fixed">Fixed</h3>
 <ul>

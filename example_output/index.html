@@ -159,12 +159,13 @@
 <h2 id="plots">Plots</h2>
 <p>At the default level, a few comparison plots are output to the <code>plots</code> folder in your image folder. Theses allow quick verification and comparison of the data.</p>
 <p>Increasing the level of <code>plots</code> will output plots for each individual plate.
-<img align="right" src="../images/time_of_appearance_small.png"></p>
+<img align="right" src="../images/time_of_appearance_bar_small.png"></p>
 <p>At the highest level of <code>plots</code>, a separate animated gif image of each plate is output. This may be useful for viewing the progression of colonies through their growth period, as well as for comparing growth in differing plate conditions.</p>
 <p>Only the measured plate area is shown in the animations. The area defined by <code>plate_edge_cut</code> is excluded.</p>
 <h2 id="data">Data</h2>
 <p>All the data gathered during analysis is output to the <code>data</code> folder in your images folder. Data is output as CSV files which is compatible with almost all data packages.</p>
-<p>The data is collated in two files for each plate, one with aggregate data for each colony and another with colony data at every image time point:</p>
+<p>Summarised data of all plates is saved as <code>plates_summary.csv</code></p>
+<p>Additionally, data is collated in two files for each plate, one with aggregate data for each colony and another with colony data at every image time point:</p>
 <pre><code>plate1_colonies.csv
 plate1_colony_timepoints.csv
 plate2_colonies.csv
