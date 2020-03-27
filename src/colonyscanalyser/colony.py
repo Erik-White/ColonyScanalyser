@@ -264,13 +264,14 @@ def group_timepoints_by_center(
     from math import dist
 
     center_groups = list()
+    timepoints = timepoints.copy()
 
     while len(timepoints) > 0:
         centers = list()
 
         # Compare current center with remaining centers in the list
-        for j, timepoint_compare in enumerate(timepoints):
-            if dist(timepoints[-1].center, timepoint_compare.center) < max_distance:
+        for j, timepoint_compare in reversed(list(enumerate(timepoints))):
+            if dist(timepoints[0].center, timepoint_compare.center) <= max_distance:
                 # Remove the Timepoint to a group if within distance limit
                 centers.append(timepoints.pop(j))
 

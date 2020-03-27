@@ -41,7 +41,7 @@ def timepoints(request):
     yield timepoints
 
 
-@pytest.fixture(params = [[0, 0.5, 1, 2, 3]])
+@pytest.fixture(params = [[0, 0.5, 1, 2, 3, 5, 10]])
 def distance(request):
     yield request.param
 
@@ -180,17 +180,10 @@ class TestColony():
 
 
 class TestColoniesFromTimepoints():
-    @pytest.fixture(params = [[11, 7, 4, 3, 3]])
-    def group_expected(self, request):
-        yield request.param
-
-    @pytest.fixture
-    def distance_expected(self, distance, group_expected):
-        yield list(zip(distance, group_expected))
-
-    def test_distance(self, timepoints, distance_expected):
-        for distance, expected in distance_expected:
-            result = colonies_from_timepoints(timepoints, distance)
+    @pytest.mark.parametrize("group_expected", [[11, 8, 5, 3, 3, 2, 1]])
+    def test_groups(self, timepoints, distance, group_expected):
+        for max_dist, expected in zip(distance, group_expected):
+            result = colonies_from_timepoints(timepoints, max_dist)
 
             assert len(result) == expected
 
@@ -200,22 +193,23 @@ class TestColoniesFromTimepoints():
 
 
 class TestGroupTimepointsByCenter():
-    @pytest.fixture(params = [[8, 4, 3, 2, 2]])
-    def group_expected(self, request):
-        yield request.param
+    @pytest.mark.parametrize("group_expected", [[11, 8, 5, 3, 3, 2, 1]])
+    def test_distance(self, timepoints, distance, group_expected):
+        from math import dist
 
-    @pytest.fixture
-    def distance_expected(self, distance, group_expected):
-        yield list(zip(distance, group_expected))
-
-    @pytest.mark.parametrize("axis", [0, 1])
-    def test_distance(self, timepoints, axis, distance_expected):
-        for distance, expected in distance_expected:
-            result = group_timepoints_by_center(timepoints, distance, axis)
+        for max_dist, expected in zip(distance, group_expected):
+            result = group_timepoints_by_center(timepoints, max_dist)
 
             assert len(result) == expected
+            for group in result:
+                # Find rough centre point for the group
+                x = [timepoint.center[0] for timepoint in group]
+                y = [timepoint.center[1] for timepoint in group]
+                group_center = (sum(x) / len(group), sum(y) / len(group))
 
-    @pytest.mark.parametrize("axis", [-1, 2, 0.5, "1"])
-    def test_axes(self, timepoints, axis):
-        with pytest.raises(ValueError):
-            group_timepoints_by_center(timepoints, axis = axis)
+                # Check that points are not too far from centre
+                for timepoint in group:
+                    assert dist(group_center, timepoint.center) <= max_dist
+
+    def test_timepoints_empty(self):
+        assert group_timepoints_by_center([]) == list()
