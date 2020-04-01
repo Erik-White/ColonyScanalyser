@@ -29,7 +29,7 @@ class Colony(Identified, Named, GrowthCurve):
 
         def __iter__(self):
             return iter([
-                self.timestamp,
+                self.timestamp.total_seconds() // 60,
                 self.area,
                 round_tuple_floats(self.center, 2),
                 round(self.diameter, 2),

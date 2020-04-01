@@ -155,7 +155,8 @@ class TestColony():
 
             assert len([*timepoints[0].__iter__()]) == 6
             for value, field in zip([*timepoints[0].__iter__()], fields(Colony.Timepoint)):
-                assert isinstance(value, field.type)
+                if not field.type == timedelta:
+                    assert isinstance(value, field.type)
 
     class TestMethods():
         def test_get_timepoint(self, timepoints):
