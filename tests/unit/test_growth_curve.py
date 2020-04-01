@@ -86,7 +86,7 @@ class TestGrowthCurve:
 
         def test_lag_time(self, host):
             assert isinstance(host.growth_curve.lag_time, timedelta)
-            assert host.growth_curve.lag_time.total_seconds() == 3.318548
+            assert host.growth_curve.lag_time.total_seconds() == 5.0
 
         def test_lag_time_std(self, host):
             assert isinstance(host.growth_curve.lag_time_std, timedelta)
@@ -94,7 +94,7 @@ class TestGrowthCurve:
 
         def test_growth_rate(self, host):
             assert isinstance(host.growth_curve.growth_rate, float)
-            assert host.growth_curve.growth_rate == 3.6072727272727265
+            assert host.growth_curve.growth_rate == 10.0
 
         def test_growth_rate_std(self, host):
             assert isinstance(host.growth_curve.growth_rate_std, float)
@@ -102,7 +102,7 @@ class TestGrowthCurve:
 
         def test_doubling_time(self, host):
             assert isinstance(host.growth_curve.doubling_time, timedelta)
-            assert host.growth_curve.doubling_time.total_seconds() == 0.192153
+            assert host.growth_curve.doubling_time.total_seconds() == 0.069315
 
         def test_doubling_time_std(self, host):
             host.growth_curve._growth_rate_std = 1
@@ -138,7 +138,7 @@ class TestGrowthCurve:
             with pytest.raises(ValueError):
                 GrowthCurveModel.estimate_parameters(timestamps, [0])
             assert GrowthCurveModel.estimate_parameters(timestamps, measurements) == (
-                3.318548387096774, 3.607272727272727, 45.25146120997929
+                5, 10.0, 45.25146120997929
             )
             assert GrowthCurveModel.estimate_parameters([0, 0, 0, 0, 0, 0], [0, 1, 3, 6, 10, 15], window = 3) == (
                 0, 5, 16.414213562373096

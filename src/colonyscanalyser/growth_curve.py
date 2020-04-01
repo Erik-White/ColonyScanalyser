@@ -198,7 +198,7 @@ class GrowthCurveModel:
         :param initial_params: initial estimate of parameters for the growth model
         """
         from statistics import median
-        from numpy import errstate, isinf, sqrt, diag, std
+        from numpy import errstate, isinf, isnan, sqrt, diag, std
 
         timestamps = [timestamp.total_seconds() for timestamp in sorted(self.data.keys())]
         measurements = [val for _, val in sorted(self.data.items())]
@@ -211,15 +211,20 @@ class GrowthCurveModel:
         carrying_capacity = 0.0
         carrying_capacity_std = 0.0
 
-        if timestamps and measurements:
+        # The number of values must be at least the number of parameters
+        if len(timestamps) >= 4 and len(measurements) >= 4:
             # Calculate standard deviation
             if all(isinstance(m, Iterable) for m in measurements):
                 measurements_std = [std(m, axis = 0) for m in measurements]
                 measurements = [median(val) for val in measurements]
 
+            # Try to estimate initial parameters, if unsuccessful pass None
+            # None will result in scipy.optimize.curve_fit using its own default parameters
             if initial_params is None:
-                lag_time, growth_rate, carrying_capacity = self.estimate_parameters(timestamps, measurements)
-                initial_params = [min(measurements), lag_time, growth_rate * 3600, carrying_capacity]
+                params_estimate = self.estimate_parameters(timestamps, measurements)
+                if params_estimate:
+                    est_lag_time, est_growth_rate, est_carrying_capacity = params_estimate
+                    initial_params = [min(measurements), est_lag_time, est_growth_rate * 3600, est_carrying_capacity]
 
             # Suppress divide by zero errors caused by zeroes in sigma values
             with errstate(divide = "ignore"):
@@ -233,12 +238,16 @@ class GrowthCurveModel:
                 )
 
             if results is not None:
-                (_, lag_time, growth_rate, carrying_capacity), conf = results
+                results, conf = results
 
-                # Calculate standard deviation if results provided
-                if not (isinf(conf)).all():
-                    conf = sqrt(diag(conf.clip(min = 0)))
-                    _, lag_time_std, growth_rate_std, carrying_capacity_std = conf
+                if not isinf(results).any() and not isnan(results).any():
+                    _, lag_time, growth_rate, carrying_capacity = results
+
+                    # Calculate standard deviation if results provided
+                    if not isinf(conf).any() and not isnan(conf).any():
+                        _, lag_time_std, growth_rate_std, carrying_capacity_std = sqrt(diag(conf.clip(min = 0)))
+                        if not lag_time_std < timedelta.max.total_seconds():
+                            lag_time_std = 0
 
         self._lag_time = timedelta(seconds = lag_time)
         self._lag_time_std = timedelta(seconds = lag_time_std)
@@ -292,14 +301,18 @@ class GrowthCurveModel:
         carrying_capacity = max(measurements) + diffs.std()
 
         # Lag time and growth rate
-        inflection = list(diffs).index(diffs[diffs > diffs.mean() + diffs.std()][0])
+        diffs_std = diffs.mean() + diffs.std()
+        # Find the value closest to diffs_std and then its index
+        diffs_index = min(diffs, key = lambda x: abs(x - diffs_std))
+        inflection = list(diffs).index(diffs_index)
+
         slopes = list()
         for i in range(inflection, len(timestamps) - window):
             # Find the slope at the exponential growth phase over a sliding window
             slope, intercept, *_ = linregress(timestamps[i: i + window], measurements[i: i + window])
             slopes.append((slope, intercept))
 
-        if len(slopes) > 0:
+        if slopes and max(slopes)[0] > 0:
             growth_rate, intercept = max(slopes)
             lag_time = -intercept / growth_rate
         else:
@@ -367,6 +380,7 @@ class GrowthCurveModel:
 
         try:
             with warnings.catch_warnings():
+                warnings.simplefilter("ignore", RuntimeWarning)
                 warnings.simplefilter("ignore", OptimizeWarning)
                 return curve_fit(curve_function, timestamps, measurements, p0 = initial_params, **kwargs)
         except RuntimeError:
