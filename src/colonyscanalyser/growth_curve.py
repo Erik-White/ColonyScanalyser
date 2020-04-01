@@ -198,7 +198,7 @@ class GrowthCurveModel:
         :param initial_params: initial estimate of parameters for the growth model
         """
         from statistics import median
-        from numpy import errstate, isinf, isnan, sqrt, diag, std
+        from numpy import errstate, iinfo, intc, isinf, isnan, sqrt, diag, std
 
         timestamps = [timestamp.total_seconds() for timestamp in sorted(self.data.keys())]
         measurements = [val for _, val in sorted(self.data.items())]
@@ -240,14 +240,14 @@ class GrowthCurveModel:
             if results is not None:
                 results, conf = results
 
-                if not isinf(results).any() and not isnan(results).any():
+                if (not isinf(results).any() and not isnan(results).any()
+                        and not (results < 0).any() and not (results >= iinfo(intc).max).any()):
                     _, lag_time, growth_rate, carrying_capacity = results
 
                     # Calculate standard deviation if results provided
-                    if not isinf(conf).any() and not isnan(conf).any():
+                    if (not isinf(conf).any() and not isnan(conf).any()
+                            and not (results < 0).any() and not (conf >= iinfo(intc).max).any()):
                         _, lag_time_std, growth_rate_std, carrying_capacity_std = sqrt(diag(conf.clip(min = 0)))
-                        if not lag_time_std < timedelta.max.total_seconds():
-                            lag_time_std = 0
 
         self._lag_time = timedelta(seconds = lag_time)
         self._lag_time_std = timedelta(seconds = lag_time_std)
