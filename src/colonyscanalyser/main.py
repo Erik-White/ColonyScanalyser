@@ -10,7 +10,7 @@ from multiprocessing import Pool, cpu_count
 from functools import partial
 
 # Third party modules
-from numpy import ndarray
+from numpy import ndarray, diff
 
 # Local modules
 from colonyscanalyser import (
@@ -28,7 +28,7 @@ def segment_image(
     plate_image: ndarray,
     plate_mask: ndarray = None,
     plate_noise_mask: ndarray = None,
-    area_min: float = 5
+    area_min: float = 1
 ) -> ndarray:
     """
     Attempts to separate and label all colonies on a plate
@@ -39,45 +39,44 @@ def segment_image(
     :param area_min: the minimum area for a colony, in pixels
     :returns: a segmented and labelled image as a numpy array
     """
-    from math import pi
-    from skimage.morphology import remove_small_objects
+    from numpy import unique, isin
     from skimage.measure import regionprops, label
+    from skimage.morphology import remove_small_objects, binary_erosion
+    from skimage.segmentation import clear_border
 
     plate_image = imaging.remove_background_mask(plate_image, smoothing = 0.5)
 
-    if plate_noise_mask is not None:
-        # Subtract an image of the first (i.e. empty) plate to remove static noise
-        plate_noise_mask = imaging.remove_background_mask(plate_noise_mask, smoothing = 0.5)
-        plate_image[plate_noise_mask] = 0
-
     if plate_mask is not None:
+        # Remove mask from image
         plate_image = plate_image & plate_mask
+        # Remove objects touching the mask border
+        plate_image = clear_border(plate_image, bgval = 0, mask = binary_erosion(plate_mask))
+    else:
+        # Remove objects touching the image border
+        plate_image = clear_border(plate_image, buffer_size = 2, bgval = 0)
 
-    colonies = label(plate_image, connectivity = 2)
+    plate_image = label(plate_image, connectivity = 2)
 
     # Remove background noise
-    plate_image = remove_small_objects(plate_image, min_size = area_min)
+    if len(unique(plate_image)) > 1:
+        plate_image = remove_small_objects(plate_image, min_size = area_min)
 
-    # Exclude objects that are too eccentric
-    rps = regionprops(colonies)
-    for rp in rps:
-        # Eccentricity of zero is a perfect circle
-        # Circularity of 1 is a perfect circle
-        if rp.perimeter != 0:
-            circularity = (4 * pi * rp.area) / (rp.perimeter * rp.perimeter)
-        else:
-            circularity = 1 - rp.eccentricity
+    # Remove colonies that have grown on top of image artefacts or static objects
+    if plate_noise_mask is not None:
+        plate_noise_image = imaging.remove_background_mask(plate_noise_mask, smoothing = 0.5)
+        noise_mask = remove_small_objects(plate_noise_image, min_size = area_min)
+        # Remove all objects where there is an existing static object
+        exclusion = unique(plate_image[noise_mask])
+        exclusion_mask = isin(plate_image, exclusion[exclusion > 0])
+        plate_image[exclusion_mask] = 0
 
-        if rp.eccentricity > 0.5 or circularity < 0.65:
-            colonies[colonies == rp.label] = 0
-
-    return colonies
+    return plate_image
 
 
 def image_file_to_timepoints(
     image_file: ndarray,
     plates: PlateCollection,
-    plate_images_mask: List[ndarray],
+    plate_noise_masks: Dict[int, ndarray],
     plot_path: Path = None
 ) -> Dict[int, List[Colony.Timepoint]]:
     """
@@ -87,7 +86,7 @@ def image_file_to_timepoints(
 
     :param image_file: an ImageFile object
     :param plates: a PlateCollection of Plate instances
-    :param plate_images_mask: a list of plate images to use as noise masks
+    :param plate_noise_masks: a dict of plate images to use as noise masks
     :param plot_path: a Path directory to save the segmented image plot
     :returns: a Dict of lists, each containing Timepoint objects
     """
@@ -102,7 +101,7 @@ def image_file_to_timepoints(
     for plate_id, plate_image in plate_images.items():
         plate_image_gray = rgb2gray(plate_image)
         # Segment each image
-        plate_images[plate_id] = segment_image(plate_image_gray, plate_noise_mask = plate_images_mask[plate_id], area_min = 2)
+        plate_images[plate_id] = segment_image(plate_image_gray, plate_mask = plate_image_gray > 0, plate_noise_mask = plate_noise_masks[plate_id], area_min = 1.5)
         # Create Timepoint objects for each plate
         plate_timepoints[plate_id].extend(timepoints_from_image(plate_images[plate_id], image_file.timestamp_elapsed, image = plate_image))
         # Save segmented image plot, if required
@@ -153,7 +152,6 @@ def main():
     POOL_MAX = 1
     if args.multiprocessing:
         POOL_MAX = cpu_count()
-
     if VERBOSE >= 1:
         print("Starting ColonyScanalyser analysis")
 
@@ -255,7 +253,7 @@ def main():
                         print(f"Plate {plate.id} center: {plate.center}")
 
             # Use the first plate image as a noise mask
-            plate_images_mask = plates.slice_plate_image(image_file.image_gray)
+            plate_noise_masks = plates.slice_plate_image(image_file.image_gray)
 
         if VERBOSE >= 1:
             print("Processing colony data from all images")
@@ -273,7 +271,7 @@ def main():
                 # Create processes
                 processes.append(pool.apply_async(
                     image_file_to_timepoints,
-                    args = (image_file, plates, plate_images_mask),
+                    args = (image_file, plates, plate_noise_masks),
                     kwds = {"plot_path" : None},
                     callback = callback_function
                 ))
@@ -287,7 +285,7 @@ def main():
         # Clear objects to free up memory
         processes = None
         plate_images = None
-        plate_images_mask = None
+        plate_noise_masks = None
         img = None
 
         if VERBOSE >= 1:
@@ -300,30 +298,27 @@ def main():
                 break
 
             plate = plates.get_item(plate_id)
-            plate.items = colonies_from_timepoints(plate_timepoints, distance_tolerance = 4)
+            plate.items = colonies_from_timepoints(plate_timepoints, distance_tolerance = 1)
             if VERBOSE >= 3:
-                print(f"{plate.count} colonies located on plate {plate.id}, before filtering")
+                print(f"{plate.count} objects located on plate {plate.id}, before filtering")
 
             # Filter colonies to remove noise, background objects and merged colonies
+            timestamp_diff_std = diff(image_files.timestamps_elapsed_seconds[1:]).std()
+            timestamp_diff_std += 100
             plate.items = list(filter(lambda colony:
                 # Remove objects that do not have sufficient data points
-                len(colony.timepoints) > image_files.count * 0.05 and
-                # A very low area to diameter ratio indicates noise
-                colony.timepoint_last.area / colony.timepoint_last.diameter > 2 and
+                len(colony.timepoints) > 5 and
+                # Remove objects with large gaps in the data
+                diff([t.timestamp.total_seconds() for t in colony.timepoints[1:]]).std() < timestamp_diff_std and
                 # Remove object that do not show growth, these are not colonies
-<<<<<<< HEAD
                 colony.timepoint_last.area > 2 * colony.timepoint_first.area and
-=======
-                colony.growth_rate > 1 and
-                0 not in colony.get_doubling_times(elapsed_minutes = True) and
->>>>>>> Update colony filtering to improve noise discrimination
-                # Colonies that appear with a large initial area are most likely merged colonies, not new colonies
-                colony.timepoint_first.area < 50,
+                # Objects that appear with a large initial area are either merged colonies or noise
+                colony.timepoint_first.area < 10,
                 plate.items
             ))
 
             if VERBOSE >= 1:
-                print(f"Colony data stored for {plate.count} colonies on plate {plate.id}")
+                print(f"{plate.count} colonies identified on plate {plate.id}")
 
         if not any([plate.count for plate in plates.items]):
             if VERBOSE >= 1:
@@ -347,6 +342,8 @@ def main():
         
     save_path = BASE_PATH.joinpath("data")
     for plate in plates.items:
+        for colony in plate.items:
+            test = colony.__iter__()
         # Save data for all colonies on one plate
         plate.colonies_to_csv(save_path)
 
