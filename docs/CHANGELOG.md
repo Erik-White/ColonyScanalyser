@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `use_saved` command line argument renamed to `use_cached_data`
 - Compressed serialised data filename changed to `cached_data`
 - `save_plots` command line argument renamed to `plots`
+- `plate_edge_cut` is now a percentage of the plate diameter, instead of a fixed pixel value
 - Refactored most of the functions from `main` as static methods in the `plate` or `image_file` modules
 - Improved flexibility when detecting date and time stamp information in file names
 - Replaced growth properties in `Colony`, now implemented as `growth_curve.GrowthCurveModel`

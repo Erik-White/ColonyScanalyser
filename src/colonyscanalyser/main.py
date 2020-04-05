@@ -126,8 +126,8 @@ def main():
                         help = "Enables use of more CPU cores, faster but more resource intensive")
     parser.add_argument("-p", "--plots", type = int, default = 1,
                         help = "The detail level of plot images to store on disk")
-    parser.add_argument("--plate_edge_cut", type = int, default = 60,
-                        help = "The radius from the plate edge to remove, in pixels")
+    parser.add_argument("--plate_edge_cut", type = int, default = 5,
+                        help = "The exclusion area from the plate edge, as a percentage of the plate diameter")
     parser.add_argument("--plate_labels", type = str, nargs = "*", default = list(),
                         help = "A list of labels to identify each plate. Plates are ordered from top left, in rows. Example usage: --plate_labels plate1 plate2")
     parser.add_argument("--plate_lattice", type = int, nargs = 2, default = (3, 2),
@@ -143,10 +143,10 @@ def main():
     args = parser.parse_args()
     BASE_PATH = args.path
     PLOTS = args.plots
-    PLATE_EDGE_CUT = args.plate_edge_cut
     PLATE_LABELS = {plate_id: label for plate_id, label in enumerate(args.plate_labels, start = 1)}
     PLATE_LATTICE = tuple(args.plate_lattice)
     PLATE_SIZE = int(imaging.mm_to_pixels(args.plate_size, dots_per_inch = args.dots_per_inch))
+    PLATE_EDGE_CUT = int(round(PLATE_SIZE * (args.plate_edge_cut / 100)))
     USE_CACHED = args.use_cached_data
     VERBOSE = args.verbose
     POOL_MAX = 1
