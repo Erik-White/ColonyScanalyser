@@ -241,7 +241,7 @@ def main():
                     shape = PLATE_LATTICE,
                     image = image_file.image_gray,
                     diameter = PLATE_SIZE,
-                    search_radius = 50,
+                    search_radius = PLATE_SIZE // 20,
                     edge_cut = PLATE_EDGE_CUT,
                     labels = PLATE_LABELS
                 )
