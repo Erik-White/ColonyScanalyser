@@ -151,9 +151,12 @@ def main():
     VERBOSE = args.verbose
     POOL_MAX = 1
     if args.multiprocessing:
-        POOL_MAX = cpu_count()
+        POOL_MAX = cpu_count() - 1 if cpu_count() > 1 else 1
+
     if VERBOSE >= 1:
         print("Starting ColonyScanalyser analysis")
+    if VERBOSE >= 2 and POOL_MAX > 1:
+        print(f"Multiprocessing enabled, utilising {POOL_MAX} of {cpu_count()} processors")
 
     # Resolve working directory
     if BASE_PATH is None:
