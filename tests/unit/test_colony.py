@@ -196,7 +196,10 @@ class TestColoniesFromTimepoints():
 class TestGroupTimepointsByCenter():
     @pytest.mark.parametrize("group_expected", [[11, 8, 5, 3, 3, 2, 1]])
     def test_distance(self, timepoints, distance, group_expected):
-        from math import dist
+        try:
+            from math import dist
+        except ImportError:
+            from scipy.spatial.distance import euclidean as dist
 
         for max_dist, expected in zip(distance, group_expected):
             result = group_timepoints_by_center(timepoints, max_dist)

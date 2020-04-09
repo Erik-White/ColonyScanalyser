@@ -261,7 +261,10 @@ def group_timepoints_by_center(
     :param max_distance: the difference allowed between centers
     :returns: a list of lists of Timepoint objects
     """
-    from math import dist
+    try:
+        from math import dist
+    except ImportError:
+        from scipy.spatial.distance import euclidean as dist
 
     center_groups = list()
     timepoints = timepoints.copy()
