@@ -240,41 +240,39 @@ def circles_radius_median(cx, cy, radii, circle_count):
     return (cx, cy, radii)
 
 
-def remove_background_mask(image: ndarray, smoothing: float = 1, **filter_args) -> ndarray:
+def remove_background_mask(image: ndarray, smoothing: float = 1, sigmoid_cutoff: float = 0.4, **filter_args) -> ndarray:
     """
     Separate the image foreground from the background
 
-    Returns a boolean mask of the foreground
+    Returns a boolean mask of the image foreground
 
     :param image: an image as a numpy array
     :param smoothing: a sigma value for the gaussian filter
+    :param sigmoid_cutoff: cutoff for the sigmoid exposure function
     :param filter_args: arguments to pass to the gaussian filter
     :returns: a boolean image mask of the foreground
     """
-    from skimage import img_as_float, img_as_bool
-    from skimage.filters import gaussian, threshold_minimum
-    from skimage.morphology import reconstruction
+    from skimage import img_as_bool
+    from skimage.exposure import adjust_sigmoid
+    from skimage.filters import gaussian, threshold_triangle
 
     if image.size == 0:
         raise ValueError("The supplied image cannot be empty")
 
-    image = img_as_float(image).copy()
+    image = image.astype("float64", copy = True)
 
     # Do not process the image if it is empty
     if not image.any():
         return img_as_bool(image)
 
+    # Apply smoothing to reduce noise
     image = gaussian(image, smoothing, **filter_args)
 
-    seed = image.copy()
-    seed[1:-1, 1:-1] = image.min()
+    # Heighten contrast
+    image = adjust_sigmoid(image, cutoff = sigmoid_cutoff, gain = 10)
 
-    dilated = reconstruction(seed, image, method = "dilation")
-
-    # Subtract the mask, returning only the foreground
-    image = (image - dilated) > threshold_minimum(image)
-
-    return image
+    # Find background threshold and return only foreground
+    return image > threshold_triangle(image, nbins = 10)
 
 
 def watershed_separation(image: ndarray, smoothing: float = 0.5, **kwargs) -> ndarray:

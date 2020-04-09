@@ -64,7 +64,8 @@ def segment_image(
     # Remove colonies that have grown on top of image artefacts or static objects
     if plate_noise_mask is not None:
         plate_noise_image = imaging.remove_background_mask(plate_noise_mask, smoothing = 0.5)
-        noise_mask = remove_small_objects(plate_noise_image, min_size = area_min)
+        if len(unique(plate_noise_mask)) > 1:
+            noise_mask = remove_small_objects(plate_noise_image, min_size = area_min)
         # Remove all objects where there is an existing static object
         exclusion = unique(plate_image[noise_mask])
         exclusion_mask = isin(plate_image, exclusion[exclusion > 0])
@@ -301,20 +302,22 @@ def main():
                 break
 
             plate = plates.get_item(plate_id)
-            plate.items = colonies_from_timepoints(plate_timepoints, distance_tolerance = 1)
+            plate.items = colonies_from_timepoints(plate_timepoints, distance_tolerance = 2)
             if VERBOSE >= 3:
                 print(f"{plate.count} objects located on plate {plate.id}, before filtering")
 
             # Filter colonies to remove noise, background objects and merged colonies
             timestamp_diff_std = diff(image_files.timestamps_elapsed_seconds[1:]).std()
-            timestamp_diff_std += 100
+            timestamp_diff_std += 20
             plate.items = list(filter(lambda colony:
                 # Remove objects that do not have sufficient data points
                 len(colony.timepoints) > 5 and
+                # No colonies should be visible at the start of the experiment
+                colony.time_of_appearance.total_seconds() > 0 and
                 # Remove objects with large gaps in the data
                 diff([t.timestamp.total_seconds() for t in colony.timepoints[1:]]).std() < timestamp_diff_std and
                 # Remove object that do not show growth, these are not colonies
-                colony.timepoint_last.area > 2 * colony.timepoint_first.area and
+                colony.timepoint_last.area > 4 * colony.timepoint_first.area and
                 # Objects that appear with a large initial area are either merged colonies or noise
                 colony.timepoint_first.area < 10,
                 plate.items

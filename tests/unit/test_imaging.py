@@ -221,50 +221,36 @@ class TestRemoveBackgroundMask():
     @pytest.fixture(params = [image_segmented])
     def image_segmented_local(self, request):
         image_segmented_local = image_ref_segmented.copy()
-        image_segmented_local[image_segmented_local == 1] = 255
+        image_segmented_local[image_segmented_local > 1] = 255
+
         yield image_segmented_local
 
-    @pytest.fixture(params = [image_segmented])
-    def image_mask(self, request):
-        image_mask = image_ref_segmented.copy()
-        image_mask[5:8] = 0
-        yield image_mask
-
-    def test_remove_background(self, image_segmented_local, image_mask):
+    def test_remove_background(self, image_segmented_local):
         image_ref = np.array([
-            [0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 1, 0, 0, 0, 0],
-            [0, 0, 0, 1, 0, 1, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 1, 0],
+            [1, 1, 0, 0, 1, 0, 0, 1, 0],
+            [1, 1, 0, 1, 0, 1, 0, 0, 0],
             [0, 0, 0, 1, 1, 1, 1, 0, 0],
             [0, 1, 1, 0, 1, 1, 1, 1, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0]])
+            [0, 1, 1, 1, 1, 0, 1, 0, 0],
+            [0, 0, 1, 0, 1, 1, 1, 0, 1],
+            [0, 1, 0, 0, 0, 0, 0, 0, 0]
+        ])
 
-        result = remove_background_mask(image_segmented_local, image_mask)
+        result = remove_background_mask(image_segmented_local, smoothing = 0.1)
 
         assert result.shape == image_segmented_local.shape
         assert (result == image_ref).all()
 
-    def test_size_mismatch(self):
-        with pytest.raises(ValueError):
-            remove_background_mask(
-                np.ones((5, 5), dtype = np.uint8),
-                np.ones((3, 5), dtype = np.uint8)
-            )
-
     def test_image_blank(self):
         image_blank = np.zeros((3, 3))
         result = remove_background_mask(image_blank, image_blank > 0)
+
         assert (result == image_blank).all()
 
-    def test_image_empty(self, image_mask):
+    def test_image_empty(self):
         with pytest.raises(ValueError):
-            remove_background_mask(np.array([]), image_mask)
-
-    def test_mask_empty(self, image_segmented_local):
-        with pytest.raises(ValueError):
-            remove_background_mask(image_segmented_local, np.array([]))
+            remove_background_mask(np.array([]))
 
 
 class TestWatershedSeparation():
