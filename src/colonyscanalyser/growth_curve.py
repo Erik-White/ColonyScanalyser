@@ -221,10 +221,10 @@ class GrowthCurveModel:
             # Try to estimate initial parameters, if unsuccessful pass None
             # None will result in scipy.optimize.curve_fit using its own default parameters
             if initial_params is None:
-                params_estimate = self.estimate_parameters(timestamps, measurements)
+                window = 15 if len(timestamps) > 15 else len(timestamps) // 3
+                params_estimate = self.estimate_parameters(timestamps, measurements, window = window)
                 if params_estimate:
-                    est_lag_time, est_growth_rate, est_carrying_capacity = params_estimate
-                    initial_params = [min(measurements), est_lag_time, est_growth_rate * 3600, est_carrying_capacity]
+                    initial_params = [min(measurements), *params_estimate]
 
             # Suppress divide by zero errors caused by zeroes in sigma values
             with errstate(divide = "ignore"):
@@ -239,6 +239,7 @@ class GrowthCurveModel:
 
             if results is not None:
                 results, conf = results
+                print(results)
 
                 if (not isinf(results).any() and not isnan(results).any()
                         and not (results < 0).any() and not (results >= iinfo(intc).max).any()):
@@ -251,8 +252,8 @@ class GrowthCurveModel:
 
         self._lag_time = timedelta(seconds = lag_time)
         self._lag_time_std = timedelta(seconds = lag_time_std)
-        self._growth_rate = growth_rate / 3600
-        self._growth_rate_std = growth_rate_std / 3600
+        self._growth_rate = growth_rate
+        self._growth_rate_std = growth_rate_std
         self._carrying_capacity = carrying_capacity
         self._carrying_capacity_std = carrying_capacity_std
 
@@ -271,7 +272,7 @@ class GrowthCurveModel:
 
         Growth rate:
             Approximates the maximum specific growth rate as maximum growth rate measured over a
-            sliding window, after the lag time
+            sliding window
 
         Carrying capacity:
             Approximates the asymptote approached by the growth curve as the maximal measurement plus
@@ -301,13 +302,8 @@ class GrowthCurveModel:
         carrying_capacity = max(measurements) + diffs.std()
 
         # Lag time and growth rate
-        diffs_std = diffs.mean() + diffs.std()
-        # Find the value closest to diffs_std and then its index
-        diffs_index = min(diffs, key = lambda x: abs(x - diffs_std))
-        inflection = list(diffs).index(diffs_index)
-
         slopes = list()
-        for i in range(inflection, len(timestamps) - window):
+        for i in range(0, len(timestamps) - window):
             # Find the slope at the exponential growth phase over a sliding window
             slope, intercept, *_ = linregress(timestamps[i: i + window], measurements[i: i + window])
             slopes.append((slope, intercept))
@@ -316,7 +312,11 @@ class GrowthCurveModel:
             growth_rate, intercept = max(slopes)
             lag_time = -intercept / growth_rate
         else:
-            lag_time = timestamps[inflection // 2]
+            # Find the value closest to diffs_std, and then it's index
+            diffs_std = diffs.mean() + diffs.std()
+            diffs_index = min(diffs, key = lambda x: abs(x - diffs_std))
+            inflection = list(diffs).index(diffs_index)
+            lag_time = timestamps[inflection]
             growth_rate = max(diffs)
 
         return lag_time, growth_rate, carrying_capacity

@@ -20,8 +20,10 @@ def measurements(request):
 @pytest.fixture
 def host(request, timestamps, measurements):
     timestamps = [timedelta(seconds = t) for t in timestamps]
+    host = GrowthCurveHost(times = timestamps, signals = measurements)
+    host.growth_curve.fit_curve(initial_params = [0, 5, 5, 45])
 
-    yield GrowthCurveHost(times = timestamps, signals = measurements)
+    yield host
 
 
 class GrowthCurveBase(GrowthCurve):
@@ -86,7 +88,7 @@ class TestGrowthCurve:
 
         def test_lag_time(self, host):
             assert isinstance(host.growth_curve.lag_time, timedelta)
-            assert host.growth_curve.lag_time.total_seconds() == 5.0
+            assert host.growth_curve.lag_time.total_seconds() == 0.097664
 
         def test_lag_time_std(self, host):
             assert isinstance(host.growth_curve.lag_time_std, timedelta)
@@ -94,7 +96,7 @@ class TestGrowthCurve:
 
         def test_growth_rate(self, host):
             assert isinstance(host.growth_curve.growth_rate, float)
-            assert host.growth_curve.growth_rate == 10.0
+            assert host.growth_curve.growth_rate == 7.14763487423103
 
         def test_growth_rate_std(self, host):
             assert isinstance(host.growth_curve.growth_rate_std, float)
@@ -102,7 +104,7 @@ class TestGrowthCurve:
 
         def test_doubling_time(self, host):
             assert isinstance(host.growth_curve.doubling_time, timedelta)
-            assert host.growth_curve.doubling_time.total_seconds() == 0.069315
+            assert host.growth_curve.doubling_time.total_seconds() == 0.096976
 
         def test_doubling_time_std(self, host):
             host.growth_curve._growth_rate_std = 1
@@ -112,7 +114,7 @@ class TestGrowthCurve:
 
         def test_carrying_capacity(self, host):
             assert isinstance(host.growth_curve.carrying_capacity, float)
-            assert host.growth_curve.carrying_capacity == 45.25146120997929
+            assert host.growth_curve.carrying_capacity == 133.7829870211188
 
         def test_carrying_capacity_std(self, host):
             assert isinstance(host.growth_curve.carrying_capacity_std, float)
@@ -138,7 +140,7 @@ class TestGrowthCurve:
             with pytest.raises(ValueError):
                 GrowthCurveModel.estimate_parameters(timestamps, [0])
             assert GrowthCurveModel.estimate_parameters(timestamps, measurements) == (
-                5, 10.0, 45.25146120997929
+                5.606823451473998, 5.489090909090908, 45.25146120997929
             )
             assert GrowthCurveModel.estimate_parameters([0, 0, 0, 0, 0, 0], [0, 1, 3, 6, 10, 15], window = 3) == (
                 0, 5, 16.414213562373096
