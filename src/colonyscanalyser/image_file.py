@@ -116,8 +116,8 @@ class ImageFile(Unique, TimeStampElapsed):
             return None
 
     @staticmethod
-    def __load_image(file_path: Path, as_gray: bool = False, plugin: str = "pil") -> ndarray:
-        return imread(str(file_path), as_gray = as_gray, plugin = plugin)
+    def __load_image(file_path: Path, as_gray: bool = False, plugin: str = None, **plugin_args) -> ndarray:
+        return imread(str(file_path), as_gray = as_gray, plugin = plugin, **plugin_args)
 
 
 class ImageFileCollection(IdentifiedCollection):
