@@ -374,7 +374,6 @@ def main():
             plots.plot_doubling_map(plates.items, save_path)
             plots.plot_colony_map(image_files.items[-1].image, plates.items, save_path)
 
-        if PLOTS >= 2:
             for plate in plates.items:
                 if VERBOSE >= 2:
                     print(f"Saving plots for plate #{plate.id}")
