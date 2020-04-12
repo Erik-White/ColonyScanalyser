@@ -18,17 +18,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Extended compatibility to Python 3.8
 - Cached data is now not used by default
+- Individual plots for each plate are now output by default
 - `use_saved` command line argument renamed to `use_cached_data`
 - Compressed serialised data filename changed to `cached_data`
 - `save_plots` command line argument renamed to `plots`
+- `plate_size` now defaults to 90 mm, the visible size of a 100 mm plate in a plate holder
 - `plate_edge_cut` is now a percentage of the plate diameter, instead of a fixed pixel value
 - Refactored most of the functions from `main` as static methods in the `plate` or `image_file` modules
 - Improved flexibility when detecting date and time stamp information in file names
 - Replaced growth properties in `Colony`, now implemented as `growth_curve.GrowthCurveModel`
 - Modified plots to use new `GrowthCurveModel` properties
+- Improved colony segmentation in low contrast images and under poor growth conditions
+- Grouping of colony Timepoints is now faster and more accurate
+- Colonies are no longer identified based on circularity
 ### Fixed
 - A rare error when opening images using skimage.io.imread
 - Corrected default DPI settings and conversion factor
+### Removed
+- A number of Colony properties - now implemented by `growth_curve.GrowthCurveModel`
 
 ## [0.3.4] - 2020-01-18
 ### Added
