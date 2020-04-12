@@ -154,10 +154,7 @@ class GrowthCurveModel:
         if self._lag_time is None:
             self.fit_curve()
 
-        if self._lag_time.total_seconds() < 0:
-            return timedelta(seconds = 0)
-        else:
-            return self._lag_time
+        return self._lag_time
 
     @property
     def lag_time_std(self) -> timedelta:
@@ -198,7 +195,7 @@ class GrowthCurveModel:
         :param initial_params: initial estimate of parameters for the growth model
         """
         from statistics import median
-        from numpy import errstate, isinf, sqrt, diag, std
+        from numpy import errstate, iinfo, intc, isinf, isnan, sqrt, diag, std
 
         timestamps = [timestamp.total_seconds() for timestamp in sorted(self.data.keys())]
         measurements = [val for _, val in sorted(self.data.items())]
@@ -211,15 +208,20 @@ class GrowthCurveModel:
         carrying_capacity = 0.0
         carrying_capacity_std = 0.0
 
-        if timestamps and measurements:
+        # The number of values must be at least the number of parameters
+        if len(timestamps) >= 4 and len(measurements) >= 4:
             # Calculate standard deviation
             if all(isinstance(m, Iterable) for m in measurements):
                 measurements_std = [std(m, axis = 0) for m in measurements]
                 measurements = [median(val) for val in measurements]
 
+            # Try to estimate initial parameters, if unsuccessful pass None
+            # None will result in scipy.optimize.curve_fit using its own default parameters
             if initial_params is None:
-                lag_time, growth_rate, carrying_capacity = self.estimate_parameters(timestamps, measurements)
-                initial_params = [min(measurements), lag_time, growth_rate * 3600, carrying_capacity]
+                window = 15 if len(timestamps) > 15 else len(timestamps) // 3
+                params_estimate = self.estimate_parameters(timestamps, measurements, window = window)
+                if params_estimate:
+                    initial_params = [min(measurements), *params_estimate]
 
             # Suppress divide by zero errors caused by zeroes in sigma values
             with errstate(divide = "ignore"):
@@ -233,17 +235,21 @@ class GrowthCurveModel:
                 )
 
             if results is not None:
-                (_, lag_time, growth_rate, carrying_capacity), conf = results
+                results, conf = results
 
-                # Calculate standard deviation if results provided
-                if not (isinf(conf)).all():
-                    conf = sqrt(diag(conf.clip(min = 0)))
-                    _, lag_time_std, growth_rate_std, carrying_capacity_std = conf
+                if (not isinf(results).any() and not isnan(results).any()
+                        and not (results < 0).any() and not (results >= iinfo(intc).max).any()):
+                    _, lag_time, growth_rate, carrying_capacity = results
+
+                    # Calculate standard deviation if results provided
+                    if (not isinf(conf).any() and not isnan(conf).any()
+                            and not (results < 0).any() and not (conf >= iinfo(intc).max).any()):
+                        _, lag_time_std, growth_rate_std, carrying_capacity_std = sqrt(diag(conf.clip(min = 0)))
 
         self._lag_time = timedelta(seconds = lag_time)
         self._lag_time_std = timedelta(seconds = lag_time_std)
-        self._growth_rate = growth_rate / 3600
-        self._growth_rate_std = growth_rate_std / 3600
+        self._growth_rate = growth_rate
+        self._growth_rate_std = growth_rate_std
         self._carrying_capacity = carrying_capacity
         self._carrying_capacity_std = carrying_capacity_std
 
@@ -262,7 +268,7 @@ class GrowthCurveModel:
 
         Growth rate:
             Approximates the maximum specific growth rate as maximum growth rate measured over a
-            sliding window, after the lag time
+            sliding window
 
         Carrying capacity:
             Approximates the asymptote approached by the growth curve as the maximal measurement plus
@@ -292,18 +298,21 @@ class GrowthCurveModel:
         carrying_capacity = max(measurements) + diffs.std()
 
         # Lag time and growth rate
-        inflection = list(diffs).index(diffs[diffs > diffs.mean() + diffs.std()][0])
         slopes = list()
-        for i in range(inflection, len(timestamps) - window):
+        for i in range(0, len(timestamps) - window):
             # Find the slope at the exponential growth phase over a sliding window
             slope, intercept, *_ = linregress(timestamps[i: i + window], measurements[i: i + window])
             slopes.append((slope, intercept))
 
-        if len(slopes) > 0:
+        if slopes and max(slopes)[0] > 0:
             growth_rate, intercept = max(slopes)
             lag_time = -intercept / growth_rate
         else:
-            lag_time = timestamps[inflection // 2]
+            # Find the value closest to diffs_std, and then it's index
+            diffs_std = diffs.mean() + diffs.std()
+            diffs_index = min(diffs, key = lambda x: abs(x - diffs_std))
+            inflection = list(diffs).index(diffs_index)
+            lag_time = timestamps[inflection]
             growth_rate = max(diffs)
 
         return lag_time, growth_rate, carrying_capacity
@@ -367,6 +376,7 @@ class GrowthCurveModel:
 
         try:
             with warnings.catch_warnings():
+                warnings.simplefilter("ignore", RuntimeWarning)
                 warnings.simplefilter("ignore", OptimizeWarning)
                 return curve_fit(curve_function, timestamps, measurements, p0 = initial_params, **kwargs)
         except RuntimeError:

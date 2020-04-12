@@ -44,7 +44,7 @@ At the highest level (currently `4`), animations of plate images are created in 
 --plots
 ```
 ### Plate edge cut
-The radius, in pixels, to remove from the edge of the plate image. This ensures that the image is clear of reflections, shadows and writing that are typically present near the edge of the plate image.
+The radius, as a percentage of the plate diameter, to exclude from the edge of the plate image. This ensures that the image is clear of reflections, shadows and writing that are typically present near the edge of the plate image.
 
 - input: integer
 ```

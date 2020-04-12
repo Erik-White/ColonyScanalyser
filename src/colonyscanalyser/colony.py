@@ -29,7 +29,7 @@ class Colony(Identified, Named, GrowthCurve):
 
         def __iter__(self):
             return iter([
-                self.timestamp,
+                self.timestamp.total_seconds() // 60,
                 self.area,
                 round_tuple_floats(self.center, 2),
                 round(self.diameter, 2),
@@ -227,28 +227,16 @@ def colonies_from_timepoints(
     :param distance_tolerance: the difference allowed between centre values
     :returns: a list of Colony objects containing Timepoint data
     """
-
-    colony_centers = list()
     colonies = list()
 
     if not len(timepoints) > 0:
         raise ValueError("No timepoints were supplied")
 
-    # First group by row values
-    center_groups = group_timepoints_by_center(
+    # Group Timepoints by centre distances
+    colony_centers = group_timepoints_by_center(
         timepoints,
-        max_distance = distance_tolerance,
-        axis = 0
+        max_distance = distance_tolerance
     )
-
-    # Then split the groups further by column values
-    for timepoint_group in center_groups:
-        group = group_timepoints_by_center(
-            timepoint_group,
-            max_distance = distance_tolerance,
-            axis = 1
-        )
-        colony_centers.extend(group)
 
     # Create a colony object for each group of centres
     for i, timepoint_objects in enumerate(colony_centers, start = 1):
@@ -262,36 +250,36 @@ def colonies_from_timepoints(
 
 def group_timepoints_by_center(
     timepoints: List[Colony.Timepoint],
-    max_distance: float = 1,
-    axis: int = 0
-) -> List[List[Colony]]:
+    max_distance: float = 1
+) -> List[List[Colony.Timepoint]]:
     """
     Split a list of Timepoint objects into sub groups
-    Compares difference in values along a specified axis
+
+    Timepoints are grouped by euclidean distance
 
     :param timepoints: a list of Timepoint objects
-    :param max_distance: the difference allowed between centre values
-    :param axis: the axis index to compare values along
-    :returns: a list of lists of Colony objects containing Timepoint objects
+    :param max_distance: the difference allowed between centers
+    :returns: a list of lists of Timepoint objects
     """
-    from collections import defaultdict
+    try:
+        from math import dist
+    except ImportError:    # pragma: no cover
+        # math.dist is not available in Python <3.8
+        from scipy.spatial.distance import euclidean as dist
 
-    # Check that the specified axis exists
-    axes = range(len(timepoints[0].center))
-    if type(axis) is not int or axis < 0 or axis > max(axes):
-        raise ValueError(f"The specified axis ({axis}) is not available. Available axes: {[*axes]}")
+    center_groups = list()
+    timepoints = timepoints.copy()
 
-    center_groups = defaultdict(list)
-    group_count = 0
-    timepoint_prev = None
+    while len(timepoints) > 0:
+        centers = list()
 
-    # Sort the list of timepoints along the specified axis
-    for timepoint in sorted(timepoints, key = lambda k: k.center[axis]):
-        # Create a new group each time the tolerance limit is reached
-        if (timepoint_prev is None or
-                abs(timepoint.center[axis] - timepoint_prev.center[axis]) > max_distance):
-            group_count += 1
-            timepoint_prev = timepoint
-        center_groups[group_count].append(timepoint)
+        # Compare current center with remaining centers in the list
+        for j, timepoint_compare in reversed(list(enumerate(timepoints))):
+            if dist(timepoints[0].center, timepoint_compare.center) <= max_distance:
+                # Remove the Timepoint to a group if within distance limit
+                centers.append(timepoints.pop(j))
 
-    return [list(centers) for centers in center_groups.values()]
+        if centers:
+            center_groups.append(centers)
+
+    return center_groups
