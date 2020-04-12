@@ -1,5 +1,7 @@
 import pytest
+from unittest.mock import patch
 from datetime import timedelta
+from numpy import linspace
 
 from colonyscanalyser.growth_curve import (
     GrowthCurve,
@@ -7,21 +9,30 @@ from colonyscanalyser.growth_curve import (
 )
 
 
-@pytest.fixture(params = [[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]])
+@pytest.fixture
 def timestamps(request):
-    yield request.param
+    yield linspace(0, 3, 50)
 
 
-@pytest.fixture(params = [[0, 0.2, 0.3, 0.5, 0.8, 1.2, 2.5, 4, 8, 15, 25, 35, 40, 42, 41, 41.5, 41.8, 41.9, 42, 42, 42]])
-def measurements(request):
-    yield request.param
+@pytest.fixture
+def measurements(request, timestamps):
+    from numpy import absolute
+    from numpy.random import normal
+
+    # Generate a sigmoid curve with a very small amount of noise
+    yield sigmoid_model(timestamps) + (0.005 * absolute(normal(timestamps, scale = 1)))
+
+
+def sigmoid_model(x, a = 0, b = 0, c = 0, d = 0):
+    return 1 - (1 / (1 + x ** 4))
 
 
 @pytest.fixture
 def host(request, timestamps, measurements):
     timestamps = [timedelta(seconds = t) for t in timestamps]
+
     host = GrowthCurveHost(times = timestamps, signals = measurements)
-    host.growth_curve.fit_curve(initial_params = [0, 5, 5, 45])
+    host.growth_curve.model = sigmoid_model
 
     yield host
 
@@ -75,12 +86,9 @@ class TestGrowthCurve:
 
     class TestProperties:
         def test_model(self, host):
-            def test_model(x):
-                return x
-
+            assert host.growth_curve.model == sigmoid_model
+            host.growth_curve.model = GrowthCurveModel._gompertz
             assert host.growth_curve.model == GrowthCurveModel._gompertz
-            host.growth_curve.model = test_model
-            assert host.growth_curve.model == test_model
 
         def test_growth_curve_data(self, host, timestamps):
             assert isinstance(host.growth_curve.data, dict)
@@ -88,15 +96,15 @@ class TestGrowthCurve:
 
         def test_lag_time(self, host):
             assert isinstance(host.growth_curve.lag_time, timedelta)
-            assert host.growth_curve.lag_time.total_seconds() == 0.097664
+            assert round(host.growth_curve.lag_time.total_seconds(), 1) == 0.5
 
         def test_lag_time_std(self, host):
             assert isinstance(host.growth_curve.lag_time_std, timedelta)
-            assert host.growth_curve.lag_time_std.total_seconds() == 0
+            assert host.growth_curve.lag_time_std.total_seconds() >= 0
 
         def test_growth_rate(self, host):
             assert isinstance(host.growth_curve.growth_rate, float)
-            assert host.growth_curve.growth_rate == 7.14763487423103
+            assert round(host.growth_curve.growth_rate, 1) == 0.9
 
         def test_growth_rate_std(self, host):
             assert isinstance(host.growth_curve.growth_rate_std, float)
@@ -104,17 +112,17 @@ class TestGrowthCurve:
 
         def test_doubling_time(self, host):
             assert isinstance(host.growth_curve.doubling_time, timedelta)
-            assert host.growth_curve.doubling_time.total_seconds() == 0.096976
+            assert round(host.growth_curve.doubling_time.total_seconds(), 1) == 0.8
 
         def test_doubling_time_std(self, host):
             host.growth_curve._growth_rate_std = 1
 
             assert isinstance(host.growth_curve.doubling_time_std, timedelta)
-            assert host.growth_curve.doubling_time_std.total_seconds() == 0.693147
+            assert round(host.growth_curve.doubling_time_std.total_seconds(), 1) == 0.7
 
         def test_carrying_capacity(self, host):
             assert isinstance(host.growth_curve.carrying_capacity, float)
-            assert host.growth_curve.carrying_capacity == 133.7829870211188
+            assert round(host.growth_curve.carrying_capacity, 1) == 1
 
         def test_carrying_capacity_std(self, host):
             assert isinstance(host.growth_curve.carrying_capacity_std, float)
@@ -122,10 +130,8 @@ class TestGrowthCurve:
 
     class TestMethods():
         def test_fit_growth_curve(self, host):
-            from numpy import linspace
-
-            host.signals = linspace(1, 6, len(host.signals))
-            host.growth_curve.fit_curve(initial_params = [1, 1, 1, 1])
+            host.signals = linspace(1, 5, len(host.signals))
+            host.growth_curve.fit_curve(initial_params = [1.2, 0.2, 3.5, max(host.signals)])
 
             assert host.growth_curve._lag_time
             assert host.growth_curve._lag_time_std.total_seconds() >= 0
@@ -134,14 +140,39 @@ class TestGrowthCurve:
             assert host.growth_curve._carrying_capacity
             assert host.growth_curve._carrying_capacity_std >= 0
 
+        def test_fit_growth_curve_iter(self, host):
+            host.signals = [[0, signal] for signal in host.signals]
+            host.growth_curve.fit_curve()
+
+            assert host.growth_curve._lag_time
+            assert host.growth_curve._lag_time_std.total_seconds() >= 0
+            assert host.growth_curve._growth_rate
+            assert host.growth_curve._growth_rate_std >= 0
+            assert host.growth_curve._carrying_capacity
+            assert host.growth_curve._carrying_capacity_std >= 0
+
+        @patch("colonyscanalyser.growth_curve.GrowthCurveModel._fit_curve")
+        def test_fit_growth_curve_std(self, patch, host):
+            from numpy import array, float
+
+            # Generate some number for standard deviation
+            conf = linspace(1, 16, 16)
+            conf = conf.reshape(4, 4)
+            host.growth_curve._fit_curve.return_value = (array([1, 1, 1, 1], dtype = float), conf)
+
+            host.growth_curve.fit_curve()
+
+            assert host.growth_curve._lag_time_std.total_seconds() == 2.44949
+            assert host.growth_curve._growth_rate_std == 3.3166247903554
+            assert host.growth_curve._carrying_capacity_std == 4
+
         def test_estimate_parameters(self, timestamps, measurements):
+            from colonyscanalyser.utilities import round_tuple_floats
             assert GrowthCurveModel.estimate_parameters(timestamps, list()) == (0, 0, 0)
             assert GrowthCurveModel.estimate_parameters(timestamps, measurements, window = len(timestamps) + 1) == (0, 0, 0)
             with pytest.raises(ValueError):
                 GrowthCurveModel.estimate_parameters(timestamps, [0])
-            assert GrowthCurveModel.estimate_parameters(timestamps, measurements) == (
-                5.606823451473998, 5.489090909090908, 45.25146120997929
-            )
+            assert round_tuple_floats(GrowthCurveModel.estimate_parameters(timestamps, measurements), 1) == (0.5, 1, 1)
             assert GrowthCurveModel.estimate_parameters([0, 0, 0, 0, 0, 0], [0, 1, 3, 6, 10, 15], window = 3) == (
                 0, 5, 16.414213562373096
             )

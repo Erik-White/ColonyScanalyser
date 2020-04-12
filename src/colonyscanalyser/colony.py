@@ -263,7 +263,8 @@ def group_timepoints_by_center(
     """
     try:
         from math import dist
-    except ImportError:
+    except ImportError:    # pragma: no cover
+        # math.dist is not available in Python <3.8
         from scipy.spatial.distance import euclidean as dist
 
     center_groups = list()

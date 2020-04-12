@@ -154,10 +154,7 @@ class GrowthCurveModel:
         if self._lag_time is None:
             self.fit_curve()
 
-        if self._lag_time.total_seconds() < 0:
-            return timedelta(seconds = 0)
-        else:
-            return self._lag_time
+        return self._lag_time
 
     @property
     def lag_time_std(self) -> timedelta:
@@ -239,7 +236,6 @@ class GrowthCurveModel:
 
             if results is not None:
                 results, conf = results
-                print(results)
 
                 if (not isinf(results).any() and not isnan(results).any()
                         and not (results < 0).any() and not (results >= iinfo(intc).max).any()):
