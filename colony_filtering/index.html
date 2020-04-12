@@ -134,17 +134,18 @@
 <p><img align="right" src="../images/plate_timelapse_tiny.gif">
 Images are first segmented to find objects in the image that appear to be colonies. Objects are assessed on three initial criteria:</p>
 <ul>
-<li>Size: objects smaller than 5 pixels are ignored. This is to reduce the level of background noise that would otherwise be picked up</li>
-<li>Eccentricity: objects with high eccentricity are ignored as colonies are always circular</li>
-<li>Circularity: along with eccentricity, this gives a good indication of the 'roundness' of an object</li>
+<li>Size: objects smaller than 1.5 pixels are ignored. This reduces that amount of noise at the limit of detection</li>
+<li>Plate edges: colonies are removed if they grow over the edge of the plate measurement area</li>
+<li>Static objects: objects or image arefacts that are present in the first (i.e. empty) plate are removed. Colonies that intersect with these objects are also removed</li>
 </ul>
-<p>This filtering has the effect of removing colonies that merge together. This is beneficial as merged colonies do not exhibit the same growth characteristics as unimpinged colonies. It is also practically impossible to divide a merged area between two individual colonies.</p>
 <p>After segmenting, the resulting objects are filtered further by three criteria:</p>
 <ul>
 <li>Colonies that do not have enough data points</li>
+<li>Colonies with large gaps in the data points</li>
 <li>Objects that do not show growth</li>
-<li>Colonies with large initial areas (usually merged colonies)</li>
-</ul></div>
+<li>Colonies with large initial areas (merged colonies)</li>
+</ul>
+<p>This filtering has the effect of removing colonies that merge together. This is beneficial as merged colonies do not exhibit the same growth characteristics as unimpinged colonies. It is also practically impossible to divide a merged area between two individual colonies.</p></div>
             </div>
         </div>
 
