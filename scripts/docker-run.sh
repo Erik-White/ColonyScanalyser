@@ -1,4 +1,4 @@
-# Run a containerised instance of ColonyScanalyser on
+# Use a containerised instance of ColonyScanalyser to analyse
 # a directory of images in the host system
 #
 # Pass the directory path to this script, followed by any
