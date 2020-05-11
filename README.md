@@ -42,7 +42,7 @@ The remaining Python package dependencies are automatically handled by Pip when 
 
 <img align="right" src="docs/images/plate_map_small.png">
 
-Optionally use a virtual environment, such as [Pipenv](https://github.com/pypa/pipenv).
+Optionally use a virtual environment, such as [Pipenv](https://github.com/pypa/pipenv), or a [containerised instance of the package](https://hub.docker.com/r/erikwhite/colonyscanalyser).
 
 For testing:
 * [Pytest](https://pytest.org/)

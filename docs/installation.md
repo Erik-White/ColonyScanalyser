@@ -49,3 +49,13 @@ pipenv run scanalyser /path/to/images
 ```
 
 [More detailed instructions](https://packaging.python.org/tutorials/managing-dependencies/) can be found on the Python packaging site.
+
+## Docker
+The image is available on [Docker Hub](https://hub.docker.com/r/erikwhite/colonyscanalyser).
+
+Alternatively, you can build the image yourself using the Dockerfile included with the package. The container can be built by running `docker-build.sh` in the `scripts` directory.
+
+`scripts/docker-run.sh` is an example of how to use a containerised instance of ColonyScanalyser to analyse images in a directory on the host machine. Run the script as you normally would ColonyScanalyser, passing it the target image directory followed by any other command line arguments:
+```
+scripts/docker-run.sh /absolute/path/to/images/ --verbose 3 --plate_size 100
+```
