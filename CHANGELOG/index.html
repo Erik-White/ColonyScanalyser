@@ -123,6 +123,10 @@
             
             <li class="nav-item" data-level="1"><a href="#changelog" class="nav-link">Changelog</a>
               <ul class="nav flex-column">
+            <li class="nav-item" data-level="2"><a href="#041-2020-05-11" class="nav-link">[0.4.1] - 2020-05-11</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
             <li class="nav-item" data-level="2"><a href="#040-2020-03-26" class="nav-link">[0.4.0] - 2020-03-26</a>
               <ul class="nav flex-column">
               </ul>
@@ -174,8 +178,14 @@
 <p>All notable changes to this project will be documented in this file.</p>
 <p>The format is based on <a href="https://keepachangelog.com/en/1.0.0/">Keep a Changelog</a>,
 and this project adheres to <a href="https://semver.org/spec/v2.0.0.html">Semantic Versioning</a>.</p>
-<h2 id="040-2020-03-26">[0.4.0] - 2020-03-26</h2>
+<h2 id="041-2020-05-11">[0.4.1] - 2020-05-11</h2>
 <h3 id="added">Added</h3>
+<ul>
+<li>Dockerfile and utility scripts</li>
+<li>Docker image is now available: https://hub.docker.com/r/erikwhite/colonyscanalyser</li>
+</ul>
+<h2 id="040-2020-03-26">[0.4.0] - 2020-03-26</h2>
+<h3 id="added_1">Added</h3>
 <ul>
 <li><code>plate_labels</code> command line argument</li>
 <li><code>base</code> module with base classes to provide core functionality throughout the package</li>
@@ -215,7 +225,7 @@ and this project adheres to <a href="https://semver.org/spec/v2.0.0.html">Semant
 <li>A number of Colony properties - now implemented by <code>growth_curve.GrowthCurveModel</code></li>
 </ul>
 <h2 id="034-2020-01-18">[0.3.4] - 2020-01-18</h2>
-<h3 id="added_1">Added</h3>
+<h3 id="added_2">Added</h3>
 <ul>
 <li>plate_edge_cut command line argument</li>
 <li>Plate and colony ID map to show how they have been identified</li>
@@ -225,7 +235,7 @@ and this project adheres to <a href="https://semver.org/spec/v2.0.0.html">Semant
 <li>Add border exclusion and slightly relax colony circularity filtering in segment_image</li>
 </ul>
 <h2 id="033-2019-12-19">[0.3.3] - 2019-12-19</h2>
-<h3 id="added_2">Added</h3>
+<h3 id="added_3">Added</h3>
 <ul>
 <li>Colony colour identification and grouping</li>
 <li>Webcolors package and rgb_to_name function to provide CSS colour groupings</li>
@@ -235,7 +245,7 @@ and this project adheres to <a href="https://semver.org/spec/v2.0.0.html">Semant
 <li>crop_image will now correctly handle images without an alpha channel</li>
 </ul>
 <h2 id="032-2019-11-11">[0.3.2] - 2019-11-11</h2>
-<h3 id="added_3">Added</h3>
+<h3 id="added_4">Added</h3>
 <ul>
 <li>Documentation</li>
 <li>Published documentation to GitHub pages (https://erik-white.github.io/ColonyScanalyser/)</li>
@@ -247,7 +257,7 @@ and this project adheres to <a href="https://semver.org/spec/v2.0.0.html">Semant
 <li>Adjust setup to correctly find packages in implicit namespaces</li>
 </ul>
 <h2 id="030-2019-11-04">[0.3.0] - 2019-11-04</h2>
-<h3 id="added_4">Added</h3>
+<h3 id="added_5">Added</h3>
 <ul>
 <li>Added changelog</li>
 </ul>
@@ -257,7 +267,7 @@ and this project adheres to <a href="https://semver.org/spec/v2.0.0.html">Semant
 <li>Update setup for readme compatability with PyPi</li>
 </ul>
 <h2 id="022-2019-11-02">[0.2.2] - 2019-11-02</h2>
-<h3 id="added_5">Added</h3>
+<h3 id="added_6">Added</h3>
 <ul>
 <li>GitHub action for automatically linting and testing pushes</li>
 <li>GitHub action for building and releasing package to PyPi</li>
@@ -267,7 +277,7 @@ and this project adheres to <a href="https://semver.org/spec/v2.0.0.html">Semant
 <li>Linting errors highlighted by flake8</li>
 </ul>
 <h2 id="021-2019-10-31">[0.2.1] - 2019-10-31</h2>
-<h3 id="added_6">Added</h3>
+<h3 id="added_7">Added</h3>
 <ul>
 <li>Graceful exit if no colonies are found</li>
 <li>Workaround function to ensure correct plates are found in images</li>
@@ -283,7 +293,7 @@ and this project adheres to <a href="https://semver.org/spec/v2.0.0.html">Semant
 <li>Removed depreciated regionprop coordinates</li>
 </ul>
 <h2 id="020-2019-10-28">[0.2.0] - 2019-10-28</h2>
-<h3 id="added_7">Added</h3>
+<h3 id="added_8">Added</h3>
 <ul>
 <li>Multiprocessing: greatly improves image processing speed</li>
 <li>Now shows a progress bar when processing images</li>
@@ -303,7 +313,7 @@ and this project adheres to <a href="https://semver.org/spec/v2.0.0.html">Semant
 </ul>
 <h2 id="012-2019-10-13">[0.1.2] - 2019-10-13</h2>
 <p>Inital release</p>
-<h3 id="added_8">Added</h3>
+<h3 id="added_9">Added</h3>
 <ul>
 <li>Image processing, plotting and data aggregation</li>
 <li>Python package uploaded to PyPi</li>

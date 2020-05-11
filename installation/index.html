@@ -135,6 +135,10 @@
               <ul class="nav flex-column">
               </ul>
             </li>
+            <li class="nav-item" data-level="2"><a href="#docker" class="nav-link">Docker</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
               </ul>
             </li>
         </ul>
@@ -186,7 +190,13 @@ pipenv install colonyscanalyser
 <pre><code>pipenv run scanalyser /path/to/images
 </code></pre>
 
-<p><a href="https://packaging.python.org/tutorials/managing-dependencies/">More detailed instructions</a> can be found on the Python packaging site.</p></div>
+<p><a href="https://packaging.python.org/tutorials/managing-dependencies/">More detailed instructions</a> can be found on the Python packaging site.</p>
+<h2 id="docker">Docker</h2>
+<p>The image is available on <a href="https://hub.docker.com/r/erikwhite/colonyscanalyser">Docker Hub</a>.</p>
+<p>Alternatively, you can build the image yourself using the Dockerfile included with the package. The container can be built by running <code>docker-build.sh</code> in the <code>scripts</code> directory.</p>
+<p><code>scripts/docker-run.sh</code> is an example of how to use a containerised instance of ColonyScanalyser to analyse images in a directory on the host machine. Run the script as you normally would ColonyScanalyser, passing it the target image directory followed by any other command line arguments:</p>
+<pre><code>scripts/docker-run.sh /absolute/path/to/images/ --verbose 3 --plate_size 100
+</code></pre></div>
             </div>
         </div>
 
