@@ -117,7 +117,16 @@ class ImageFile(Unique, TimeStampElapsed):
 
     @staticmethod
     def __load_image(file_path: Path, as_gray: bool = False, plugin: str = None, **plugin_args) -> ndarray:
-        return imread(str(file_path), as_gray = as_gray, plugin = plugin, **plugin_args)
+        while True:
+            try:
+                return imread(str(file_path), as_gray = as_gray, plugin = plugin, **plugin_args)
+            except Exception:
+                if not plugin:
+                    # Retry imread once with a different plugin if none has been set
+                    # PIL is quite tolerant and may be able to handle images that the default plugin cannot
+                    plugin = "pil"
+                else:
+                    raise
 
 
 class ImageFileCollection(IdentifiedCollection):
