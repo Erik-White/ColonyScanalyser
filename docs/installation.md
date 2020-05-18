@@ -27,6 +27,12 @@ A message should hopefully indicate that the ColonyScanalyser package was downlo
 
 Note: We use the command `pip3` in case both Python 2 & 3 are installed on the system. In which case `pip` will usually default to installing packages for Python 2
 
+If you already have ColonyScanalyser installed via Pip and simply need to update it, use:
+
+```
+pip3 install colonyscanalyser --upgrade
+```
+
 ## Virtual environments
 There are a number of benefits to setting up self-contained virtual environments instead of installing system-wide packages:
 
