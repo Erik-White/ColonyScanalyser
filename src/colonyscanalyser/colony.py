@@ -217,7 +217,7 @@ def timepoints_from_image(
 
 
 def colonies_from_timepoints(
-    timepoints: List["Timepoint"],
+    timepoints: List[Colony.Timepoint],
     distance_tolerance: float = 1
 ) -> List[Colony]:
     """
