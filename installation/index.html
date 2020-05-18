@@ -170,6 +170,10 @@
 
 <p>A message should hopefully indicate that the ColonyScanalyser package was downloaded and installed successfully.</p>
 <p>Note: We use the command <code>pip3</code> in case both Python 2 &amp; 3 are installed on the system. In which case <code>pip</code> will usually default to installing packages for Python 2</p>
+<p>If you already have ColonyScanalyser installed via Pip and simply need to update it, use:</p>
+<pre><code>pip3 install colonyscanalyser --upgrade
+</code></pre>
+
 <h2 id="virtual-environments">Virtual environments</h2>
 <p>There are a number of benefits to setting up self-contained virtual environments instead of installing system-wide packages:</p>
 <ul>
@@ -225,7 +229,7 @@ pipenv install colonyscanalyser
                 </p>
                 <form>
                     <div class="form-group">
-                        <input type="text" class="form-control" placeholder="Search..." id="mkdocs-search-query" title="Type search term here">
+                        <input type="search" class="form-control" placeholder="Search..." id="mkdocs-search-query" title="Type search term here">
                     </div>
                 </form>
                 <div id="mkdocs-search-results"></div>
