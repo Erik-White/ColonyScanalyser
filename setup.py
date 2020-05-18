@@ -32,7 +32,7 @@ setup(
     install_requires = [
         "numpy >= 1.18",
         "matplotlib",
-        "scikit-image >= 0.16",
+        "scikit-image >= 0.17",
         "webcolors"
     ],
     extras_require = {
