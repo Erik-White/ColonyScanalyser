@@ -8,7 +8,7 @@ Scanners with a resolution of at least 300 DPI are recommended, though greater i
 ### Plates and holders
 To allow the colonies to easily be discerned in the image, a strongly contrasting background is needed. An easy technique is to paint the bottom of the plates black, or place them on black fabric.
 ### Image formats
-Images should be saved in a [lossless format](https://en.wikipedia.org/wiki/Lossless_compression#Raster_graphics). ColonyScanalyser currently supports `png` and `tiff` image files.
+Images should be saved in a [lossless format](https://en.wikipedia.org/wiki/Lossless_compression#Raster_graphics). ColonyScanalyser currently supports `png`, `tiff` and `bmp` image files.
 ### Image file names
 Images need to be saved with a file name that contains the date and time stamp when the image was taken. This information must be in `YYYYMMDD HHMM` (year/month/day hour/minute) format.
 

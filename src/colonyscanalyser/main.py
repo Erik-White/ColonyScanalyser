@@ -195,7 +195,7 @@ def main():
 
     if not USE_CACHED or plates is None:
         # Find images in working directory
-        image_formats = ["tif", "tiff", "png"]
+        image_formats = ["tif", "tiff", "png", "bmp"]
         image_paths = file_access.get_files_by_type(BASE_PATH, image_formats)
 
         # Store images as ImageFile objects
