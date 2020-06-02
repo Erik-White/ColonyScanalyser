@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.4.3] - 2020-06-02
 ### Added
 - `--version` command line argument to display installed package version number
+- `--image_formats` command line argument to display supported image formats
 ### Changed
 - Improved the output from the `--help` command line argument to make it a little clearer
 

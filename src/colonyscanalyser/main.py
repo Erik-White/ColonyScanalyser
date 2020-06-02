@@ -37,11 +37,15 @@ def argparse_init(*args, **kwargs) -> argparse.ArgumentParser:
     :params kwargs: keyword arguments to pass to the ArgumentParser initialiser
     """
     parser = argparse.ArgumentParser(*args, **kwargs)
+
+    supported_formats = ["tif", "tiff", "png", "bmp"]
     
     parser.add_argument("path", type = str,
                         help = "Image files location", default = None)
     parser.add_argument("-dpi", "--dots_per_inch", type = int, default = 300,
                         help = "The image DPI (dots per inch) setting", metavar = "N")
+    parser.add_argument("--image_formats", default = supported_formats, action = "version", version = str(supported_formats),
+                        help = "The supported image formats")
     parser.add_argument("-mp", "--multiprocessing", type = strtobool, default = True,
                         help = "Enables use of more CPU cores, faster but more resource intensive",  metavar = "BOOLEAN")
     parser.add_argument("-p", "--plots", type = int, default = 1,
@@ -166,6 +170,7 @@ def main():
     # Retrieve and parse arguments
     args = parser.parse_args()
     BASE_PATH = args.path
+    IMAGE_FORMATS = args.image_formats
     PLOTS = args.plots
     PLATE_LABELS = {plate_id: label for plate_id, label in enumerate(args.plate_labels, start = 1)}
     PLATE_LATTICE = tuple(args.plate_lattice)
@@ -218,8 +223,7 @@ def main():
 
     if not USE_CACHED or plates is None:
         # Find images in working directory
-        image_formats = ["tif", "tiff", "png", "bmp"]
-        image_paths = file_access.get_files_by_type(BASE_PATH, image_formats)
+        image_paths = file_access.get_files_by_type(BASE_PATH, IMAGE_FORMATS)
 
         # Store images as ImageFile objects
         # Timestamps are automatically read from filenames
