@@ -94,4 +94,10 @@ The level of information output to the command line. Default level is `1`, incre
 -v
 --verbose
 ```
+### Package version
+Displays the version number of the installed ColonyScanalyser package
+
+```
+--version
+```
 
