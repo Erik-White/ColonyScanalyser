@@ -39,7 +39,7 @@ setup(
         "scikit-image >= 0.17",
         "webcolors",
         # Ensure metadata is available on Python <3.8
-        "importlib-metadata ~= 1.0 ; python_version < '3.8'",
+        "importlib-metadata ~= 1.0 ; python_version < '3.8'"
     ],
     extras_require = {
         "dev": [

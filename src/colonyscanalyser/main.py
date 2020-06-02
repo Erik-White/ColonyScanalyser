@@ -1,7 +1,7 @@
 ﻿# System modules
 import sys
 import argparse
-from typing import Union, Dict, List, Tuple
+from typing import Optional, Union, Dict, List, Tuple
 from pathlib import Path
 from datetime import datetime
 from distutils.util import strtobool
@@ -19,6 +19,7 @@ from numpy import ndarray, diff
 
 # Local modules
 from colonyscanalyser import (
+    config,
     utilities,
     file_access,
     imaging,
@@ -33,36 +34,35 @@ def argparse_init(*args, **kwargs) -> argparse.ArgumentParser:
     """
     Initialise an ArgumentParser instance with the standard package arguments
 
-    :params args: positional arguments to pass to the ArgumentParser initialiser
-    :params kwargs: keyword arguments to pass to the ArgumentParser initialiser
+    :param args: positional arguments to pass to the ArgumentParser initialiser
+    :param kwargs: keyword arguments to pass to the ArgumentParser initialiser
+    :returns: an ArgumentParser instance with the standard package arguments
     """
     parser = argparse.ArgumentParser(*args, **kwargs)
-
-    supported_formats = ["tif", "tiff", "png", "bmp"]
     
     parser.add_argument("path", type = str,
                         help = "Image files location", default = None)
-    parser.add_argument("-dpi", "--dots_per_inch", type = int, default = 300,
+    parser.add_argument("-dpi", "--dots_per_inch", type = int, default = config.DOTS_PER_INCH,
                         help = "The image DPI (dots per inch) setting", metavar = "N")
-    parser.add_argument("--image_formats", default = supported_formats, action = "version", version = str(supported_formats),
+    parser.add_argument("--image_formats", default = config.SUPPORTED_FORMATS, action = "version", version = str(config.SUPPORTED_FORMATS),
                         help = "The supported image formats")
-    parser.add_argument("-mp", "--multiprocessing", type = strtobool, default = True,
+    parser.add_argument("-mp", "--multiprocessing", type = strtobool, default = config.MULTIPROCESSING,
                         help = "Enables use of more CPU cores, faster but more resource intensive",  metavar = "BOOLEAN")
-    parser.add_argument("-p", "--plots", type = int, default = 1,
+    parser.add_argument("-p", "--plots", type = int, default = config.OUTPUT_PLOTS,
                         help = "The detail level of plot images to store on disk", metavar = "N")
-    parser.add_argument("--plate_edge_cut", type = int, default = 5,
+    parser.add_argument("--plate_edge_cut", type = int, default = config.PLATE_EDGE_CUT,
                         help = "The exclusion area from the plate edge, as a percentage of the plate diameter", metavar = "N")
     parser.add_argument("--plate_labels", type = str, nargs = "*", default = list(),
                         help = "A list of labels to identify each plate. Plates are ordered from top left, in rows. Example usage: --plate_labels plate1 plate2",
                         metavar = "LABEL")
-    parser.add_argument("--plate_lattice", type = int, nargs = 2, default = (3, 2),
+    parser.add_argument("--plate_lattice", type = int, nargs = 2, default = config.PLATE_LATTICE,
                         help = "The row and column co-ordinate layout of plates. Example usage: --plate_lattice 3 3",
                         metavar = ("ROW", "COL"))
-    parser.add_argument("--plate_size", type = int, default = 90,
+    parser.add_argument("--plate_size", type = int, default = config.PLATE_SIZE,
                         help = "The plate diameter, in millimetres", metavar = "N")
-    parser.add_argument("--use_cached_data", type = strtobool, default = False,
+    parser.add_argument("--use_cached_data", type = strtobool, default = config.USE_CACHED_DATA,
                         help = "Allow use of previously calculated data", metavar = "BOOLEAN")
-    parser.add_argument("-v", "--verbose", type = int, default = 1,
+    parser.add_argument("-v", "--verbose", type = int, default = config.OUTPUT_VERBOSE,
                         help = "Information output level", metavar = "N")
     parser.add_argument("--version", action = "version", version = f"ColonyScanlayser {metadata.version('colonyscanalyser')}",
                         help = "The package version number")
@@ -198,13 +198,12 @@ def main():
         print(f"Working directory: {BASE_PATH}")
 
     # Check if processed image data is already stored and can be loaded
-    segmented_image_data_filename = "cached_data"
     plates = None
     if USE_CACHED:
         if VERBOSE >= 1:
             print("Attempting to load cached data")
         plates = file_access.load_file(
-            BASE_PATH.joinpath("data", segmented_image_data_filename),
+            BASE_PATH.joinpath(config.DATA_DIR, config.CACHED_DATA_FILE_NAME),
             file_access.CompressionMethod.LZMA,
             pickle = True
         )
@@ -329,24 +328,24 @@ def main():
                 break
 
             plate = plates.get_item(plate_id)
-            plate.items = colonies_from_timepoints(plate_timepoints, distance_tolerance = 2)
+            plate.items = colonies_from_timepoints(plate_timepoints, distance_tolerance = config.COLONY_DISTANCE_MAX)
             if VERBOSE >= 3:
                 print(f"{plate.count} objects located on plate {plate.id}, before filtering")
 
             # Filter colonies to remove noise, background objects and merged colonies
             timestamp_diff_std = diff(image_files.timestamps_elapsed_seconds[1:]).std()
-            timestamp_diff_std += 20
+            timestamp_diff_std += config.COLONY_TIMESTAMP_DIFF_MAX
             plate.items = list(filter(lambda colony:
                 # Remove objects that do not have sufficient data points
-                len(colony.timepoints) > 5 and
+                len(colony.timepoints) > config.COLONY_TIMEPOINTS_MIN and
                 # No colonies should be visible at the start of the experiment
                 colony.time_of_appearance.total_seconds() > 0 and
                 # Remove objects with large gaps in the data
                 diff([t.timestamp.total_seconds() for t in colony.timepoints[1:]]).std() < timestamp_diff_std and
                 # Remove object that do not show growth, these are not colonies
-                colony.timepoint_last.area > 4 * colony.timepoint_first.area and
+                colony.timepoint_last.area > config.COLONY_GROWTH_FACTOR_MIN * colony.timepoint_first.area and
                 # Objects that appear with a large initial area are either merged colonies or noise
-                colony.timepoint_first.area < 10,
+                colony.timepoint_first.area < config.COLONY_FIRST_AREA_MAX,
                 plate.items
             ))
 
@@ -360,8 +359,8 @@ def main():
             sys.exit()
 
     # Store pickled data to allow quick re-use
-    save_path = file_access.create_subdirectory(BASE_PATH, "data")
-    save_path = save_path.joinpath(segmented_image_data_filename)
+    save_path = file_access.create_subdirectory(BASE_PATH, config.DATA_DIR)
+    save_path = save_path.joinpath(config.CACHED_DATA_FILE_NAME)
     save_status = file_access.save_file(save_path, plates, file_access.CompressionMethod.LZMA)
     if VERBOSE >= 1:
         if save_status:
@@ -373,7 +372,7 @@ def main():
     if VERBOSE >= 1:
         print("Saving data to CSV")
         
-    save_path = BASE_PATH.joinpath("data")
+    save_path = BASE_PATH.joinpath(config.DATA_DIR)
     for plate in plates.items:
         for colony in plate.items:
             test = colony.__iter__()
@@ -390,7 +389,7 @@ def main():
     # Can't guarantee that the original images and full list of time points
     # will be available when using cached data
     if image_files is not None:
-        save_path = file_access.create_subdirectory(BASE_PATH, "plots")
+        save_path = file_access.create_subdirectory(BASE_PATH, config.PLOTS_DIR)
         if PLOTS >= 1:
             if VERBOSE >= 1:
                 print("Saving plots")
