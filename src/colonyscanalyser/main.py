@@ -24,6 +24,41 @@ from .plate import Plate, PlateCollection
 from .colony import Colony, timepoints_from_image, colonies_from_timepoints, timepoints_from_image
 
 
+def argparse_init(*args, **kwargs) -> argparse.ArgumentParser:
+    """
+    Initialise an ArgumentParser instance with the standard package arguments
+
+    :params args: positional arguments to pass to the ArgumentParser initialiser
+    :params kwargs: keyword arguments to pass to the ArgumentParser initialiser
+    """
+    parser = argparse.ArgumentParser(*args, **kwargs)
+    
+    parser.add_argument("path", type = str,
+                        help = "Image files location", default = None)
+    parser.add_argument("-dpi", "--dots_per_inch", type = int, default = 300,
+                        help = "The image DPI (dots per inch) setting", metavar = "N")
+    parser.add_argument("-mp", "--multiprocessing", type = strtobool, default = True,
+                        help = "Enables use of more CPU cores, faster but more resource intensive",  metavar = "BOOLEAN")
+    parser.add_argument("-p", "--plots", type = int, default = 1,
+                        help = "The detail level of plot images to store on disk", metavar = "N")
+    parser.add_argument("--plate_edge_cut", type = int, default = 5,
+                        help = "The exclusion area from the plate edge, as a percentage of the plate diameter", metavar = "N")
+    parser.add_argument("--plate_labels", type = str, nargs = "*", default = list(),
+                        help = "A list of labels to identify each plate. Plates are ordered from top left, in rows. Example usage: --plate_labels plate1 plate2",
+                        metavar = "LABEL")
+    parser.add_argument("--plate_lattice", type = int, nargs = 2, default = (3, 2),
+                        help = "The row and column co-ordinate layout of plates. Example usage: --plate_lattice 3 3",
+                        metavar = ("ROW", "COL"))
+    parser.add_argument("--plate_size", type = int, default = 90,
+                        help = "The plate diameter, in millimetres", metavar = "N")
+    parser.add_argument("--use_cached_data", type = strtobool, default = False,
+                        help = "Allow use of previously calculated data", metavar = "BOOLEAN")
+    parser.add_argument("-v", "--verbose", type = int, default = 1,
+                        help = "Information output level", metavar = "N")
+
+    return parser
+
+
 def segment_image(
     plate_image: ndarray,
     plate_mask: ndarray = None,
@@ -115,32 +150,13 @@ def image_file_to_timepoints(
 
 # flake8: noqa: C901
 def main():
-    parser = argparse.ArgumentParser(
+    parser = argparse_init(
         description = "An image analysis tool for measuring microorganism colony growth",
-        formatter_class = argparse.ArgumentDefaultsHelpFormatter
-    )
-    parser.add_argument("path", type = str,
-                        help = "Image files location", default = None)
-    parser.add_argument("-dpi", "--dots_per_inch", type = int, default = 300,
-                        help = "The image DPI (dots per inch) setting")
-    parser.add_argument("-mp", "--multiprocessing", type = strtobool, default = True,
-                        help = "Enables use of more CPU cores, faster but more resource intensive")
-    parser.add_argument("-p", "--plots", type = int, default = 1,
-                        help = "The detail level of plot images to store on disk")
-    parser.add_argument("--plate_edge_cut", type = int, default = 5,
-                        help = "The exclusion area from the plate edge, as a percentage of the plate diameter")
-    parser.add_argument("--plate_labels", type = str, nargs = "*", default = list(),
-                        help = "A list of labels to identify each plate. Plates are ordered from top left, in rows. Example usage: --plate_labels plate1 plate2")
-    parser.add_argument("--plate_lattice", type = int, nargs = 2, default = (3, 2),
-                        metavar = ("ROW", "COL"),
-                        help = "The row and column co-ordinate layout of plates. Example usage: --plate_lattice 3 3")
-    parser.add_argument("--plate_size", type = int, default = 90,
-                        help = "The plate diameter, in millimetres")
-    parser.add_argument("--use_cached_data", type = strtobool, default = False,
-                        help = "Allow use of previously calculated data")
-    parser.add_argument("-v", "--verbose", type = int, default = 1,
-                        help = "Information output level")
+        formatter_class = argparse.ArgumentDefaultsHelpFormatter,
+        usage = "%(prog)s '/image/file/path/' [OPTIONS]"
+        )
 
+    # Retrieve and parse arguments
     args = parser.parse_args()
     BASE_PATH = args.path
     PLOTS = args.plots
