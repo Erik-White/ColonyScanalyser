@@ -23,6 +23,12 @@ The image density your scanner uses, this can usually be found in your scanner s
 -dpi
 --dots_per_inch
 ```
+### Image formats
+Displays the currently supported image formats.
+
+```
+--image_formats
+```
 ### Multiprocessing
 This technique utilises all of the available processors that your computer has to analyse images in parallel. Since most computers now have at least 2 or 4 processors, this can greatly reduce the time needed to process a set of images.
 
@@ -93,5 +99,11 @@ The level of information output to the command line. Default level is `1`, incre
 ```
 -v
 --verbose
+```
+### Package version
+Displays the version number of the installed ColonyScanalyser package
+
+```
+--version
 ```
 
