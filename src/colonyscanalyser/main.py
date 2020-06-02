@@ -8,6 +8,11 @@ from distutils.util import strtobool
 from collections import defaultdict
 from multiprocessing import Pool, cpu_count
 from functools import partial
+try:
+    from importlib import metadata
+except ImportError:
+    # Running on pre-3.8 Python, use importlib-metadata package
+    import importlib_metadata as metadata
 
 # Third party modules
 from numpy import ndarray, diff
@@ -55,6 +60,8 @@ def argparse_init(*args, **kwargs) -> argparse.ArgumentParser:
                         help = "Allow use of previously calculated data", metavar = "BOOLEAN")
     parser.add_argument("-v", "--verbose", type = int, default = 1,
                         help = "Information output level", metavar = "N")
+    parser.add_argument("--version", action = "version", version = f"ColonyScanlayser {metadata.version('colonyscanalyser')}",
+                        help = "The package version number")
 
     return parser
 

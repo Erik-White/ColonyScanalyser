@@ -12,15 +12,19 @@ def read(*names, **kwargs):
         return fh.read()
 
 
+# Combine the readme and changelog to form the long_description
+long_description = "%s\n%s" % (
+        re.compile("^.. start-badges.*^.. end-badges", re.M | re.S).sub("", read("README.md")),
+        re.sub(":[a-z]+:`~?(.*?)`", r"``\1``", read("docs/CHANGELOG.md"))
+    )
+
+
 setup(
     python_requires = ">=3.7",
     name = "colonyscanalyser",
     version = "0.4.2",
     description = "An image analysis tool for measuring microorganism colony growth",
-    long_description = "%s\n%s" % (
-        re.compile("^.. start-badges.*^.. end-badges", re.M | re.S).sub("", read("README.md")),
-        re.sub(":[a-z]+:`~?(.*?)`", r"``\1``", read("docs/CHANGELOG.md"))
-    ),
+    long_description = long_description,
     long_description_content_type = "text/markdown",
     url = "https://github.com/Erik-White/ColonyScanalyser/",
     author = "Erik White",
@@ -33,7 +37,9 @@ setup(
         "numpy >= 1.18",
         "matplotlib",
         "scikit-image >= 0.17",
-        "webcolors"
+        "webcolors",
+        # Ensure metadata is available on Python <3.8
+        "importlib-metadata ~= 1.0 ; python_version < '3.8'",
     ],
     extras_require = {
         "dev": [
