@@ -89,6 +89,7 @@ The diameter of the plates used, in millimeters. It is important to set this cor
 Silence all output to the console. Note that this only silences the informative output from the package, warnings or errors may still appear.
 
 ```
+-s
 --silent
 ```
 ### Cached data
@@ -98,10 +99,9 @@ The package saves a compressed serialised version of its output, along with the 
 ```
 --use_cached_data
 ```
-### Information output
-The level of information output to the command line. Default level is `1`, increase to see more information. Output can be silenced with `0`
+### Verbose output
+Increases the information output to the command line.
 
-- input: integer
 ```
 -v
 --verbose

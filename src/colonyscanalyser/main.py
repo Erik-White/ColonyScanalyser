@@ -40,6 +40,9 @@ def argparse_init(*args, **kwargs) -> argparse.ArgumentParser:
     """
     parser = argparse.ArgumentParser(*args, **kwargs)
     
+    # Silence and verbose anr mutually exclusive
+    exclusive = parser.add_mutually_exclusive_group()
+    
     parser.add_argument("path", type = str,
                         help = "Image files location", default = None)
     parser.add_argument("-dpi", "--dots_per_inch", type = int, default = config.DOTS_PER_INCH,
@@ -60,12 +63,12 @@ def argparse_init(*args, **kwargs) -> argparse.ArgumentParser:
                         metavar = ("ROW", "COL"))
     parser.add_argument("--plate_size", type = int, default = config.PLATE_SIZE,
                         help = "The plate diameter, in millimetres", metavar = "N")
-    parser.add_argument("--silent", action = "store_false" if config.SILENT else "store_true",
+    exclusive.add_argument("-s", "--silent", action = "store_true",
                         help = "Silence all output to console")
     parser.add_argument("--use_cached_data", type = strtobool, default = config.USE_CACHED_DATA,
                         help = "Allow use of previously calculated data", metavar = "BOOLEAN")
-    parser.add_argument("-v", "--verbose", type = int, default = config.OUTPUT_VERBOSE,
-                        help = "Information output level", metavar = "N")
+    exclusive.add_argument("-v", "--verbose", action = "store_true",
+                        help = "Output extra information")
     parser.add_argument("--version", action = "version", version = f"ColonyScanlayser {metadata.version('colonyscanalyser')}",
                         help = "The package version number")
 
@@ -241,7 +244,7 @@ def main():
 
     if not SILENT:
         print("Starting ColonyScanalyser analysis")
-    if not SILENT and VERBOSE >= 2 and POOL_MAX > 1:
+    if VERBOSE and POOL_MAX > 1:
         print(f"Multiprocessing enabled, utilising {POOL_MAX} of {cpu_count()} processors")
 
     # Resolve working directory
@@ -267,7 +270,7 @@ def main():
         # Check that segmented image data has been loaded for all plates
         # Also that data is not from an older format (< v0.4.0)
         if (
-            VERBOSE >= 1 and plates is not None
+            VERBOSE and plates is not None
             and plates.count == PlateCollection.coordinate_to_index(PLATE_LATTICE)
             and isinstance(plates.items[0], Plate)
         ):
@@ -317,7 +320,7 @@ def main():
         with image_files.items[0] as image_file:
             # Only find centers using first image. Assume plates do not move
             if plates is None:
-                if not SILENT and VERBOSE >= 2:
+                if VERBOSE:
                     print(f"Locating plate centres in image: {image_file.file_path}")
 
                 # Create new Plate instances to store the information
@@ -331,11 +334,12 @@ def main():
                 )
 
                 if not plates.count > 0:
-                    print(f"Unable to locate plates in image: {image_file.file_path}")
-                    print(f"Processing unable to continue")
+                    if not SILENT:
+                        print(f"Unable to locate plates in image: {image_file.file_path}")
+                        print(f"Processing unable to continue")
                     sys.exit()
                 
-                if not SILENT and VERBOSE >= 3:
+                if VERBOSE:
                     for plate in plates.items:
                         print(f"Plate {plate.id} center: {plate.center}")
 
@@ -436,7 +440,7 @@ def main():
             plots.plot_colony_map(image_files.items[-1].image, plates.items, save_path)
 
             for plate in plates.items:
-                if not SILENT and VERBOSE >= 2:
+                if VERBOSE:
                     print(f"Saving plots for plate #{plate.id}")
                 save_path_plate = file_access.create_subdirectory(save_path, file_access.file_safe_name([f"plate{plate.id}", plate.name]))
                 # Plot colony growth curves, ID map and time of appearance for each plate
