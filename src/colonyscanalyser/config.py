@@ -23,7 +23,7 @@ CACHED_DATA_FILE_NAME = "cached_data"
 DATA_DIR = "data"
 OUTPUT_VERBOSE = 1
 OUTPUT_PLOTS = 1
-PLOTS_DIR = "data"
+PLOTS_DIR = "plots"
 
 # Runtime
 MULTIPROCESSING = True
