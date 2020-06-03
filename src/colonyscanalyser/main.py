@@ -39,20 +39,22 @@ def argparse_init(*args, **kwargs) -> argparse.ArgumentParser:
     :returns: an ArgumentParser instance with the standard package arguments
     """
     parser = argparse.ArgumentParser(*args, **kwargs)
-    
+
     # Silence and verbose anr mutually exclusive
     exclusive = parser.add_mutually_exclusive_group()
     
     parser.add_argument("path", type = str,
                         help = "Image files location", default = None)
+    parser.add_argument("-a", "--animation", action = "store_true",
+                        help = "Output animated plots and videos")
     parser.add_argument("-dpi", "--dots_per_inch", type = int, default = config.DOTS_PER_INCH,
                         help = "The image DPI (dots per inch) setting", metavar = "N")
     parser.add_argument("--image_formats", default = config.SUPPORTED_FORMATS, action = "version", version = str(config.SUPPORTED_FORMATS),
                         help = "The supported image formats")
     parser.add_argument("-mp", "--multiprocessing", type = strtobool, default = config.MULTIPROCESSING,
                         help = "Enables use of more CPU cores, faster but more resource intensive",  metavar = "BOOLEAN")
-    parser.add_argument("-p", "--plots", type = int, default = config.OUTPUT_PLOTS,
-                        help = "The detail level of plot images to store on disk", metavar = "N")
+    parser.add_argument("--no_plots", action = "store_true",
+                        help = "Prevent output of plot images to disk")
     parser.add_argument("--plate_edge_cut", type = int, default = config.PLATE_EDGE_CUT,
                         help = "The exclusion area from the plate edge, as a percentage of the plate diameter", metavar = "N")
     parser.add_argument("--plate_labels", type = str, nargs = "*", default = list(),
@@ -229,8 +231,9 @@ def main():
     # Retrieve and parse arguments
     args = parser.parse_args()
     BASE_PATH = args.path
+    ANIMATION = args.animation
     IMAGE_FORMATS = args.image_formats
-    PLOTS = args.plots
+    PLOTS = not args.no_plots
     PLATE_LABELS = {plate_id: label for plate_id, label in enumerate(args.plate_labels, start = 1)}
     PLATE_LATTICE = tuple(args.plate_lattice)
     PLATE_SIZE = int(imaging.mm_to_pixels(args.plate_size, dots_per_inch = args.dots_per_inch))
@@ -428,8 +431,9 @@ def main():
     # Can't guarantee that the original images and full list of time points
     # will be available when using cached data
     if image_files is not None:
-        save_path = file_access.create_subdirectory(BASE_PATH, config.PLOTS_DIR)
-        if PLOTS >= 1:
+        if PLOTS or ANIMATION:
+            save_path = file_access.create_subdirectory(BASE_PATH, config.PLOTS_DIR)
+        if PLOTS:
             if not SILENT:
                 print("Saving plots")
             # Summary plots for all plates
@@ -448,7 +452,7 @@ def main():
                 plots.plot_appearance_frequency([plate], save_path_plate, timestamps = image_files.timestamps_elapsed)
                 plots.plot_appearance_frequency([plate], save_path_plate, timestamps = image_files.timestamps_elapsed, bar = True)
 
-        if PLOTS >= 4:
+        if ANIMATION:
             # Plot individual plate images as an animation
             if not SILENT:
                 print("Saving plate image animations. This may take several minutes")
@@ -475,7 +479,7 @@ def main():
 
     else:
         if not SILENT:
-            print("Unable to generate plots from cached data. Run analysis on original images to generate plot images")
+            print("Unable to generate plots or animations from cached data. Run analysis on original images to generate plot images")
 
     if not SILENT:
         print(f"ColonyScanalyser analysis completed for: {BASE_PATH}")

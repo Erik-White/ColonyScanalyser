@@ -21,7 +21,6 @@ COLONY_GROWTH_FACTOR_MIN = 4
 # Output
 CACHED_DATA_FILE_NAME = "cached_data"
 DATA_DIR = "data"
-OUTPUT_PLOTS = 1
 PLOTS_DIR = "plots"
 
 # Runtime

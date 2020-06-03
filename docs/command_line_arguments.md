@@ -15,6 +15,13 @@ A full list of available arguments, along with their default values
 -h
 --help
 ```
+### Animation
+Generate animation and video from plots or plate images. These may take several minutes to create and the process can be quite resource intensive.
+
+```
+-a
+--animation
+```
 ### Image density
 The image density your scanner uses, this can usually be found in your scanner settings. It is important to set this correctly as it enables the program to acurately convert the plate size in millimeters to pixels.
 
@@ -40,14 +47,10 @@ This technique is however quite resource intensive for your computer so you may 
 --multiprocessing
 ```
 ### Plot images output
-The level of detail required when saving plot images after analysis. At the default level (`1`), a few summary plots are saved to give a quick overview of the data. If the output level is increased, individual plots for each plate will be saved.
+Prevent plot images being output to disk. Summary plots to give a quick overview of the data and individual plots for each plate are output unless this argument is passed.
 
-At the highest level (currently `4`), animations of plate images are created in `gif` format. These may take several minutes to create and the process can be quite resource intensive.
-
-- input: boolean
 ```
--p
---plots
+--no_plots
 ```
 ### Plate edge cut
 The radius, as a percentage of the plate diameter, to exclude from the edge of the plate image. This ensures that the image is clear of reflections, shadows and writing that are typically present near the edge of the plate image.
