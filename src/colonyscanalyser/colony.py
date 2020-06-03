@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from collections.abc import Collection
 from functools import total_ordering
 from numpy import ndarray, log2
+from colonyscanalyser import config
 from .base import Identified, Named
 from .utilities import round_tuple_floats
 from .imaging import rgb_to_name
@@ -212,6 +213,39 @@ def timepoints_from_image(
         )
 
         colonies.append(timepoint_data)
+
+    return colonies
+
+
+def colonies_filtered(colonies: List[Colony], timestamp_diff_std: float = 10) -> List[Colony]:
+    """
+    Filter colonies to return only valid colonies
+
+    :param colonies: a list of Colony instances
+    :param timestamp_diff_std: the maximum allowed deviation in timestamps (i.e. likelihood of missing data)
+    :returns: a filtered list of Colony instances
+    """
+    from numpy import diff
+
+    # If no objects are found
+    if not len(colonies) > 0:
+        return colonies
+
+    # Filter colonies to remove noise, background objects and merged colonies
+    colonies = list(filter(
+        lambda colony:
+            # Remove objects that do not have sufficient data points
+            len(colony.timepoints) > config.COLONY_TIMEPOINTS_MIN and
+            # No colonies should be visible at the start of the experiment
+            colony.time_of_appearance.total_seconds() > 0 and
+            # Remove objects with large gaps in the data
+            diff([t.timestamp.total_seconds() for t in colony.timepoints[1:]]).std() < timestamp_diff_std and
+            # Remove object that do not show growth, these are not colonies
+            colony.timepoint_last.area > config.COLONY_GROWTH_FACTOR_MIN * colony.timepoint_first.area and
+            # Objects that appear with a large initial area are either merged colonies or noise
+            colony.timepoint_first.area < config.COLONY_FIRST_AREA_MAX,
+            colonies
+    ))
 
     return colonies
 

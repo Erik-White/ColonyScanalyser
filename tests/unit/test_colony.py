@@ -4,6 +4,7 @@ from datetime import timedelta
 from colonyscanalyser.colony import (
     Colony,
     timepoints_from_image,
+    colonies_filtered,
     colonies_from_timepoints,
     group_timepoints_by_center
 )
@@ -178,6 +179,18 @@ class TestColony():
             colony.remove_timepoint(timepoints[0].timestamp)
 
             assert timepoints[0] not in colony.timepoints
+
+
+class TestColoniesFiltered():
+    def test_filter(self, timepoints):
+        # It is very difficult to rigorously and exhaustively test the filtering
+        # The results are also somewhat subjective and outside the scope of a unit test
+        colonies = [Colony(1, timepoints)]
+
+        assert colonies_filtered(colonies) == colonies
+
+    def test_empty(self):
+        assert colonies_filtered(list()) == list()
 
 
 class TestColoniesFromTimepoints():

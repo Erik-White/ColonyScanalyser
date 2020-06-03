@@ -27,7 +27,7 @@ from colonyscanalyser import (
 )
 from .image_file import ImageFile, ImageFileCollection
 from .plate import Plate, PlateCollection
-from .colony import Colony, timepoints_from_image, colonies_from_timepoints, timepoints_from_image
+from .colony import Colony, timepoints_from_image, colonies_filtered, colonies_from_timepoints, timepoints_from_image
 
 
 def argparse_init(*args, **kwargs) -> argparse.ArgumentParser:
@@ -68,6 +68,41 @@ def argparse_init(*args, **kwargs) -> argparse.ArgumentParser:
                         help = "The package version number")
 
     return parser
+
+
+def plates_colonies_from_timepoints(
+    plates: PlateCollection,
+    timepoints: Dict[int, List[Colony.Timepoint]],
+    timepoints_distance: float = 1,
+    timestamp_diff_std: float = 10,
+    pool_size = 1
+) -> Plate:
+    """
+    Group a list of Timepoints to Colony objects, and populate in a Plate instance
+
+    Colonies are filtered via the criteria of the Colony.colonies_filtered function
+
+    :param plates: a PlateCollection instance associated with the Timepoints
+    :param timepoints: a dict of lists of Timepoint instances, with keys corresponding to Plate.id numbers
+    :param timepoints_distance: the maximum distance allowed for Colony grouping
+    :param timestamp_diff_std: the maximum allowed deviation in timestamps (i.e. likelihood of missing data)
+    :param pool_size: the number of logical processors available for multiprocessing
+    :returns: the collection with each plate instance populated with a collection of Colony instances
+    """
+    # Assemble data to a single iterable for starmap
+    timepoints_iter = [
+        (plates.get_item(plate_id), timepoints, timepoints_distance, timestamp_diff_std)
+        for plate_id, timepoints in timepoints.items()
+    ]
+
+    # Process and filter Timepoints to Colony objects in parallel
+    with Pool(processes = pool_size) as pool:
+        plates.items = pool.starmap(
+            func = _plate_colonies_from_timepoints_filtered,
+            iterable = timepoints_iter
+        )
+
+    return plates
 
 
 def segment_image(
@@ -157,6 +192,33 @@ def image_file_to_timepoints(
             plots.plot_plate_segmented(plate_image_gray, plate_images[plate_id], image_file.timestamp, save_path)
 
     return plate_timepoints
+
+
+def _plate_colonies_from_timepoints_filtered(
+    plate: Plate,
+    timepoints: List[Colony.Timepoint],
+    timepoints_distance: float = 1,
+    timestamp_diff_std: float = 10
+) -> Plate:
+    """
+    Group a list of Timepoints to Colony objects, and filter to return only valid colonies
+
+    Mainly a helper function for plates_colonies_from_timepoints as multiprocessing cant use local functions
+
+    :param plate: a Plate instance associated with the Timepoints
+    :param timepoints: a list of Timepoint instances
+    :param timepoints_distance: the maximum distance allowed for Colony grouping
+    :param timestamp_diff_std: the maximum allowed deviation in timestamps (i.e. likelihood of missing data)
+    :returns: the plate instance with a collection of Colony instances
+    """
+    if len(timepoints) > 0:
+        # Group Timepoints by Euclidean distance
+        plate.items = colonies_from_timepoints(timepoints, distance_tolerance = timepoints_distance)
+
+        # Filter colonies to remove noise, background objects and merged colonies
+        plate.items = colonies_filtered(plate.items, timestamp_diff_std)
+
+    return plate
 
 
 # flake8: noqa: C901
@@ -321,42 +383,21 @@ def main():
         if VERBOSE >= 1:
             print("Calculating colony properties")
 
-        # Group Timepoints by centres and create Colony objects
-        for plate_id, plate_timepoints in plate_timepoints.items():
-            # If no objects are found
-            if not len(plate_timepoints) > 0:
-                break
+        # Calculate deviation in timestamps (i.e. likelihood of missing data)
+        timestamp_diff_std = diff(image_files.timestamps_elapsed_seconds[1:]).std()
+        timestamp_diff_std += config.COLONY_TIMESTAMP_DIFF_MAX
 
-            plate = plates.get_item(plate_id)
-            plate.items = colonies_from_timepoints(plate_timepoints, distance_tolerance = config.COLONY_DISTANCE_MAX)
-            if VERBOSE >= 3:
-                print(f"{plate.count} objects located on plate {plate.id}, before filtering")
-
-            # Filter colonies to remove noise, background objects and merged colonies
-            timestamp_diff_std = diff(image_files.timestamps_elapsed_seconds[1:]).std()
-            timestamp_diff_std += config.COLONY_TIMESTAMP_DIFF_MAX
-            plate.items = list(filter(lambda colony:
-                # Remove objects that do not have sufficient data points
-                len(colony.timepoints) > config.COLONY_TIMEPOINTS_MIN and
-                # No colonies should be visible at the start of the experiment
-                colony.time_of_appearance.total_seconds() > 0 and
-                # Remove objects with large gaps in the data
-                diff([t.timestamp.total_seconds() for t in colony.timepoints[1:]]).std() < timestamp_diff_std and
-                # Remove object that do not show growth, these are not colonies
-                colony.timepoint_last.area > config.COLONY_GROWTH_FACTOR_MIN * colony.timepoint_first.area and
-                # Objects that appear with a large initial area are either merged colonies or noise
-                colony.timepoint_first.area < config.COLONY_FIRST_AREA_MAX,
-                plate.items
-            ))
-
-            if VERBOSE >= 1:
-                print(f"{plate.count} colonies identified on plate {plate.id}")
+        # Group and consolidate Timepoints into Colony instances
+        plates = plates_colonies_from_timepoints(plates, plate_timepoints, config.COLONY_DISTANCE_MAX, timestamp_diff_std, POOL_MAX)
 
         if not any([plate.count for plate in plates.items]):
             if VERBOSE >= 1:
                 print("Unable to locate any colonies in the images provided")
                 print(f"ColonyScanalyser analysis completed for: {BASE_PATH}")
             sys.exit()
+        else:
+            for plate in plates.items:
+                print(f"{plate.count} colonies identified on plate {plate.id}")
 
     # Store pickled data to allow quick re-use
     save_path = file_access.create_subdirectory(BASE_PATH, config.DATA_DIR)
