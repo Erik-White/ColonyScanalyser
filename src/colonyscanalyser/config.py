@@ -27,4 +27,5 @@ PLOTS_DIR = "plots"
 
 # Runtime
 MULTIPROCESSING = True
+SILENT = False
 USE_CACHED_DATA = False

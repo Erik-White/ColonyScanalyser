@@ -60,6 +60,8 @@ def argparse_init(*args, **kwargs) -> argparse.ArgumentParser:
                         metavar = ("ROW", "COL"))
     parser.add_argument("--plate_size", type = int, default = config.PLATE_SIZE,
                         help = "The plate diameter, in millimetres", metavar = "N")
+    parser.add_argument("--silent", action = "store_false" if config.SILENT else "store_true",
+                        help = "Silence all output to console")
     parser.add_argument("--use_cached_data", type = strtobool, default = config.USE_CACHED_DATA,
                         help = "Allow use of previously calculated data", metavar = "BOOLEAN")
     parser.add_argument("-v", "--verbose", type = int, default = config.OUTPUT_VERBOSE,
@@ -230,15 +232,16 @@ def main():
     PLATE_LATTICE = tuple(args.plate_lattice)
     PLATE_SIZE = int(imaging.mm_to_pixels(args.plate_size, dots_per_inch = args.dots_per_inch))
     PLATE_EDGE_CUT = int(round(PLATE_SIZE * (args.plate_edge_cut / 100)))
+    SILENT = args.silent
     USE_CACHED = args.use_cached_data
     VERBOSE = args.verbose
     POOL_MAX = 1
     if args.multiprocessing:
         POOL_MAX = cpu_count() - 1 if cpu_count() > 1 else 1
 
-    if VERBOSE >= 1:
+    if not SILENT:
         print("Starting ColonyScanalyser analysis")
-    if VERBOSE >= 2 and POOL_MAX > 1:
+    if not SILENT and VERBOSE >= 2 and POOL_MAX > 1:
         print(f"Multiprocessing enabled, utilising {POOL_MAX} of {cpu_count()} processors")
 
     # Resolve working directory
@@ -248,13 +251,13 @@ def main():
         BASE_PATH = Path(args.path).resolve()
     if not BASE_PATH.exists():
         raise EnvironmentError(f"The supplied folder path could not be found: {BASE_PATH}")
-    if VERBOSE >= 1:
+    if not SILENT:
         print(f"Working directory: {BASE_PATH}")
 
     # Check if processed image data is already stored and can be loaded
     plates = None
     if USE_CACHED:
-        if VERBOSE >= 1:
+        if not SILENT:
             print("Attempting to load cached data")
         plates = file_access.load_file(
             BASE_PATH.joinpath(config.DATA_DIR, config.CACHED_DATA_FILE_NAME),
@@ -291,7 +294,7 @@ def main():
 
         # Check if images have been loaded and timestamps could be read
         if image_files.count > 0:
-            if VERBOSE >= 1:
+            if not SILENT:
                 print(f"{image_files.count} images found")
         else:
             raise IOError(f"No images could be found in the supplied folder path."
@@ -307,14 +310,14 @@ def main():
         plate_images_mask = None
         plate_timepoints = defaultdict(list)
 
-        if VERBOSE >= 1:
+        if not SILENT:
             print("Preprocessing images to locate plates")
 
         # Load the first image to get plate coordinates and mask
         with image_files.items[0] as image_file:
             # Only find centers using first image. Assume plates do not move
             if plates is None:
-                if VERBOSE >= 2:
+                if not SILENT and VERBOSE >= 2:
                     print(f"Locating plate centres in image: {image_file.file_path}")
 
                 # Create new Plate instances to store the information
@@ -332,14 +335,14 @@ def main():
                     print(f"Processing unable to continue")
                     sys.exit()
                 
-                if VERBOSE >= 3:
+                if not SILENT and VERBOSE >= 3:
                     for plate in plates.items:
                         print(f"Plate {plate.id} center: {plate.center}")
 
             # Use the first plate image as a noise mask
             plate_noise_masks = plates.slice_plate_image(image_file.image_gray)
 
-        if VERBOSE >= 1:
+        if not SILENT:
             print("Processing colony data from all images")
 
         # Thin wrapper to display a progress bar
@@ -356,7 +359,7 @@ def main():
                 processes.append(pool.apply_async(
                     image_file_to_timepoints,
                     args = (image_file, plates, plate_noise_masks),
-                    callback = callback_function
+                    callback = callback_function if not SILENT else None
                 ))
 
             # Consolidate the results to a single dict
@@ -371,7 +374,7 @@ def main():
         plate_noise_masks = None
         img = None
 
-        if VERBOSE >= 1:
+        if not SILENT:
             print("Calculating colony properties")
 
         # Calculate deviation in timestamps (i.e. likelihood of missing data)
@@ -382,11 +385,11 @@ def main():
         plates = plates_colonies_from_timepoints(plates, plate_timepoints, config.COLONY_DISTANCE_MAX, timestamp_diff_std, POOL_MAX)
 
         if not any([plate.count for plate in plates.items]):
-            if VERBOSE >= 1:
+            if not SILENT:
                 print("Unable to locate any colonies in the images provided")
                 print(f"ColonyScanalyser analysis completed for: {BASE_PATH}")
             sys.exit()
-        else:
+        elif not SILENT:
             for plate in plates.items:
                 print(f"{plate.count} colonies identified on plate {plate.id}")
 
@@ -394,14 +397,14 @@ def main():
     save_path = file_access.create_subdirectory(BASE_PATH, config.DATA_DIR)
     save_path = save_path.joinpath(config.CACHED_DATA_FILE_NAME)
     save_status = file_access.save_file(save_path, plates, file_access.CompressionMethod.LZMA)
-    if VERBOSE >= 1:
+    if not SILENT:
         if save_status:
             print(f"Cached data saved to {save_path}")
         else:
             print(f"An error occurred and cached data could not be written to disk at {save_path}")
 
     # Store colony data in CSV format
-    if VERBOSE >= 1:
+    if not SILENT:
         print("Saving data to CSV")
         
     save_path = BASE_PATH.joinpath(config.DATA_DIR)
@@ -423,7 +426,7 @@ def main():
     if image_files is not None:
         save_path = file_access.create_subdirectory(BASE_PATH, config.PLOTS_DIR)
         if PLOTS >= 1:
-            if VERBOSE >= 1:
+            if not SILENT:
                 print("Saving plots")
             # Summary plots for all plates
             plots.plot_growth_curve(plates.items, save_path)
@@ -433,7 +436,7 @@ def main():
             plots.plot_colony_map(image_files.items[-1].image, plates.items, save_path)
 
             for plate in plates.items:
-                if VERBOSE >= 2:
+                if not SILENT and VERBOSE >= 2:
                     print(f"Saving plots for plate #{plate.id}")
                 save_path_plate = file_access.create_subdirectory(save_path, file_access.file_safe_name([f"plate{plate.id}", plate.name]))
                 # Plot colony growth curves, ID map and time of appearance for each plate
@@ -443,7 +446,7 @@ def main():
 
         if PLOTS >= 4:
             # Plot individual plate images as an animation
-            if VERBOSE >= 1:
+            if not SILENT:
                 print("Saving plate image animations. This may take several minutes")
 
             # Original size images
@@ -467,10 +470,10 @@ def main():
             )
 
     else:
-        if VERBOSE >= 1:
+        if not SILENT:
             print("Unable to generate plots from cached data. Run analysis on original images to generate plot images")
 
-    if VERBOSE >= 1:
+    if not SILENT:
         print(f"ColonyScanalyser analysis completed for: {BASE_PATH}")
 
     sys.exit()

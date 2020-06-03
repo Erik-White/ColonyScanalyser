@@ -85,6 +85,12 @@ The diameter of the plates used, in millimeters. It is important to set this cor
 ```
 --plate_size
 ```
+### Silence output
+Silence all output to the console. Note that this only silences the informative output from the package, warnings or errors may still appear.
+
+```
+--silent
+```
 ### Cached data
 The package saves a compressed serialised version of its output, along with the uncompressed CSV data. This allows it to quickly generate the CSV files and plot images again, without the need for reanalysing the original images. This is disabled by default to prevent confusing situation where outdated information is output from new or altered image sets.
 
