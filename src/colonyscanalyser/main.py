@@ -156,21 +156,17 @@ def segment_image(
 
 
 def image_file_to_timepoints(
-    image_file: ndarray,
+    image_file: ImageFile,
     plates: PlateCollection,
-    plate_noise_masks: Dict[int, ndarray],
-    plot_path: Path = None
+    plate_noise_masks: Dict[int, ndarray]
 ) -> Dict[int, List[Colony.Timepoint]]:
     """
     Get Timepoint object data from a plate image
 
-    Lists the results in a dict with the plate number as the key
-
     :param image_file: an ImageFile object
     :param plates: a PlateCollection of Plate instances
     :param plate_noise_masks: a dict of plate images to use as noise masks
-    :param plot_path: a Path directory to save the segmented image plot
-    :returns: a Dict of lists, each containing Timepoint objects
+    :returns: a Dict of lists containing Timepoints, with the plate number as keys
     """
     from collections import defaultdict
     from skimage.color import rgb2gray
@@ -186,10 +182,6 @@ def image_file_to_timepoints(
         plate_images[plate_id] = segment_image(plate_image_gray, plate_mask = plate_image_gray > 0, plate_noise_mask = plate_noise_masks[plate_id], area_min = 1.5)
         # Create Timepoint objects for each plate
         plate_timepoints[plate_id].extend(timepoints_from_image(plate_images[plate_id], image_file.timestamp_elapsed, image = plate_image))
-        # Save segmented image plot, if required
-        if plot_path is not None:
-            save_path = file_access.create_subdirectory(plot_path, f"plate{plate_id}")
-            plots.plot_plate_segmented(plate_image_gray, plate_images[plate_id], image_file.timestamp, save_path)
 
     return plate_timepoints
 
@@ -364,7 +356,6 @@ def main():
                 processes.append(pool.apply_async(
                     image_file_to_timepoints,
                     args = (image_file, plates, plate_noise_masks),
-                    kwds = {"plot_path" : None},
                     callback = callback_function
                 ))
 
