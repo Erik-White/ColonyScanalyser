@@ -36,16 +36,6 @@ Displays the currently supported image formats.
 ```
 --image_formats
 ```
-### Multiprocessing
-This technique utilises all of the available processors that your computer has to analyse images in parallel. Since most computers now have at least 2 or 4 processors, this can greatly reduce the time needed to process a set of images.
-
-This technique is however quite resource intensive for your computer so you may wish to disable it.
-
-- input: boolean
-```
--mp
---multiprocessing
-```
 ### Plot images output
 Prevent plot images being output to disk. Summary plots to give a quick overview of the data and individual plots for each plate are output unless this argument is passed.
 
@@ -94,6 +84,14 @@ Silence all output to the console. Note that this only silences the informative 
 ```
 -s
 --silent
+```
+### Single processing
+Disable multiprocessing. By default the program utilises nearly all of the available processors in your system, leaving at least one free for other tasks. This allows image processing in parallel and will greatly reduce the time needed to process a set of images, but is very resource intensive.
+
+This technique is however quite resource intensive for your computer so you may wish to disable it.
+
+```
+--single-process
 ```
 ### Cached data
 The package saves a compressed serialised version of its output, along with the uncompressed CSV data. This allows it to quickly generate the CSV files and plot images again, without the need for reanalysing the original images. This is disabled by default to prevent confusing situation where outdated information is output from new or altered image sets.

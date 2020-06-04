@@ -40,8 +40,8 @@ def argparse_init(*args, **kwargs) -> argparse.ArgumentParser:
     """
     parser = argparse.ArgumentParser(*args, **kwargs)
 
-    # Silence and verbose anr mutually exclusive
-    exclusive = parser.add_mutually_exclusive_group()
+    # Mutually exclusive options
+    output = parser.add_mutually_exclusive_group()
     
     parser.add_argument("path", type = str,
                         help = "Image files location", default = None)
@@ -51,10 +51,7 @@ def argparse_init(*args, **kwargs) -> argparse.ArgumentParser:
                         help = "The image DPI (dots per inch) setting", metavar = "N")
     parser.add_argument("--image_formats", default = config.SUPPORTED_FORMATS, action = "version", version = str(config.SUPPORTED_FORMATS),
                         help = "The supported image formats")
-    parser.add_argument("-mp", "--multiprocessing", type = strtobool, default = config.MULTIPROCESSING,
-                        help = "Enables use of more CPU cores, faster but more resource intensive",  metavar = "BOOLEAN")
-    parser.add_argument("--no_plots", action = "store_true",
-                        help = "Prevent output of plot images to disk")
+    parser.add_argument("--no_plots", action = "store_true", help = "Prevent output of plot images to disk")
     parser.add_argument("--plate_edge_cut", type = int, default = config.PLATE_EDGE_CUT,
                         help = "The exclusion area from the plate edge, as a percentage of the plate diameter", metavar = "N")
     parser.add_argument("--plate_labels", type = str, nargs = "*", default = list(),
@@ -63,14 +60,12 @@ def argparse_init(*args, **kwargs) -> argparse.ArgumentParser:
     parser.add_argument("--plate_lattice", type = int, nargs = 2, default = config.PLATE_LATTICE,
                         help = "The row and column co-ordinate layout of plates. Example usage: --plate_lattice 3 3",
                         metavar = ("ROW", "COL"))
-    parser.add_argument("--plate_size", type = int, default = config.PLATE_SIZE,
-                        help = "The plate diameter, in millimetres", metavar = "N")
-    exclusive.add_argument("-s", "--silent", action = "store_true",
-                        help = "Silence all output to console")
+    parser.add_argument("--plate_size", type = int, default = config.PLATE_SIZE, help = "The plate diameter, in millimetres", metavar = "N")
+    output.add_argument("-s", "--silent", action = "store_true", help = "Silence all output to console")
+    parser.add_argument("--single-process", action = "store_true", help = "Use only a single CPU core, slower but less resource intensive")
     parser.add_argument("--use_cached_data", type = strtobool, default = config.USE_CACHED_DATA,
                         help = "Allow use of previously calculated data", metavar = "BOOLEAN")
-    exclusive.add_argument("-v", "--verbose", action = "store_true",
-                        help = "Output extra information")
+    output.add_argument("-v", "--verbose", action = "store_true", help = "Output extra information to console")
     parser.add_argument("--version", action = "version", version = f"ColonyScanlayser {metadata.version('colonyscanalyser')}",
                         help = "The package version number")
 
@@ -242,9 +237,9 @@ def main():
     USE_CACHED = args.use_cached_data
     VERBOSE = args.verbose
     POOL_MAX = 1
-    if args.multiprocessing:
+    if not args.single_process:
         POOL_MAX = cpu_count() - 1 if cpu_count() > 1 else 1
-
+        
     if not SILENT:
         print("Starting ColonyScanalyser analysis")
     if VERBOSE and POOL_MAX > 1:
