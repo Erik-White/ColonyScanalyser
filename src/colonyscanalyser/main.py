@@ -321,34 +321,20 @@ def main():
         if not SILENT:
             print("Processing colony data from all images")
 
-        # Thin wrapper to display a progress bar
-        def progress_update(result, progress):
-            utilities.progress_bar(progress, message = "Processing images")
-
-        processes = list()
+        # Process images to Timepoints
         with Pool(processes = POOL_MAX) as pool:
-            for i, image_file in enumerate(image_files.items):
-                # Allow args to be passed to callback function
-                callback_function = partial(progress_update, progress = ((i + 1) / image_files.count) * 100)
-
-                # Create processes
-                processes.append(pool.apply_async(
-                    image_file_to_timepoints,
-                    args = (image_file, plates, plate_noise_masks),
-                    callback = callback_function if not SILENT else None
-                ))
-
-            # Consolidate the results to a single dict
-            for process in processes:
-                result = process.get()
-                for plate_id, timepoints in result.items():
-                    plate_timepoints[plate_id].extend(timepoints)
-
-        # Clear objects to free up memory
-        processes = None
-        plate_images = None
-        plate_noise_masks = None
-        img = None
+            results = list()
+            job = pool.imap(
+                func = partial(image_file_to_timepoints, plates = plates, plate_noise_masks = plate_noise_masks),
+                iterable = image_files.items,
+                chunksize = 2
+            )
+            # Store results and update progress bar
+            for i, result in enumerate(job, start = 1):
+                results.append(result)
+                if not SILENT:
+                    utilities.progress_bar((i / image_files.count) * 100, message = "Processing images")
+            plate_timepoints = utilities.dicts_merge(list(results))
 
         if not SILENT:
             print("Calculating colony properties")
@@ -385,11 +371,8 @@ def main():
         
     save_path = BASE_PATH.joinpath(config.DATA_DIR)
     for plate in plates.items:
-        for colony in plate.items:
-            test = colony.__iter__()
         # Save data for all colonies on one plate
         plate.colonies_to_csv(save_path)
-
         # Save data for each colony on a plate
         plate.colonies_timepoints_to_csv(save_path)
 
