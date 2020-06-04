@@ -22,7 +22,3 @@ COLONY_GROWTH_FACTOR_MIN = 4
 CACHED_DATA_FILE_NAME = "cached_data"
 DATA_DIR = "data"
 PLOTS_DIR = "plots"
-
-# Runtime
-MULTIPROCESSING = True
-USE_CACHED_DATA = False

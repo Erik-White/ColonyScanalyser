@@ -3,11 +3,11 @@ A list of optional arguments, and their default values, that affect the way Colo
 
 The only required argument is the path to the folder containing the image files you wish to analyse. Optional arguments can be added after the folder path e.g.
 ```
-scanalyser /path/to/images --use_saved false
+scanalyser /path/to/images --use-cached-data
 ```
 You can add as many optional arguments as you like:
 ```
-scanalyser /path/to/images --use_saved false -mp true -dpi 300 --plate_lattice 2 3
+scanalyser /path/to/images --use-cached-data -s -d 300 --plate-lattice 2 3
 ```
 ### Help
 A full list of available arguments, along with their default values
@@ -27,27 +27,27 @@ The image density your scanner uses, this can usually be found in your scanner s
 
 - input: integer
 ```
--dpi
---dots_per_inch
+-d
+--dots-per-inch
 ```
 ### Image formats
 Displays the currently supported image formats.
 
 ```
---image_formats
+--image-formats
 ```
 ### Plot images output
 Prevent plot images being output to disk. Summary plots to give a quick overview of the data and individual plots for each plate are output unless this argument is passed.
 
 ```
---no_plots
+--no-plots
 ```
 ### Plate edge cut
 The radius, as a percentage of the plate diameter, to exclude from the edge of the plate image. This ensures that the image is clear of reflections, shadows and writing that are typically present near the edge of the plate image.
 
 - input: integer
 ```
---plate_edge_cut
+--plate-edge-cut
 ```
 ### Plate labels
 A list of labels to identify each plate. The label is used in file names and the plate map.
@@ -56,27 +56,27 @@ Plates are ordered from top left, in rows, and labels must be provided in that o
 
 Labels are separated with spaces. To use a space within a label, wrap that label in quotes
 
-Example: `--plate_labels first second third "label with spaces" fifth sixth`
+Example: `--plate-labels first second third "label with spaces" fifth sixth`
 
 - input: list
 ```
---plate_labels
+--plate-labels
 ```
 ### Plate holder shape
 The layout of the plates in the image in rows and columns. The default is `3` rows and `2` columns.
 
-A square grid of 9 plates would be entered as `--plate_lattice 3 3`
+A square grid of 9 plates would be entered as `--plate-lattice 3 3`
 
 - input: integer
 ```
---plate_lattice
+--plate-lattice
 ```
 ### Plate size
 The diameter of the plates used, in millimeters. It is important to set this correctly otherwise the plates may be located incorrectly in the images.
 
 - input: integer
 ```
---plate_size
+--plate-size
 ```
 ### Silence output
 Silence all output to the console. Note that this only silences the informative output from the package, warnings or errors may still appear.
