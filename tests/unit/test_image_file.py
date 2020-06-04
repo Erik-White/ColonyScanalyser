@@ -40,7 +40,7 @@ class TestImageFile:
 
         return temp_file
 
-    @pytest.fixture(params = [True, False], autouse = True)
+    @pytest.fixture(params = [True, False], autouse = False)
     def cache_image(self, request):
         yield request.param
 
@@ -208,8 +208,12 @@ class TestImageFileCollection:
             )
 
     class TestMethods:
+        @pytest.fixture(params = [None, "10001010_00_00"])
+        def timestamp_initial(self, request):
+            yield request.param
+
         @mock.patch("colonyscanalyser.image_file.file_exists", return_value = True)
-        def test_add_image_file(self, patch, image_files):
+        def test_add_image_file(self, mock_file_exists, image_files):
             imagefiles = ImageFileCollection(image_files)
             image_file_first = imagefiles.items[0]
             new_image_file = imagefiles.add(
@@ -223,3 +227,24 @@ class TestImageFileCollection:
             assert new_image_file in imagefiles.items
             assert image_file_first != new_image_file
             assert imagefiles.items[0] == new_image_file
+
+        @mock.patch("colonyscanalyser.image_file.file_exists", return_value = True)
+        @mock.patch("colonyscanalyser.file_access.get_files_by_type", return_value = ["10001010_00_00"])
+        def test_from_path(self, mock_get_files_by_type, mock_file_exists, timestamp_initial, tmp_path):
+            results = ImageFileCollection.from_path(tmp_path, [])
+
+            assert results.count == 1
+            if timestamp_initial:
+                assert results.timestamps_initial[0] == ImageFile.timestamp_from_string(timestamp_initial)
+            else:
+                assert results.timestamps_initial[0] == results.items[0].timestamp_initial
+
+        def test_from_path_filenotfound(self, tmp_path):
+            with pytest.raises(FileNotFoundError):
+                ImageFileCollection.from_path(tmp_path, [])
+
+        @mock.patch("colonyscanalyser.image_file.file_exists", return_value = True)
+        @mock.patch("colonyscanalyser.file_access.get_files_by_type", return_value = ["test"])
+        def test_from_path_ioerror(self, mock_get_files_by_type, mock_file_exists, tmp_path):
+            with pytest.raises(IOError):
+                ImageFileCollection.from_path(tmp_path, [])

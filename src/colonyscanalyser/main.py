@@ -276,33 +276,10 @@ def main():
             plates = None
 
     if not USE_CACHED or plates is None:
-        # Find images in working directory
-        image_paths = file_access.get_files_by_type(BASE_PATH, IMAGE_FORMATS)
-
-        # Store images as ImageFile objects
-        # Timestamps are automatically read from filenames
-        image_files = ImageFileCollection()
-        for image_path in image_paths:
-            image_files.add(
-                file_path = image_path,
-                timestamp = None,
-                timestamp_initial = None,
-                cache_image = False
-            )
-
-        # Check if images have been loaded and timestamps could be read
-        if image_files.count > 0:
-            if not SILENT:
-                print(f"{image_files.count} images found")
-        else:
-            raise IOError(f"No images could be found in the supplied folder path."
-            " Images are expected in these formats: {image_formats}")
-        if image_files.count != len(image_files.timestamps):
-            raise IOError("Unable to load timestamps from all image filenames."
-            " Please check that images have a filename with YYYYMMDD_HHMM timestamps")
-
-        # Set intial timestamp
-        image_files.timestamps_initial = image_files.timestamps[0]
+        # Find images in working directory. Raises IOError if images not loaded correctly
+        image_files = ImageFileCollection.from_path(BASE_PATH, IMAGE_FORMATS, cache_images = False)
+        if not SILENT:
+            print(f"{image_files.count} images found")
 
         # Process images to Timepoint data objects
         plate_images_mask = None

@@ -1,3 +1,4 @@
+from __future__ import annotations
 from typing import Optional, List
 from pathlib import Path
 from datetime import datetime, timedelta
@@ -139,11 +140,11 @@ class ImageFileCollection(IdentifiedCollection):
 
     @property
     def file_paths(self) -> List[datetime]:
-        return [image_file.file_path for image_file in self.items]
+        return [image_file.file_path for image_file in self.items if image_file.timestamp is not None]
 
     @property
     def timestamps(self) -> List[datetime]:
-        return [image_file.timestamp for image_file in self.items]
+        return [image_file.timestamp for image_file in self.items if image_file.timestamp is not None]
 
     @property
     def timestamps_initial(self) -> List[datetime]:
@@ -196,3 +197,48 @@ class ImageFileCollection(IdentifiedCollection):
         self.append(image_file)
 
         return image_file
+
+    @classmethod
+    def from_path(
+        cls,
+        path: Path,
+        image_formats: List[str],
+        timestamp_initial: datetime = None,
+        cache_images: bool = False
+    ) -> ImageFileCollection:
+        """
+        Build an ImageFileCollection from a directory containing image files
+
+        :param path: the path to the image files on disk
+        :param image_formats: a list of supported image format file extensions
+        :param timestamp_initial: a timestamp used to calculate relative timestamps for ImageFiles
+        :param cache_images: if images should be stored in memory as they are added to the collection
+        :returns: a new ImageFileCollection populated with ImageFiles
+        """
+        from .file_access import get_files_by_type
+
+        image_paths = get_files_by_type(path, image_formats)
+        if not len(image_paths) > 0:
+            raise FileNotFoundError(f"""No images could be found in the supplied folder path.
+                Images are expected in these formats: {image_formats}""")
+
+        # Store images as ImageFile objects
+        # Timestamps are automatically read from filenames
+        image_files = cls()
+        for image_path in image_paths:
+            image_files.add(
+                file_path = image_path,
+                timestamp = None,
+                timestamp_initial = None,
+                cache_image = False
+            )
+
+        # Check that timestamps were parsed correctly
+        if image_files.count != len(image_files.timestamps):
+            raise IOError("""Unable to load timestamps from all image filenames.
+                Please check that images have a filename with YYYYMMDD_HHMM timestamps""")
+
+        # Use first available timestamp if no initial timestamp is set
+        image_files.timestamps_initial = timestamp_initial or image_files.timestamps[0]
+
+        return image_files
