@@ -63,8 +63,7 @@ def argparse_init(*args, **kwargs) -> argparse.ArgumentParser:
     parser.add_argument("--plate_size", type = int, default = config.PLATE_SIZE, help = "The plate diameter, in millimetres", metavar = "N")
     output.add_argument("-s", "--silent", action = "store_true", help = "Silence all output to console")
     parser.add_argument("--single-process", action = "store_true", help = "Use only a single CPU core, slower but less resource intensive")
-    parser.add_argument("--use_cached_data", type = strtobool, default = config.USE_CACHED_DATA,
-                        help = "Allow use of previously calculated data", metavar = "BOOLEAN")
+    parser.add_argument("-u", "--use-cached-data", action = "store_true", help = "Allow use of previously calculated data")
     output.add_argument("-v", "--verbose", action = "store_true", help = "Output extra information to console")
     parser.add_argument("--version", action = "version", version = f"ColonyScanlayser {metadata.version('colonyscanalyser')}",
                         help = "The package version number")

@@ -94,11 +94,11 @@ This technique is however quite resource intensive for your computer so you may 
 --single-process
 ```
 ### Cached data
-The package saves a compressed serialised version of its output, along with the uncompressed CSV data. This allows it to quickly generate the CSV files and plot images again, without the need for reanalysing the original images. This is disabled by default to prevent confusing situation where outdated information is output from new or altered image sets.
+The package saves a compressed serialised version of its output, along with the uncompressed CSV data. This allows it to quickly generate the CSV files and plot images again, without the need for reanalysing the original images. This is disabled by default to prevent situations where outdated information is output from new or altered image sets.
 
-- input: boolean
 ```
---use_cached_data
+-u
+--use-cached-data
 ```
 ### Verbose output
 Increases the information output to the command line.
