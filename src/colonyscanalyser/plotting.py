@@ -25,12 +25,22 @@ def label_bars(ax: Axes, bars: BarContainer, text_format: str, **kwargs):
     vertical = all(y == ys[0] for y in ys)
 
     if vertical:
-        __label_bar(ax, bars, text_format, **kwargs)
+        _label_bar(ax, bars, text_format, **kwargs)
     else:
-        __label_bar_horizontal(ax, bars, text_format, **kwargs)
+        _label_bar_horizontal(ax, bars, text_format, **kwargs)
 
 
-def __label_bar(ax: Axes, bars: BarContainer, text_format: str, **kwargs):
+def axis_minutes_to_hours(labels: Union[List[int], List[float]]) -> List[str]:
+    """
+    Format axis labels in minutes to integer hours
+
+    :param labels: a list of numerical labels to format
+    :returns: a list list of labels
+    """
+    return ["{:.0f}".format(x // 60) for x in labels]
+
+
+def _label_bar(ax: Axes, bars: BarContainer, text_format: str, **kwargs):
     """
     Attach a text label to each bar displaying its y value
 
@@ -58,7 +68,7 @@ def __label_bar(ax: Axes, bars: BarContainer, text_format: str, **kwargs):
         ax.text(text_x, text_y, text, ha = "center", va = "bottom", color = color, **kwargs)
 
 
-def __label_bar_horizontal(ax: Axes, bars: BarContainer, text_format: str, **kwargs):
+def _label_bar_horizontal(ax: Axes, bars: BarContainer, text_format: str, **kwargs):
     """
     Attach a text label to each bar displaying its y value
     Note: label always outside. otherwise it's too hard to control as numbers can be very long
@@ -78,13 +88,3 @@ def __label_bar_horizontal(ax: Axes, bars: BarContainer, text_format: str, **kwa
         text_y = bar.get_y() + bar.get_height() / 2
 
         ax.text(text_x, text_y, text, va='center', **kwargs)
-
-
-def axis_minutes_to_hours(labels: Union[List[int], List[float]]) -> List[str]:
-    """
-    Format axis labels in minutes to integer hours
-
-    :param labels: a list of numerical labels to format
-    :returns: a list list of labels
-    """
-    return ["{:.0f}".format(x // 60) for x in labels]
