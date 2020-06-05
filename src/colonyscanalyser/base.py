@@ -1,3 +1,4 @@
+from __future__ import annotations
 from typing import Type, TypeVar, Optional, List
 from collections.abc import Collection
 from datetime import datetime, timedelta
@@ -59,7 +60,7 @@ class IdentifiedCollection:
         return len(self.items)
 
     @property
-    def items(self) -> List["T"]:
+    def items(self) -> List[T]:
         """
         Returns a sorted list of items from the collection
 
@@ -78,7 +79,7 @@ class IdentifiedCollection:
         else:
             raise ValueError(f"Items must be supplied as a valid Collection, not {type(val)}")
 
-    def add(self, id: int) -> "T":
+    def add(self, id: int) -> T:
         """
         Create a new instance of T and append it to the collection
 
@@ -120,7 +121,7 @@ class IdentifiedCollection:
         """
         return Identified._id_exists(self.items, id)
 
-    def get_item(self, id: int) -> Optional["T"]:
+    def get_item(self, id: int) -> Optional[T]:
         """
         Returns an item with the specified ID number from the item collection
 
