@@ -19,6 +19,11 @@ def image(request):
     return image_bytes
 
 
+@pytest.fixture
+def image_array():
+    return array([[[1, 1, 1]]])
+
+
 class TestImageFile:
     @pytest.fixture(params = [
         (datetime(2019, 4, 2, 14, 23), "img_20190402_1423.tif"),
@@ -55,7 +60,7 @@ class TestImageFile:
             assert imagefile.timestamp_elapsed == timedelta()
             assert imagefile.cache_image == cache_image
 
-        def test_init_timestamp(self, tmp_path, timestamp_image, cache_image):
+        def test_init_timestamp(self, tmp_path, timestamp_image, cache_image, image_array):
             timestamp, image_name = timestamp_image
             timestamp_diff = timedelta(hours = 1)
             image_path = TestImageFile.create_temp_file(tmp_path, image_name)
@@ -69,14 +74,14 @@ class TestImageFile:
             assert imagefile.timestamp_initial == timestamp - timestamp_diff
             assert imagefile.timestamp_elapsed == timestamp_diff
 
-        def test_enter_exit(self, tmp_path, timestamp_image, cache_image, image):
+        def test_enter_exit(self, tmp_path, timestamp_image, cache_image, image, image_array):
             image_path = TestImageFile.create_temp_file(tmp_path, timestamp_image[1], suffix = "png", file_data = image)
             imagefile = ImageFile(image_path, cache_image = cache_image)
 
             with imagefile as image_file:
-                assert (image_file._ImageFile__image == array([[[255, 255, 255, 255]]])).all()
+                assert (image_file._ImageFile__image == image_array).all()
             if imagefile.cache_image:
-                assert (imagefile._ImageFile__image == array([[[255, 255, 255, 255]]])).all()
+                assert (imagefile._ImageFile__image == image_array).all()
             else:
                 assert imagefile._ImageFile__image is None
 
@@ -86,16 +91,16 @@ class TestImageFile:
             with pytest.raises(FileNotFoundError):
                 ImageFile(image_path)
 
-        def test_image(self, tmp_path, timestamp_image, image, cache_image):
+        def test_image(self, tmp_path, timestamp_image, image, image_array, cache_image):
             _, image_name = timestamp_image
             image_path = TestImageFile.create_temp_file(tmp_path, image_name, suffix = "png", file_data = image)
             imagefile = ImageFile(image_path, cache_image = cache_image)
 
-            assert (imagefile.image == array([[[255, 255, 255, 255]]])).all()
+            assert (imagefile.image == image_array).all()
             assert (imagefile.image_gray == array([[1.]])).all()
 
             if cache_image:
-                assert (imagefile._ImageFile__image == array([[[255, 255, 255, 255]]])).all()
+                assert (imagefile._ImageFile__image == image_array).all()
             else:
                 assert imagefile._ImageFile__image is None
 

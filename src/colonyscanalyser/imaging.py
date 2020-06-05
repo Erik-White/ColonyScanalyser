@@ -240,6 +240,23 @@ def circles_radius_median(cx, cy, radii, circle_count):
     return (cx, cy, radii)
 
 
+def image_as_rgb(image: ndarray) -> ndarray:
+    """
+    Convert an image in any colour mode to RGB
+
+    :param image: an image as a numpy array
+    :returns: the image with RGB colour
+    """
+    from skimage.color import rgba2rgb, gray2rgb
+
+    # If the image has no colour channels, it must be greyscale
+    if len(image.shape) < 3 or image.shape[-1] == 1:
+        return gray2rgb(image)
+
+    # Remove alpha channel if present
+    return rgba2rgb(image)
+
+
 def remove_background_mask(image: ndarray, smoothing: float = 1, sigmoid_cutoff: float = 0.4, **filter_args) -> ndarray:
     """
     Separate the image foreground from the background

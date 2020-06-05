@@ -7,6 +7,7 @@ from colonyscanalyser.imaging import (
     crop_image,
     cut_image_circle,
     get_image_circles,
+    image_as_rgb,
     remove_background_mask,
     watershed_separation
 )
@@ -215,6 +216,26 @@ class TestGetImageCircles():
     def test_image_empty(self):
         with pytest.raises(ValueError):
             get_image_circles(np.array([]), 1)
+
+
+class TestImageAsRGB():
+    def test_grayscale(self, image):
+        result = image_as_rgb(image)
+
+        assert len(image.shape) == 2
+        assert len(result.shape) == 3
+        assert result.shape[-1] == 3
+
+    def test_rgba(self, image):
+        from numpy import empty
+
+        image = empty(image.shape + (4, ), dtype = image.dtype)
+        result = image_as_rgb(image)
+
+        assert len(image.shape) == 3
+        assert image.shape[-1] == 4
+        assert len(result.shape) == 3
+        assert result.shape[-1] == 3
 
 
 class TestRemoveBackgroundMask():
