@@ -1,3 +1,4 @@
+from __future__ import annotations
 from typing import Type, TypeVar, Optional, List
 from collections.abc import Collection
 from datetime import datetime, timedelta
@@ -12,17 +13,17 @@ class Identified:
 
     @property
     def id(self) -> int:
-        return self.__id
+        return self._id
 
     @id.setter
     def id(self, val: int):
-        if self.__id_is_valid(val):
-            self.__id = val
+        if self._id_is_valid(val):
+            self._id = val
         else:
             raise ValueError(f"'{val}' is not a valid id. An id must be a non-negative integer'")
 
     @staticmethod
-    def __id_exists(collection: Collection, id: int) -> bool:
+    def _id_exists(collection: Collection, id: int) -> bool:
         """
         Verifies if an object in a collection matches the specified ID number
 
@@ -33,7 +34,7 @@ class Identified:
         return any(id == existing.id for existing in collection)
 
     @staticmethod
-    def __id_is_valid(id: int) -> bool:
+    def _id_is_valid(id: int) -> bool:
         """
         Verifies if a value conforms to the requirements for an ID number
 
@@ -59,26 +60,26 @@ class IdentifiedCollection:
         return len(self.items)
 
     @property
-    def items(self) -> List["T"]:
+    def items(self) -> List[T]:
         """
         Returns a sorted list of items from the collection
 
         A copy is returned, preventing direct changes to the collection
         """
-        return sorted(self.__items, key = lambda item: item.id)
+        return sorted(self._items, key = lambda item: item.id)
 
     @items.setter
     def items(self, val: Collection):
         if isinstance(val, dict):
             val = list(val.values())
         if val is None:
-            self.__items = list()
+            self._items = list()
         elif isinstance(val, Collection) and not isinstance(val, str):
-            self.__items = val.copy()
+            self._items = val.copy()
         else:
             raise ValueError(f"Items must be supplied as a valid Collection, not {type(val)}")
 
-    def add(self, id: int) -> "T":
+    def add(self, id: int) -> T:
         """
         Create a new instance of T and append it to the collection
 
@@ -98,7 +99,7 @@ class IdentifiedCollection:
         :param item: the object to append to the collection
         """
         if not self.exists(item):
-            self.__items.append(item)
+            self._items.append(item)
         else:
             raise ValueError(f"An item with ID #{item.id} already exists")
 
@@ -118,9 +119,9 @@ class IdentifiedCollection:
         :param id: a valid Identified id number
         :returns: True if an item is found with matching ID
         """
-        return Identified._Identified__id_exists(self.items, id)
+        return Identified._id_exists(self.items, id)
 
-    def get_item(self, id: int) -> Optional["T"]:
+    def get_item(self, id: int) -> Optional[T]:
         """
         Returns an item with the specified ID number from the item collection
 
@@ -142,7 +143,7 @@ class IdentifiedCollection:
         if self.id_exists(id):
             for item in self.items:
                 if item.id == id:
-                    self.__items.remove(item)
+                    self._items.remove(item)
         else:
             raise KeyError(f"No item with ID #{id} could be found")
 
@@ -156,11 +157,11 @@ class Named:
 
     @property
     def name(self) -> str:
-        return self.__name
+        return self._name
 
     @name.setter
     def name(self, val: str):
-        self.__name = str(val)
+        self._name = str(val)
 
 
 class Unique(Identified):
@@ -170,7 +171,7 @@ class Unique(Identified):
     id_count = 0
 
     def __init__(self):
-        self._Identified__id = self.id_increment()
+        self._id = self.id_increment()
 
     @Identified.id.setter
     def id(self, val: int):
@@ -199,11 +200,11 @@ class TimeStamped:
 
     @property
     def timestamp(self) -> datetime:
-        return self.__timestamp
+        return self._timestamp
 
     @timestamp.setter
     def timestamp(self, val: datetime):
-        self.__timestamp = val
+        self._timestamp = val
 
 
 class TimeStampElapsed(TimeStamped):
@@ -213,7 +214,7 @@ class TimeStampElapsed(TimeStamped):
         if timestamp_initial is None:
             timestamp_initial = timestamp
 
-        self._TimeStamped__timestamp = timestamp
+        self._timestamp = timestamp
         self.timestamp_initial = timestamp_initial
 
     @property
@@ -234,8 +235,8 @@ class TimeStampElapsed(TimeStamped):
 
     @property
     def timestamp_initial(self) -> datetime:
-        return self.__timestamp_initial
+        return self._timestamp_initial
 
     @timestamp_initial.setter
     def timestamp_initial(self, val: datetime):
-        self.__timestamp_initial = val
+        self._timestamp_initial = val

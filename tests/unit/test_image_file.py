@@ -79,11 +79,11 @@ class TestImageFile:
             imagefile = ImageFile(image_path, cache_image = cache_image)
 
             with imagefile as image_file:
-                assert (image_file._ImageFile__image == image_array).all()
+                assert (image_file._image == image_array).all()
             if imagefile.cache_image:
-                assert (imagefile._ImageFile__image == image_array).all()
+                assert (imagefile._image == image_array).all()
             else:
-                assert imagefile._ImageFile__image is None
+                assert imagefile._image is None
 
     class TestProperties:
         @pytest.mark.parametrize("image_path", ["", Path(), "."])
@@ -100,9 +100,9 @@ class TestImageFile:
             assert (imagefile.image_gray == array([[1.]])).all()
 
             if cache_image:
-                assert (imagefile._ImageFile__image == image_array).all()
+                assert (imagefile._image == image_array).all()
             else:
-                assert imagefile._ImageFile__image is None
+                assert imagefile._image is None
 
     class TestMethods:
         def test_timestamp_from_exif(self, tmp_path, timestamp_image):

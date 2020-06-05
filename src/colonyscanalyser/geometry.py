@@ -15,35 +15,35 @@ class Shape(ABC):
     @property
     def center(self) -> Union[Tuple[float, float], Tuple[float, float, float]]:
         try:
-            return self.__center
+            return self._center
         except AttributeError:
             return None
 
     @center.setter
     def center(self, val: Union[Tuple[float, float], Tuple[float, float, float]]):
-        self.__center = val
+        self._center = val
 
     @property
     def depth(self) -> float:
         try:
-            return self.__depth
+            return self._depth
         except AttributeError:
             return 0
 
     @depth.setter
     def depth(self, val: float):
-        self.__depth = val
+        self._depth = val
 
     @property
     def height(self) -> float:
         try:
-            return self.__height
+            return self._height
         except AttributeError:
             return 0
 
     @height.setter
     def height(self, val: float):
-        self.__height = val
+        self._height = val
 
     @property
     @abstractmethod
@@ -53,13 +53,13 @@ class Shape(ABC):
     @property
     def width(self) -> float:
         try:
-            return self.__width
+            return self._width
         except AttributeError:
             return 0
 
     @width.setter
     def width(self, val: float):
-        self.__width = val
+        self._width = val
 
 
 class Circle(Shape):
@@ -79,14 +79,14 @@ class Circle(Shape):
 
     @property
     def diameter(self) -> float:
-        return self.__diameter
+        return self._diameter
 
     @diameter.setter
     def diameter(self, val: float):
         if val < 0:
             raise ValueError("The diameter must be a number greater than zero")
 
-        self.__diameter = val
+        self._diameter = val
 
     @property
     def height(self) -> float:

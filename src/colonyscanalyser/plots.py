@@ -213,7 +213,7 @@ def plot_plate_images_animation(
     :param fps: the framerate of the animated gif
     :param image_name: the file name for the saved gif images
     :param pool_max: the maximum number of processors to use for parallel processing
-    :param kwargs: arguments to pass through to __image_file_to_plate_images
+    :param kwargs: arguments to pass through to _image_file_to_plate_images
     :returns: a list of file path objects if the images were saved sucessfully
     """
     from multiprocessing import Pool
@@ -223,7 +223,7 @@ def plot_plate_images_animation(
     # Divide up image files between processes and assemble results
     chunk_size = int(image_files.count // pool_max)
     func = partial(
-        __image_file_to_plate_images,
+        _image_file_to_plate_images,
         plate_collection = plates,
         **kwargs
     )
@@ -348,7 +348,9 @@ def growth_curve(
     if growth_params:
         # Plot lag, vmax and carrying capacity lines
         if plate.growth_curve.lag_time.total_seconds() > 0:
-            line = ax.axvline(plate.growth_curve.lag_time.total_seconds() / 3600, color = "grey", linestyle = "dashed", alpha = 0.5)
+            line = ax.axvline(
+                plate.growth_curve.lag_time.total_seconds() / 3600, color = "grey", linestyle = "dashed", alpha = 0.5
+            )
             line.set_label("Lag time")
 
         if plate.growth_curve.carrying_capacity > 0:
@@ -362,7 +364,12 @@ def growth_curve(
             ax.plot([x0, x1], [y0, y1], color = "red", linestyle = "dashed", alpha = 0.5, label = "Maximum\ngrowth rate")
 
 
-def plot_appearance_frequency(plates: List[Plate], save_path: str, timestamps: List[timedelta] = None, bar = False) -> Path:
+def plot_appearance_frequency(  # noqa: C901
+    plates: List[Plate],
+    save_path: str,
+    timestamps: List[timedelta] = None,
+    bar = False
+) -> Path:
     """
     Time of appearance frequency for either a single plate, or all plates on the lattice
 
@@ -536,7 +543,7 @@ def plot_doubling_map(plates: List[Plate], save_path: Path) -> Path:
         return save_path
 
 
-def __image_file_to_plate_images(
+def _image_file_to_plate_images(
     image_file: ImageFile,
     plate_collection: PlateCollection = None,
     image_size: Tuple[int, int] = None,

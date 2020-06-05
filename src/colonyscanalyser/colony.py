@@ -111,11 +111,11 @@ class Colony(Identified, Named, GrowthCurve):
             raise ValueError("Timepoints must be supplied as a Dict or other Collection")
 
     @property
-    def timepoint_first(self) -> "Timepoint":
+    def timepoint_first(self) -> Timepoint:
         return min(self.timepoints)
 
     @property
-    def timepoint_last(self) -> "Timepoint":
+    def timepoint_last(self) -> Timepoint:
         return max(self.timepoints)
 
     @property
@@ -144,7 +144,7 @@ class Colony(Identified, Named, GrowthCurve):
         else:
             raise ValueError(f"This time point at {timepoint.timestamp}  already exists")
 
-    def get_timepoint(self, timestamp: timedelta) -> "Timepoint":
+    def get_timepoint(self, timestamp: timedelta) -> Timepoint:
         """
         Returns a Timepoint object from the Colony timepoints collection
 
