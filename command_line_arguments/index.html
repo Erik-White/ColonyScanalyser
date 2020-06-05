@@ -133,11 +133,11 @@
 <h1 id="command-line-arguments">Command Line Arguments</h1>
 <p>A list of optional arguments, and their default values, that affect the way ColonyScanalyser is run. Some arguments have a 'shorthand' version that saves having to type the full command. Shorthand arguments are prefixed by a single dash <code>-</code>, while normal arguments are prefixed by two dashes <code>--</code></p>
 <p>The only required argument is the path to the folder containing the image files you wish to analyse. Optional arguments can be added after the folder path e.g.</p>
-<pre><code>scanalyser /path/to/images --use_saved false
+<pre><code>scanalyser /path/to/images --use-cached-data
 </code></pre>
 
 <p>You can add as many optional arguments as you like:</p>
-<pre><code>scanalyser /path/to/images --use_saved false -mp true -dpi 300 --plate_lattice 2 3
+<pre><code>scanalyser /path/to/images --use-cached-data -s -d 300 --plate-lattice 2 3
 </code></pre>
 
 <h3 id="help">Help</h3>
@@ -146,38 +146,29 @@
 --help
 </code></pre>
 
+<h3 id="animation">Animation</h3>
+<p>Generate animation and video from plots or plate images. These may take several minutes to create and the process can be quite resource intensive.</p>
+<pre><code>-a
+--animation
+</code></pre>
+
 <h3 id="image-density">Image density</h3>
 <p>The image density your scanner uses, this can usually be found in your scanner settings. It is important to set this correctly as it enables the program to acurately convert the plate size in millimeters to pixels.</p>
 <ul>
 <li>input: integer</li>
 </ul>
-<pre><code>-dpi
---dots_per_inch
+<pre><code>-d
+--dots-per-inch
 </code></pre>
 
 <h3 id="image-formats">Image formats</h3>
 <p>Displays the currently supported image formats.</p>
-<pre><code>--image_formats
-</code></pre>
-
-<h3 id="multiprocessing">Multiprocessing</h3>
-<p>This technique utilises all of the available processors that your computer has to analyse images in parallel. Since most computers now have at least 2 or 4 processors, this can greatly reduce the time needed to process a set of images.</p>
-<p>This technique is however quite resource intensive for your computer so you may wish to disable it.</p>
-<ul>
-<li>input: boolean</li>
-</ul>
-<pre><code>-mp
---multiprocessing
+<pre><code>--image-formats
 </code></pre>
 
 <h3 id="plot-images-output">Plot images output</h3>
-<p>The level of detail required when saving plot images after analysis. At the default level (<code>1</code>), a few summary plots are saved to give a quick overview of the data. If the output level is increased, individual plots for each plate will be saved.</p>
-<p>At the highest level (currently <code>4</code>), animations of plate images are created in <code>gif</code> format. These may take several minutes to create and the process can be quite resource intensive.</p>
-<ul>
-<li>input: boolean</li>
-</ul>
-<pre><code>-p
---plots
+<p>Prevent plot images being output to disk. Summary plots to give a quick overview of the data and individual plots for each plate are output unless this argument is passed.</p>
+<pre><code>--no-plots
 </code></pre>
 
 <h3 id="plate-edge-cut">Plate edge cut</h3>
@@ -185,27 +176,27 @@
 <ul>
 <li>input: integer</li>
 </ul>
-<pre><code>--plate_edge_cut
+<pre><code>--plate-edge-cut
 </code></pre>
 
 <h3 id="plate-labels">Plate labels</h3>
 <p>A list of labels to identify each plate. The label is used in file names and the plate map.</p>
 <p>Plates are ordered from top left, in rows, and labels must be provided in that order.</p>
 <p>Labels are separated with spaces. To use a space within a label, wrap that label in quotes</p>
-<p>Example: <code>--plate_labels first second third "label with spaces" fifth sixth</code></p>
+<p>Example: <code>--plate-labels first second third "label with spaces" fifth sixth</code></p>
 <ul>
 <li>input: list</li>
 </ul>
-<pre><code>--plate_labels
+<pre><code>--plate-labels
 </code></pre>
 
 <h3 id="plate-holder-shape">Plate holder shape</h3>
 <p>The layout of the plates in the image in rows and columns. The default is <code>3</code> rows and <code>2</code> columns.</p>
-<p>A square grid of 9 plates would be entered as <code>--plate_lattice 3 3</code></p>
+<p>A square grid of 9 plates would be entered as <code>--plate-lattice 3 3</code></p>
 <ul>
 <li>input: integer</li>
 </ul>
-<pre><code>--plate_lattice
+<pre><code>--plate-lattice
 </code></pre>
 
 <h3 id="plate-size">Plate size</h3>
@@ -213,22 +204,29 @@
 <ul>
 <li>input: integer</li>
 </ul>
-<pre><code>--plate_size
+<pre><code>--plate-size
+</code></pre>
+
+<h3 id="silence-output">Silence output</h3>
+<p>Silence all output to the console. Note that this only silences the informative output from the package, warnings or errors may still appear.</p>
+<pre><code>-s
+--silent
+</code></pre>
+
+<h3 id="single-processing">Single processing</h3>
+<p>Disable multiprocessing. By default the program utilises nearly all of the available processors in your system, leaving at least one free for other tasks. This allows image processing in parallel and will greatly reduce the time needed to process a set of images, but is very resource intensive.</p>
+<p>This technique is however quite resource intensive for your computer so you may wish to disable it.</p>
+<pre><code>--single-process
 </code></pre>
 
 <h3 id="cached-data">Cached data</h3>
-<p>The package saves a compressed serialised version of its output, along with the uncompressed CSV data. This allows it to quickly generate the CSV files and plot images again, without the need for reanalysing the original images. This is disabled by default to prevent confusing situation where outdated information is output from new or altered image sets.</p>
-<ul>
-<li>input: boolean</li>
-</ul>
-<pre><code>--use_cached_data
+<p>The package saves a compressed serialised version of its output, along with the uncompressed CSV data. This allows it to quickly generate the CSV files and plot images again, without the need for reanalysing the original images. This is disabled by default to prevent situations where outdated information is output from new or altered image sets.</p>
+<pre><code>-u
+--use-cached-data
 </code></pre>
 
-<h3 id="information-output">Information output</h3>
-<p>The level of information output to the command line. Default level is <code>1</code>, increase to see more information. Output can be silenced with <code>0</code></p>
-<ul>
-<li>input: integer</li>
-</ul>
+<h3 id="verbose-output">Verbose output</h3>
+<p>Increases the information output to the command line.</p>
 <pre><code>-v
 --verbose
 </code></pre>
