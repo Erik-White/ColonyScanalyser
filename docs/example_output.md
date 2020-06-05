@@ -1,5 +1,5 @@
 # Example output
-A few simple plots are saved to allow quick comparison of the different plates. Increasing the `plots` argument will increase the number and detail of plots that are output, see the [command line arguments](command_line_arguments.md) for more detail.
+Several plots are saved to allow quick comparison of the different plates. Using the `animation` argument will also output animations in `gif` format with timelapses of the individual plate images, see the [command line arguments](command_line_arguments.md) for more detail.
 
 Data such as colony area, colour, time of appearance etc is output to a set of CSV files. Growth curve fitting with the Gompertz function is attempted for each colony and this data is provided where fitting is possible.
 
@@ -17,14 +17,14 @@ Plates are numbered sequentially, starting from the top left and proceeding in r
 A 'map' of the identified plates and colonies will be output to show how they have been identified. This can be useful for correlating data from individual colonies with the specific colony on the plate. Note that colonies are shown at their final measurement size, which may be smaller than the colony in the image. Measurements are stopped if colonies merge, or if they do not meet other criteria e.g. they display low circularity.
 
 ## Plots
-At the default level, a few comparison plots are output to the `plots` folder in your image folder. These allow quick verification and comparison of the data.
+Several comparison plots are output to the `plots` folder in your image folder. These allow quick verification and comparison of the data.
 
 Individual plots for each plate are also saved, this includes growth curves fitted with the Gompertz function (where fitting is successful).
 <img align="right" src="../images/time_of_appearance_bar_small.png">
 
-At the highest level of `plots`, a separate animated gif image of each plate is output. This may be useful for viewing the progression of colonies through their growth period, as well as for comparing growth in differing plate conditions.
+A separate animated gif image of each plate can be output with the `animation` command line argument. This may be useful for viewing the progression of colonies through their growth period, as well as for comparing growth in differing plate conditions.
 
-Only the measured plate area is shown in the animations. The area defined by `plate_edge_cut` is excluded.
+Only the measured plate area is shown in the animations. The area defined by `plate-edge-cut` is excluded.
 
 ## Data
 All the data gathered during analysis is output to the `data` folder in your images folder. Data is output as CSV files which is compatible with almost all data packages.

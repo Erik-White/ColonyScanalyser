@@ -4,6 +4,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2020-06-05
+### Added
+- Utilize multiprocessing for grouping and filtering `Timepoint`s to Colonies
+- `silent` command line argument to prevent output to console
+- `animation` command line argument to output
+- New class function, from_path, for building an ImageFileCollection
+### Changed
+- Improved plot labels/legends
+- `plots` command line argument replaced with `no-plots` switch
+- `multiprocessing` command line argument replaced with `single-process` switch
+- Reworked command line arguments, using simplified switches for boolean arguments
+- Reworked command line arguments to follow GNU conventions
+- Refactored `main` module
+- Improve access model and remove forward typing
+### Fixed
+- Ensure image files are converted to RGB
+
 ## [0.4.4] - 2020-06-03
 ### Fixed
 - Plots are now saved to the correct directory again

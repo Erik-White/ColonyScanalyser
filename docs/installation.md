@@ -13,7 +13,7 @@ brew install python
 #### On Linux
 Python may come bundled with your distribution, otherwise it will be available through your package manager e.g.
 ```
-sudo apt-get install python3.7
+sudo apt-get install python3.8
 ```
 #### On Windows
 Go to the [Python downloads site](https://www.python.org/downloads/windows/) and grab the latest Python installer. Run the installer once it has downloaded and follow the setup instructions.
@@ -63,5 +63,5 @@ Alternatively, you can build the image yourself using the Dockerfile included wi
 
 `scripts/docker-run.sh` is an example of how to use a containerised instance of ColonyScanalyser to analyse images in a directory on the host machine. Run the script as you normally would ColonyScanalyser, passing it the target image directory followed by any other command line arguments:
 ```
-scripts/docker-run.sh /absolute/path/to/images/ --verbose 3 --plate_size 100
+scripts/docker-run.sh /absolute/path/to/images/ --verbose --plate-size 100
 ```
