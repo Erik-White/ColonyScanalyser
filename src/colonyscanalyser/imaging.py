@@ -233,6 +233,29 @@ def image_as_rgb(image: ndarray) -> ndarray:
     return image
 
 
+def align_image(image: ndarray, image_ref: ndarray, **kwargs):
+    """
+    Attempt to align an image to a reference image
+
+    :param image: the image to align
+    :param image_ref: the image to align with
+    :param kwargs: keyword arguments passed to skimage.registration.phase_cross_correlation
+    :returns: an aligned image
+    """
+    from numpy import flip
+    from skimage.registration import phase_cross_correlation
+    from skimage.transform import EuclideanTransform, warp
+
+    # Calculate the movement and translation parameters
+    shifts = phase_cross_correlation(image_ref, image, return_error = False, **kwargs)
+    transform = EuclideanTransform(translation = flip(shifts))
+
+    # Adjust the image using the calculated transform
+    image = warp(image, transform.inverse, mode = "constant", cval = 0, clip = True, preserve_range = True)
+
+    return image
+
+
 def remove_background_mask(image: ndarray, smoothing: float = 1, sigmoid_cutoff: float = 0.4, **filter_args) -> ndarray:
     """
     Separate the image foreground from the background

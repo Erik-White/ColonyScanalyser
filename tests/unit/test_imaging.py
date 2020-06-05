@@ -8,6 +8,7 @@ from colonyscanalyser.imaging import (
     cut_image_circle,
     get_image_circles,
     image_as_rgb,
+    align_image,
     remove_background_mask,
     watershed_separation
 )
@@ -243,6 +244,32 @@ class TestImageAsRGB():
         assert image.shape[-1] == 4
         assert len(result.shape) == 3
         assert result.shape[-1] == 3
+
+
+class TestAlignImages():
+    @pytest.fixture(params = [(0, 0), (0, -2), (-2, -1), (-.34, 1.4), (1.5, -2)])
+    def image_shifted(self, request, image):
+        from scipy.ndimage.interpolation import shift
+
+        yield shift(image, request.param, order = 0)
+
+    @staticmethod
+    def crop_center(img, crop):
+        cropx, cropy = crop
+        y, x = img.shape
+        startx = x // 2 - (cropx // 2)
+        starty = y // 2 - (cropy // 2)
+
+        return img[starty: starty + cropy, startx: startx + cropx]
+
+    def test_shift(self, image, image_shifted):
+        result = align_image(image_shifted, image)
+
+        assert image.shape == image_shifted.shape == result.shape
+
+        # Compare the centres, data near the edges may have been lost
+        result = self.crop_center(result.astype("uint8"), (5, 5))
+        assert (result == self.crop_center(image, (5, 5))).all()
 
 
 class TestRemoveBackgroundMask():
