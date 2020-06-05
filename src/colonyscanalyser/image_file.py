@@ -32,36 +32,36 @@ class ImageFile(Unique, TimeStampElapsed):
         self.timestamp = timestamp
         self.timestamp_initial = timestamp_initial
         self.cache_image = cache_image
-        self.__image = None
+        self._image = None
         if self.cache_image:
-            self.__image = ImageFile.__load_image(self.file_path)
+            self._image = ImageFile._load_image(self.file_path)
 
     def __enter__(self):
         # Load and cache image ready for use
-        if self.__image is None:
-            self.__image = ImageFile.__load_image(self.file_path)
+        if self._image is None:
+            self._image = ImageFile._load_image(self.file_path)
 
         return self
 
     def __exit__(self, exception_type, exception_value, traceback):
         # Remove cached images, unless required
         if not self.cache_image:
-            self.__image = None
+            self._image = None
 
     @property
     def cache_image(self) -> bool:
-        return self.__cache_image
+        return self._cache_image
 
     @cache_image.setter
     def cache_image(self, val: bool):
-        self.__cache_image = val
+        self._cache_image = val
 
     @property
     def image(self) -> ndarray:
-        if self.cache_image and self.__image is not None:
-            return self.__image.copy()
+        if self.cache_image and self._image is not None:
+            return self._image.copy()
         else:
-            return ImageFile.__load_image(self.file_path)
+            return ImageFile._load_image(self.file_path)
 
     @property
     def image_gray(self) -> ndarray:
@@ -69,7 +69,7 @@ class ImageFile(Unique, TimeStampElapsed):
 
     @property
     def file_path(self) -> Path:
-        return self.__file_path
+        return self._file_path
 
     @file_path.setter
     def file_path(self, val: Path):
@@ -79,7 +79,7 @@ class ImageFile(Unique, TimeStampElapsed):
         if not file_exists(val):
             raise FileNotFoundError(f"The image file could not be found: {val}")
 
-        self.__file_path = val
+        self._file_path = val
 
     @staticmethod
     def timestamp_from_exif(image_file: Path) -> Optional[datetime]:
@@ -117,7 +117,7 @@ class ImageFile(Unique, TimeStampElapsed):
             return None
 
     @staticmethod
-    def __load_image(file_path: Path, as_gray: bool = False, plugin: str = None, **plugin_args) -> ndarray:
+    def _load_image(file_path: Path, as_gray: bool = False, plugin: str = None, **plugin_args) -> ndarray:
         from .imaging import image_as_rgb
 
         while True:
@@ -138,7 +138,7 @@ class ImageFileCollection(IdentifiedCollection):
     """
     @IdentifiedCollection.items.getter
     def items(self) -> List[ImageFile]:
-        return sorted(self._IdentifiedCollection__items, key = lambda item: item.timestamp)
+        return sorted(self._items, key = lambda item: item.timestamp)
 
     @property
     def file_paths(self) -> List[datetime]:
