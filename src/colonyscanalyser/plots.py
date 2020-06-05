@@ -295,6 +295,11 @@ def plot_growth_curve(plates: List[Plate], save_path: Path) -> Path:
         "bbox_inches": "tight"
     }
 
+    title = "Colony growth"
+    if len(plates) == 1:
+        title = _plate_title(title, plates[0])
+    plt.title(title)
+
     save_path = save_path.joinpath("growth_curve.png")
     try:
         plt.savefig(str(save_path), **save_params)
@@ -398,12 +403,13 @@ def plot_appearance_frequency(  # noqa: C901
         # Plot frequency for each time point
         figures.extend(time_of_appearance_frequency(ax, plate, cm_plate, timestamps = timestamps, bar = bar))
 
-    lgd = ax.legend(loc = 'center right', fontsize = 8, bbox_to_anchor = (1.25, 0.5))
     save_params = {
         "format": "png",
-        "bbox_extra_artists": (lgd,),
         "bbox_inches": "tight"
     }
+    if len(plates) > 1:
+        lgd = ax.legend(loc = 'center right', fontsize = 8, bbox_to_anchor = (1.25, 0.5))
+        save_params["bbox_extra_artists"] = (lgd,)
 
     alpha = 1 / (0.25 * len(plates))
     if alpha > 1:
@@ -414,7 +420,11 @@ def plot_appearance_frequency(  # noqa: C901
     plt.ylim(bottom = 0)
     if timestamps is not None:
         plt.xlim(min(timestamps).total_seconds() / 3600, max(timestamps).total_seconds() / 3600)
-    plt.title("Time of appearance")
+    title = "Time of appearance"
+    if len(plates) == 1:
+        title = _plate_title(title, plates[0])
+    plt.title(title)
+
     if bar:
         save_name = "time_of_appearance_bar.png"
     else:
@@ -584,3 +594,21 @@ def _image_file_to_plate_images(
         images[plate_id] = Image.fromarray(image.astype("uint8"), mode = "RGBA")
 
     return images
+
+
+def _plate_title(title: str, plate: Plate):
+    """
+    Construct a plot title containing the Plate information
+
+    :param title: a plot title
+    :param plate: a Plate instance
+    :returns: a title containing the plate ID and label, if available
+    """
+    title_items = [title]
+
+    if plate.name:
+        title_items[0] += ","
+        title_items.append(f"{plate.name}")
+    title_items.append(f"(plate {plate.id})")
+
+    return " ".join(title_items)
