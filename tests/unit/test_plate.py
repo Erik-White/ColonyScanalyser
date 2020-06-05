@@ -34,22 +34,6 @@ def colonies(request):
     yield colonies
 
 
-'''
-class Colony:
-    def __init__(self, id):
-        self.id = id
-        self.timepoints = {str(id): str(id)}
-        self.time_of_appearance = timedelta(seconds = id)
-        self.growth_curve = object()
-        #self.growth_curve.data = {self.time_of_appearance: id}
-
-    def __iter__(self):
-        return iter([
-            self.id
-        ])
-'''
-
-
 def ColonyMock(id):
     patcher = patch(
         "colonyscanalyser.colony.Colony",
@@ -141,13 +125,13 @@ class TestPlate():
 
         def test_collection_to_csv(self, plate, tmp_path, colonies):
             file_name = "test"
-            result = plate._Plate__collection_to_csv(str(tmp_path), file_name, colonies, list())
+            result = plate._collection_to_csv(str(tmp_path), file_name, colonies, list())
 
             assert result == tmp_path.joinpath(file_name).with_suffix(".csv")
 
         def test_collection_to_csv_path(self, plate):
             with pytest.raises(FileNotFoundError):
-                plate._Plate__collection_to_csv("", "", list())
+                plate._collection_to_csv("", "", list())
 
 
 class TestPlateCollection:
@@ -243,7 +227,10 @@ class TestPlateCollection:
                 reader = list(csv.reader(csvfile))
 
                 assert len(reader) == plates.count + 1
-                assert reader[1] == ["1", "", "(102, 102)", "160", "0", "0", "0", "0.0", "0.0", "0.0", "0.0", "0.0", "0.0", "0.0", "0.0"]
+                assert reader[1] == [
+                    "1", "", "(102, 102)", "160", "0", "0", "0", "0.0",
+                    "0.0", "0.0", "0.0", "0.0", "0.0", "0.0", "0.0"
+                ]
 
         def test_slice_plate_image(self, image_circle):
             plates = PlateCollection(shape = (1, 1))

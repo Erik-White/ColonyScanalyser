@@ -62,19 +62,19 @@ class Plate(GrowthCurve, Identified, IdentifiedCollection, Named, Circle):
 
     @property
     def center(self) -> Union[Tuple[float, float], Tuple[float, float, float]]:
-        return self.__center
+        return self._center
 
     @center.setter
     def center(self, val: Union[Tuple[float, float], Tuple[float, float, float]]):
-        self.__center = val
+        self._center = val
 
     @property
     def edge_cut(self) -> float:
-        return self.__edge_cut
+        return self._edge_cut
 
     @edge_cut.setter
     def edge_cut(self, val: float):
-        self.__edge_cut = val
+        self._edge_cut = val
 
     @property
     def _growth_curve_data(self) -> Dict[timedelta, Union[float, List[float]]]:
@@ -121,7 +121,7 @@ class Plate(GrowthCurve, Identified, IdentifiedCollection, Named, Circle):
                 "Final diameter (pixels)"
             ]
 
-        return self.__collection_to_csv(
+        return self._collection_to_csv(
             save_path,
             file_safe_name([f"plate{str(self.id)}", self.name, "colonies"]),
             self.items,
@@ -153,7 +153,7 @@ class Plate(GrowthCurve, Identified, IdentifiedCollection, Named, Circle):
             for timepoint in colony.timepoints:
                 colony_timepoints.append([colony.id, *timepoint])
 
-        return self.__collection_to_csv(
+        return self._collection_to_csv(
             save_path,
             file_safe_name([f"plate{str(self.id)}", self.name, "colony", "timepoints"]),
             colony_timepoints,
@@ -173,7 +173,7 @@ class Plate(GrowthCurve, Identified, IdentifiedCollection, Named, Circle):
         return i
 
     @staticmethod
-    def __collection_to_csv(save_path: Path, file_name: str, data: Collection, headers: List[str] = None) -> Path:
+    def _collection_to_csv(save_path: Path, file_name: str, data: Collection, headers: List[str] = None) -> Path:
         """
         Output the data from the timepoints in the colonies collection to a CSV file
 
@@ -213,14 +213,14 @@ class PlateCollection(IdentifiedCollection):
 
     @property
     def shape(self) -> Tuple[int, int]:
-        return self.__shape
+        return self._shape
 
     @shape.setter
     def shape(self, val: Tuple[int, int]):
-        if not PlateCollection.__is_valid_shape(val):
+        if not PlateCollection._is_valid_shape(val):
             raise ValueError(f"{val} is not a valid shape. All values must be non-negative integers")
 
-        self.__shape = val
+        self._shape = val
 
     def add(
         self,
@@ -341,7 +341,7 @@ class PlateCollection(IdentifiedCollection):
                 "Doubling time standard deviation (minutes)"
             ]
 
-        return Plate._Plate__collection_to_csv(
+        return Plate._collection_to_csv(
             save_path,
             file_safe_name(["plates_summary"]),
             self.items,
@@ -382,7 +382,7 @@ class PlateCollection(IdentifiedCollection):
         """
         from numpy import prod
 
-        if not PlateCollection.__is_valid_shape(coordinate):
+        if not PlateCollection._is_valid_shape(coordinate):
             raise ValueError(
                 f"The supplied coordinates, {coordinate}, are not valid. All values must be non-negative integers"
             )
@@ -400,7 +400,7 @@ class PlateCollection(IdentifiedCollection):
         :param shape: row and column boundaries
         :returns: row and column coordinate tuple
         """
-        if index < 1 or not PlateCollection.__is_valid_shape(shape):
+        if index < 1 or not PlateCollection._is_valid_shape(shape):
             raise ValueError("The supplied index or shape is not valid. All values must be non-negative integers")
 
         shape_row, shape_col = shape
@@ -414,7 +414,7 @@ class PlateCollection(IdentifiedCollection):
         return (row, col)
 
     @staticmethod
-    def __is_valid_shape(shape: Tuple[int, int]) -> bool:
+    def _is_valid_shape(shape: Tuple[int, int]) -> bool:
         return (
             all(shape) and
             not any([(not isinstance(val, int) or val < 1) for val in shape])
