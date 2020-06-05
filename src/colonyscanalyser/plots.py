@@ -403,12 +403,13 @@ def plot_appearance_frequency(  # noqa: C901
         # Plot frequency for each time point
         figures.extend(time_of_appearance_frequency(ax, plate, cm_plate, timestamps = timestamps, bar = bar))
 
-    lgd = ax.legend(loc = 'center right', fontsize = 8, bbox_to_anchor = (1.25, 0.5))
     save_params = {
         "format": "png",
-        "bbox_extra_artists": (lgd,),
         "bbox_inches": "tight"
     }
+    if len(plates) > 1:
+        lgd = ax.legend(loc = 'center right', fontsize = 8, bbox_to_anchor = (1.25, 0.5))
+        save_params["bbox_extra_artists"] = (lgd,)
 
     alpha = 1 / (0.25 * len(plates))
     if alpha > 1:
