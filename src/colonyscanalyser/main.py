@@ -27,7 +27,7 @@ from colonyscanalyser import (
 )
 from .image_file import ImageFile, ImageFileCollection
 from .plate import Plate, PlateCollection
-from .colony import Colony, timepoints_from_image, colonies_from_timepoints, timepoints_from_image
+from .colony import Colony, timepoints_from_image, colonies_filtered, colonies_from_timepoints, timepoints_from_image
 
 
 def argparse_init(*args, **kwargs) -> argparse.ArgumentParser:
@@ -39,35 +39,69 @@ def argparse_init(*args, **kwargs) -> argparse.ArgumentParser:
     :returns: an ArgumentParser instance with the standard package arguments
     """
     parser = argparse.ArgumentParser(*args, **kwargs)
+
+    # Mutually exclusive options
+    output = parser.add_mutually_exclusive_group()
     
     parser.add_argument("path", type = str,
                         help = "Image files location", default = None)
-    parser.add_argument("-dpi", "--dots_per_inch", type = int, default = config.DOTS_PER_INCH,
-                        help = "The image DPI (dots per inch) setting", metavar = "N")
-    parser.add_argument("--image_formats", default = config.SUPPORTED_FORMATS, action = "version", version = str(config.SUPPORTED_FORMATS),
+    parser.add_argument("-a", "--animation", action = "store_true",
+                        help = "Output animated plots and videos")
+    parser.add_argument("-d", "--dots-per-inch", type = int, default = config.DOTS_PER_INCH, metavar = "N",
+                        help = "The image DPI (dots per inch) setting")
+    parser.add_argument("--image-formats", default = config.SUPPORTED_FORMATS, action = "version", version = str(config.SUPPORTED_FORMATS),
                         help = "The supported image formats")
-    parser.add_argument("-mp", "--multiprocessing", type = strtobool, default = config.MULTIPROCESSING,
-                        help = "Enables use of more CPU cores, faster but more resource intensive",  metavar = "BOOLEAN")
-    parser.add_argument("-p", "--plots", type = int, default = config.OUTPUT_PLOTS,
-                        help = "The detail level of plot images to store on disk", metavar = "N")
-    parser.add_argument("--plate_edge_cut", type = int, default = config.PLATE_EDGE_CUT,
+    parser.add_argument("--no-plots", action = "store_true", help = "Prevent output of plot images to disk")
+    parser.add_argument("--plate-edge-cut", type = int, default = config.PLATE_EDGE_CUT,
                         help = "The exclusion area from the plate edge, as a percentage of the plate diameter", metavar = "N")
-    parser.add_argument("--plate_labels", type = str, nargs = "*", default = list(),
-                        help = "A list of labels to identify each plate. Plates are ordered from top left, in rows. Example usage: --plate_labels plate1 plate2",
-                        metavar = "LABEL")
-    parser.add_argument("--plate_lattice", type = int, nargs = 2, default = config.PLATE_LATTICE,
-                        help = "The row and column co-ordinate layout of plates. Example usage: --plate_lattice 3 3",
-                        metavar = ("ROW", "COL"))
-    parser.add_argument("--plate_size", type = int, default = config.PLATE_SIZE,
-                        help = "The plate diameter, in millimetres", metavar = "N")
-    parser.add_argument("--use_cached_data", type = strtobool, default = config.USE_CACHED_DATA,
-                        help = "Allow use of previously calculated data", metavar = "BOOLEAN")
-    parser.add_argument("-v", "--verbose", type = int, default = config.OUTPUT_VERBOSE,
-                        help = "Information output level", metavar = "N")
+    parser.add_argument("--plate-labels", type = str, nargs = "*", default = list(), metavar = "LABEL",
+                        help = "A list of labels to identify each plate. Plates are ordered from top left, in rows. Example usage: --plate_labels plate1 plate2")
+    parser.add_argument("--plate-lattice", type = int, nargs = 2, default = config.PLATE_LATTICE, metavar = ("ROW", "COL"),
+                        help = "The row and column co-ordinate layout of plates. Example usage: --plate_lattice 3 3")
+    parser.add_argument("--plate-size", type = int, default = config.PLATE_SIZE, help = "The plate diameter, in millimetres", metavar = "N")
+    output.add_argument("-s", "--silent", action = "store_true", help = "Silence all output to console")
+    parser.add_argument("--single-process", action = "store_true", help = "Use only a single CPU core, slower but less resource intensive")
+    parser.add_argument("-u", "--use-cached-data", action = "store_true", help = "Allow use of previously calculated data")
+    output.add_argument("-v", "--verbose", action = "store_true", help = "Output extra information to console")
     parser.add_argument("--version", action = "version", version = f"ColonyScanlayser {metadata.version('colonyscanalyser')}",
                         help = "The package version number")
 
     return parser
+
+
+def plates_colonies_from_timepoints(
+    plates: PlateCollection,
+    timepoints: Dict[int, List[Colony.Timepoint]],
+    timepoints_distance: float = 1,
+    timestamp_diff_std: float = 10,
+    pool_size = 1
+) -> Plate:
+    """
+    Group a list of Timepoints to Colony objects, and populate in a Plate instance
+
+    Colonies are filtered via the criteria of the Colony.colonies_filtered function
+
+    :param plates: a PlateCollection instance associated with the Timepoints
+    :param timepoints: a dict of lists of Timepoint instances, with keys corresponding to Plate.id numbers
+    :param timepoints_distance: the maximum distance allowed for Colony grouping
+    :param timestamp_diff_std: the maximum allowed deviation in timestamps (i.e. likelihood of missing data)
+    :param pool_size: the number of logical processors available for multiprocessing
+    :returns: the collection with each plate instance populated with a collection of Colony instances
+    """
+    # Assemble data to a single iterable for starmap
+    timepoints_iter = [
+        (plates.get_item(plate_id), timepoints, timepoints_distance, timestamp_diff_std)
+        for plate_id, timepoints in timepoints.items()
+    ]
+
+    # Process and filter Timepoints to Colony objects in parallel
+    with Pool(processes = pool_size) as pool:
+        plates.items = pool.starmap(
+            func = _plate_colonies_from_timepoints_filtered,
+            iterable = timepoints_iter
+        )
+
+    return plates
 
 
 def segment_image(
@@ -121,21 +155,17 @@ def segment_image(
 
 
 def image_file_to_timepoints(
-    image_file: ndarray,
+    image_file: ImageFile,
     plates: PlateCollection,
-    plate_noise_masks: Dict[int, ndarray],
-    plot_path: Path = None
+    plate_noise_masks: Dict[int, ndarray]
 ) -> Dict[int, List[Colony.Timepoint]]:
     """
     Get Timepoint object data from a plate image
 
-    Lists the results in a dict with the plate number as the key
-
     :param image_file: an ImageFile object
     :param plates: a PlateCollection of Plate instances
     :param plate_noise_masks: a dict of plate images to use as noise masks
-    :param plot_path: a Path directory to save the segmented image plot
-    :returns: a Dict of lists, each containing Timepoint objects
+    :returns: a Dict of lists containing Timepoints, with the plate number as keys
     """
     from collections import defaultdict
     from skimage.color import rgb2gray
@@ -151,12 +181,35 @@ def image_file_to_timepoints(
         plate_images[plate_id] = segment_image(plate_image_gray, plate_mask = plate_image_gray > 0, plate_noise_mask = plate_noise_masks[plate_id], area_min = 1.5)
         # Create Timepoint objects for each plate
         plate_timepoints[plate_id].extend(timepoints_from_image(plate_images[plate_id], image_file.timestamp_elapsed, image = plate_image))
-        # Save segmented image plot, if required
-        if plot_path is not None:
-            save_path = file_access.create_subdirectory(plot_path, f"plate{plate_id}")
-            plots.plot_plate_segmented(plate_image_gray, plate_images[plate_id], image_file.timestamp, save_path)
 
     return plate_timepoints
+
+
+def _plate_colonies_from_timepoints_filtered(
+    plate: Plate,
+    timepoints: List[Colony.Timepoint],
+    timepoints_distance: float = 1,
+    timestamp_diff_std: float = 10
+) -> Plate:
+    """
+    Group a list of Timepoints to Colony objects, and filter to return only valid colonies
+
+    Mainly a helper function for plates_colonies_from_timepoints as multiprocessing cant use local functions
+
+    :param plate: a Plate instance associated with the Timepoints
+    :param timepoints: a list of Timepoint instances
+    :param timepoints_distance: the maximum distance allowed for Colony grouping
+    :param timestamp_diff_std: the maximum allowed deviation in timestamps (i.e. likelihood of missing data)
+    :returns: the plate instance with a collection of Colony instances
+    """
+    if len(timepoints) > 0:
+        # Group Timepoints by Euclidean distance
+        plate.items = colonies_from_timepoints(timepoints, distance_tolerance = timepoints_distance)
+
+        # Filter colonies to remove noise, background objects and merged colonies
+        plate.items = colonies_filtered(plate.items, timestamp_diff_std)
+
+    return plate
 
 
 # flake8: noqa: C901
@@ -170,21 +223,23 @@ def main():
     # Retrieve and parse arguments
     args = parser.parse_args()
     BASE_PATH = args.path
+    ANIMATION = args.animation
     IMAGE_FORMATS = args.image_formats
-    PLOTS = args.plots
+    PLOTS = not args.no_plots
     PLATE_LABELS = {plate_id: label for plate_id, label in enumerate(args.plate_labels, start = 1)}
     PLATE_LATTICE = tuple(args.plate_lattice)
     PLATE_SIZE = int(imaging.mm_to_pixels(args.plate_size, dots_per_inch = args.dots_per_inch))
     PLATE_EDGE_CUT = int(round(PLATE_SIZE * (args.plate_edge_cut / 100)))
+    SILENT = args.silent
     USE_CACHED = args.use_cached_data
     VERBOSE = args.verbose
     POOL_MAX = 1
-    if args.multiprocessing:
+    if not args.single_process:
         POOL_MAX = cpu_count() - 1 if cpu_count() > 1 else 1
-
-    if VERBOSE >= 1:
+        
+    if not SILENT:
         print("Starting ColonyScanalyser analysis")
-    if VERBOSE >= 2 and POOL_MAX > 1:
+    if VERBOSE and POOL_MAX > 1:
         print(f"Multiprocessing enabled, utilising {POOL_MAX} of {cpu_count()} processors")
 
     # Resolve working directory
@@ -194,13 +249,13 @@ def main():
         BASE_PATH = Path(args.path).resolve()
     if not BASE_PATH.exists():
         raise EnvironmentError(f"The supplied folder path could not be found: {BASE_PATH}")
-    if VERBOSE >= 1:
+    if not SILENT:
         print(f"Working directory: {BASE_PATH}")
 
     # Check if processed image data is already stored and can be loaded
     plates = None
     if USE_CACHED:
-        if VERBOSE >= 1:
+        if not SILENT:
             print("Attempting to load cached data")
         plates = file_access.load_file(
             BASE_PATH.joinpath(config.DATA_DIR, config.CACHED_DATA_FILE_NAME),
@@ -210,7 +265,7 @@ def main():
         # Check that segmented image data has been loaded for all plates
         # Also that data is not from an older format (< v0.4.0)
         if (
-            VERBOSE >= 1 and plates is not None
+            VERBOSE and plates is not None
             and plates.count == PlateCollection.coordinate_to_index(PLATE_LATTICE)
             and isinstance(plates.items[0], Plate)
         ):
@@ -221,46 +276,23 @@ def main():
             plates = None
 
     if not USE_CACHED or plates is None:
-        # Find images in working directory
-        image_paths = file_access.get_files_by_type(BASE_PATH, IMAGE_FORMATS)
-
-        # Store images as ImageFile objects
-        # Timestamps are automatically read from filenames
-        image_files = ImageFileCollection()
-        for image_path in image_paths:
-            image_files.add(
-                file_path = image_path,
-                timestamp = None,
-                timestamp_initial = None,
-                cache_image = False
-            )
-
-        # Check if images have been loaded and timestamps could be read
-        if image_files.count > 0:
-            if VERBOSE >= 1:
-                print(f"{image_files.count} images found")
-        else:
-            raise IOError(f"No images could be found in the supplied folder path."
-            " Images are expected in these formats: {image_formats}")
-        if image_files.count != len(image_files.timestamps):
-            raise IOError("Unable to load timestamps from all image filenames."
-            " Please check that images have a filename with YYYYMMDD_HHMM timestamps")
-
-        # Set intial timestamp
-        image_files.timestamps_initial = image_files.timestamps[0]
+        # Find images in working directory. Raises IOError if images not loaded correctly
+        image_files = ImageFileCollection.from_path(BASE_PATH, IMAGE_FORMATS, cache_images = False)
+        if not SILENT:
+            print(f"{image_files.count} images found")
 
         # Process images to Timepoint data objects
         plate_images_mask = None
         plate_timepoints = defaultdict(list)
 
-        if VERBOSE >= 1:
+        if not SILENT:
             print("Preprocessing images to locate plates")
 
         # Load the first image to get plate coordinates and mask
         with image_files.items[0] as image_file:
             # Only find centers using first image. Assume plates do not move
             if plates is None:
-                if VERBOSE >= 2:
+                if VERBOSE:
                     print(f"Locating plate centres in image: {image_file.file_path}")
 
                 # Create new Plate instances to store the information
@@ -274,111 +306,73 @@ def main():
                 )
 
                 if not plates.count > 0:
-                    print(f"Unable to locate plates in image: {image_file.file_path}")
-                    print(f"Processing unable to continue")
+                    if not SILENT:
+                        print(f"Unable to locate plates in image: {image_file.file_path}")
+                        print(f"Processing unable to continue")
                     sys.exit()
                 
-                if VERBOSE >= 3:
+                if VERBOSE:
                     for plate in plates.items:
                         print(f"Plate {plate.id} center: {plate.center}")
 
             # Use the first plate image as a noise mask
             plate_noise_masks = plates.slice_plate_image(image_file.image_gray)
 
-        if VERBOSE >= 1:
+        if not SILENT:
             print("Processing colony data from all images")
 
-        # Thin wrapper to display a progress bar
-        def progress_update(result, progress):
-            utilities.progress_bar(progress, message = "Processing images")
-
-        processes = list()
+        # Process images to Timepoints
         with Pool(processes = POOL_MAX) as pool:
-            for i, image_file in enumerate(image_files.items):
-                # Allow args to be passed to callback function
-                callback_function = partial(progress_update, progress = ((i + 1) / image_files.count) * 100)
+            results = list()
+            job = pool.imap(
+                func = partial(image_file_to_timepoints, plates = plates, plate_noise_masks = plate_noise_masks),
+                iterable = image_files.items,
+                chunksize = 2
+            )
+            # Store results and update progress bar
+            for i, result in enumerate(job, start = 1):
+                results.append(result)
+                if not SILENT:
+                    utilities.progress_bar((i / image_files.count) * 100, message = "Processing images")
+            plate_timepoints = utilities.dicts_merge(list(results))
 
-                # Create processes
-                processes.append(pool.apply_async(
-                    image_file_to_timepoints,
-                    args = (image_file, plates, plate_noise_masks),
-                    kwds = {"plot_path" : None},
-                    callback = callback_function
-                ))
-
-            # Consolidate the results to a single dict
-            for process in processes:
-                result = process.get()
-                for plate_id, timepoints in result.items():
-                    plate_timepoints[plate_id].extend(timepoints)
-
-        # Clear objects to free up memory
-        processes = None
-        plate_images = None
-        plate_noise_masks = None
-        img = None
-
-        if VERBOSE >= 1:
+        if not SILENT:
             print("Calculating colony properties")
 
-        # Group Timepoints by centres and create Colony objects
-        for plate_id, plate_timepoints in plate_timepoints.items():
-            # If no objects are found
-            if not len(plate_timepoints) > 0:
-                break
+        # Calculate deviation in timestamps (i.e. likelihood of missing data)
+        timestamp_diff_std = diff(image_files.timestamps_elapsed_seconds[1:]).std()
+        timestamp_diff_std += config.COLONY_TIMESTAMP_DIFF_MAX
 
-            plate = plates.get_item(plate_id)
-            plate.items = colonies_from_timepoints(plate_timepoints, distance_tolerance = config.COLONY_DISTANCE_MAX)
-            if VERBOSE >= 3:
-                print(f"{plate.count} objects located on plate {plate.id}, before filtering")
-
-            # Filter colonies to remove noise, background objects and merged colonies
-            timestamp_diff_std = diff(image_files.timestamps_elapsed_seconds[1:]).std()
-            timestamp_diff_std += config.COLONY_TIMESTAMP_DIFF_MAX
-            plate.items = list(filter(lambda colony:
-                # Remove objects that do not have sufficient data points
-                len(colony.timepoints) > config.COLONY_TIMEPOINTS_MIN and
-                # No colonies should be visible at the start of the experiment
-                colony.time_of_appearance.total_seconds() > 0 and
-                # Remove objects with large gaps in the data
-                diff([t.timestamp.total_seconds() for t in colony.timepoints[1:]]).std() < timestamp_diff_std and
-                # Remove object that do not show growth, these are not colonies
-                colony.timepoint_last.area > config.COLONY_GROWTH_FACTOR_MIN * colony.timepoint_first.area and
-                # Objects that appear with a large initial area are either merged colonies or noise
-                colony.timepoint_first.area < config.COLONY_FIRST_AREA_MAX,
-                plate.items
-            ))
-
-            if VERBOSE >= 1:
-                print(f"{plate.count} colonies identified on plate {plate.id}")
+        # Group and consolidate Timepoints into Colony instances
+        plates = plates_colonies_from_timepoints(plates, plate_timepoints, config.COLONY_DISTANCE_MAX, timestamp_diff_std, POOL_MAX)
 
         if not any([plate.count for plate in plates.items]):
-            if VERBOSE >= 1:
+            if not SILENT:
                 print("Unable to locate any colonies in the images provided")
                 print(f"ColonyScanalyser analysis completed for: {BASE_PATH}")
             sys.exit()
+        elif not SILENT:
+            for plate in plates.items:
+                print(f"{plate.count} colonies identified on plate {plate.id}")
 
     # Store pickled data to allow quick re-use
     save_path = file_access.create_subdirectory(BASE_PATH, config.DATA_DIR)
     save_path = save_path.joinpath(config.CACHED_DATA_FILE_NAME)
     save_status = file_access.save_file(save_path, plates, file_access.CompressionMethod.LZMA)
-    if VERBOSE >= 1:
+    if not SILENT:
         if save_status:
             print(f"Cached data saved to {save_path}")
         else:
             print(f"An error occurred and cached data could not be written to disk at {save_path}")
 
     # Store colony data in CSV format
-    if VERBOSE >= 1:
+    if not SILENT:
         print("Saving data to CSV")
         
     save_path = BASE_PATH.joinpath(config.DATA_DIR)
     for plate in plates.items:
-        for colony in plate.items:
-            test = colony.__iter__()
         # Save data for all colonies on one plate
         plate.colonies_to_csv(save_path)
-
         # Save data for each colony on a plate
         plate.colonies_timepoints_to_csv(save_path)
 
@@ -389,9 +383,10 @@ def main():
     # Can't guarantee that the original images and full list of time points
     # will be available when using cached data
     if image_files is not None:
-        save_path = file_access.create_subdirectory(BASE_PATH, config.PLOTS_DIR)
-        if PLOTS >= 1:
-            if VERBOSE >= 1:
+        if PLOTS or ANIMATION:
+            save_path = file_access.create_subdirectory(BASE_PATH, config.PLOTS_DIR)
+        if PLOTS:
+            if not SILENT:
                 print("Saving plots")
             # Summary plots for all plates
             plots.plot_growth_curve(plates.items, save_path)
@@ -401,7 +396,7 @@ def main():
             plots.plot_colony_map(image_files.items[-1].image, plates.items, save_path)
 
             for plate in plates.items:
-                if VERBOSE >= 2:
+                if VERBOSE:
                     print(f"Saving plots for plate #{plate.id}")
                 save_path_plate = file_access.create_subdirectory(save_path, file_access.file_safe_name([f"plate{plate.id}", plate.name]))
                 # Plot colony growth curves, ID map and time of appearance for each plate
@@ -409,9 +404,9 @@ def main():
                 plots.plot_appearance_frequency([plate], save_path_plate, timestamps = image_files.timestamps_elapsed)
                 plots.plot_appearance_frequency([plate], save_path_plate, timestamps = image_files.timestamps_elapsed, bar = True)
 
-        if PLOTS >= 4:
+        if ANIMATION:
             # Plot individual plate images as an animation
-            if VERBOSE >= 1:
+            if not SILENT:
                 print("Saving plate image animations. This may take several minutes")
 
             # Original size images
@@ -435,10 +430,10 @@ def main():
             )
 
     else:
-        if VERBOSE >= 1:
-            print("Unable to generate plots from cached data. Run analysis on original images to generate plot images")
+        if not SILENT:
+            print("Unable to generate plots or animations from cached data. Run analysis on original images to generate plot images")
 
-    if VERBOSE >= 1:
+    if not SILENT:
         print(f"ColonyScanalyser analysis completed for: {BASE_PATH}")
 
     sys.exit()
