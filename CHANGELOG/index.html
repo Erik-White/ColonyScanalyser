@@ -123,6 +123,10 @@
             
             <li class="nav-item" data-level="1"><a href="#changelog" class="nav-link">Changelog</a>
               <ul class="nav flex-column">
+            <li class="nav-item" data-level="2"><a href="#051-2020-06-07" class="nav-link">[0.5.1] - 2020-06-07</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
             <li class="nav-item" data-level="2"><a href="#050-2020-06-05" class="nav-link">[0.5.0] - 2020-06-05</a>
               <ul class="nav flex-column">
               </ul>
@@ -194,6 +198,11 @@
 <p>All notable changes to this project will be documented in this file.</p>
 <p>The format is based on <a href="https://keepachangelog.com/en/1.0.0/">Keep a Changelog</a>,
 and this project adheres to <a href="https://semver.org/spec/v2.0.0.html">Semantic Versioning</a>.</p>
+<h2 id="051-2020-06-07">[0.5.1] - 2020-06-07</h2>
+<h3 id="fixed">Fixed</h3>
+<ul>
+<li>RGB images are correctly handled during colour mode conversion</li>
+</ul>
 <h2 id="050-2020-06-05">[0.5.0] - 2020-06-05</h2>
 <h3 id="added">Added</h3>
 <ul>
@@ -212,12 +221,12 @@ and this project adheres to <a href="https://semver.org/spec/v2.0.0.html">Semant
 <li>Refactored <code>main</code> module</li>
 <li>Improve access model and remove forward typing</li>
 </ul>
-<h3 id="fixed">Fixed</h3>
+<h3 id="fixed_1">Fixed</h3>
 <ul>
 <li>Ensure image files are converted to RGB</li>
 </ul>
 <h2 id="044-2020-06-03">[0.4.4] - 2020-06-03</h2>
-<h3 id="fixed_1">Fixed</h3>
+<h3 id="fixed_2">Fixed</h3>
 <ul>
 <li>Plots are now saved to the correct directory again</li>
 </ul>
@@ -237,7 +246,7 @@ and this project adheres to <a href="https://semver.org/spec/v2.0.0.html">Semant
 <ul>
 <li>Support for <code>bmp</code> image files</li>
 </ul>
-<h3 id="fixed_2">Fixed</h3>
+<h3 id="fixed_3">Fixed</h3>
 <ul>
 <li>Wrong type reference in colony.colonies_from_timepoints</li>
 </ul>
@@ -282,7 +291,7 @@ and this project adheres to <a href="https://semver.org/spec/v2.0.0.html">Semant
 <li>Grouping of colony Timepoints is now faster and more accurate</li>
 <li>Colonies are no longer identified based on circularity</li>
 </ul>
-<h3 id="fixed_3">Fixed</h3>
+<h3 id="fixed_4">Fixed</h3>
 <ul>
 <li>A rare error when opening images using skimage.io.imread</li>
 <li>Corrected default DPI settings and conversion factor</li>
@@ -307,7 +316,7 @@ and this project adheres to <a href="https://semver.org/spec/v2.0.0.html">Semant
 <li>Colony colour identification and grouping</li>
 <li>Webcolors package and rgb_to_name function to provide CSS colour groupings</li>
 </ul>
-<h3 id="fixed_4">Fixed</h3>
+<h3 id="fixed_5">Fixed</h3>
 <ul>
 <li>crop_image will now correctly handle images without an alpha channel</li>
 </ul>
@@ -319,7 +328,7 @@ and this project adheres to <a href="https://semver.org/spec/v2.0.0.html">Semant
 <li>Unit tests for the colony module</li>
 </ul>
 <h2 id="031-2019-11-04">[0.3.1] - 2019-11-04</h2>
-<h3 id="fixed_5">Fixed</h3>
+<h3 id="fixed_6">Fixed</h3>
 <ul>
 <li>Adjust setup to correctly find packages in implicit namespaces</li>
 </ul>
@@ -339,7 +348,7 @@ and this project adheres to <a href="https://semver.org/spec/v2.0.0.html">Semant
 <li>GitHub action for automatically linting and testing pushes</li>
 <li>GitHub action for building and releasing package to PyPi</li>
 </ul>
-<h3 id="fixed_6">Fixed</h3>
+<h3 id="fixed_7">Fixed</h3>
 <ul>
 <li>Linting errors highlighted by flake8</li>
 </ul>
@@ -372,7 +381,7 @@ and this project adheres to <a href="https://semver.org/spec/v2.0.0.html">Semant
 <li>Improve colony filtering, removes virtually all merged colonies</li>
 <li>Updated readme with images and code examples</li>
 </ul>
-<h3 id="fixed_7">Fixed</h3>
+<h3 id="fixed_8">Fixed</h3>
 <ul>
 <li>Greatly reduced memory usage by using per-image processing</li>
 <li>Filter out system files when locating images to process</li>
