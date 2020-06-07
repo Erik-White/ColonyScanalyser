@@ -254,7 +254,10 @@ def image_as_rgb(image: ndarray) -> ndarray:
         return gray2rgb(image)
 
     # Remove alpha channel if present
-    return rgba2rgb(image)
+    if image.shape[-1] == 4:
+        image = rgba2rgb(image)
+
+    return image
 
 
 def remove_background_mask(image: ndarray, smoothing: float = 1, sigmoid_cutoff: float = 0.4, **filter_args) -> ndarray:
