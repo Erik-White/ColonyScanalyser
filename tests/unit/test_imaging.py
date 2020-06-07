@@ -226,6 +226,17 @@ class TestImageAsRGB():
         assert len(result.shape) == 3
         assert result.shape[-1] == 3
 
+    def test_rgb(self, image):
+        from numpy import empty
+
+        image = empty(image.shape + (3, ), dtype = image.dtype)
+        result = image_as_rgb(image)
+
+        assert len(image.shape) == 3
+        assert image.shape[-1] == 3
+        assert len(result.shape) == 3
+        assert result.shape[-1] == 3
+
     def test_rgba(self, image):
         from numpy import empty
 
