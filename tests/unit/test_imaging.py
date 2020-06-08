@@ -8,7 +8,7 @@ from colonyscanalyser.imaging import (
     cut_image_circle,
     get_image_circles,
     image_as_rgb,
-    align_image,
+    align_images,
     remove_background_mask,
     watershed_separation
 )
@@ -247,6 +247,12 @@ class TestImageAsRGB():
 
 
 class TestAlignImages():
+    @pytest.fixture(params = [0, 10, 30, 45, 90])
+    def image_rotated(self, request, image):
+        from scipy.ndimage import rotate
+
+        yield rotate(image * 255, request.param, reshape = False, mode = "constant", order = 0)
+
     @pytest.fixture(params = [(0, 0), (0, -2), (-2, -1), (-.34, 1.4), (1.5, -2)])
     def image_shifted(self, request, image):
         from scipy.ndimage.interpolation import shift
@@ -262,8 +268,11 @@ class TestAlignImages():
 
         return img[starty: starty + cropy, startx: startx + cropx]
 
-    def test_shift(self, image, image_shifted):
-        result = align_image(image_shifted, image)
+    def test_rotation(self, image, image_rotated):
+        pass
+
+    def test_translation(self, image, image_shifted):
+        result = align_images(image_shifted, image)
 
         assert image.shape == image_shifted.shape == result.shape
 

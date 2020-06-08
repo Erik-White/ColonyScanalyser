@@ -1,6 +1,6 @@
-from typing import Optional, Union, Iterable, Tuple, List
+from typing import Optional, Union, Tuple, List
 from numpy import ndarray
-from skimage.transform import SimilarityTransform
+from skimage.transform._geometric import GeometricTransform, SimilarityTransform
 
 
 def mm_to_pixels(millimeters: float, dots_per_inch: float = 300, pixels_per_mm: Optional[float] = None) -> float:
@@ -234,30 +234,101 @@ def image_as_rgb(image: ndarray) -> ndarray:
     return image
 
 
-def align_image(image: ndarray, image_ref: ndarray, iterations: int = 2, **kwargs) -> ndarray:
+def align_images(image: ndarray, image_ref: ndarray, transform: str = "similarity", robust: bool = True, **kwargs) -> ndarray:
     """
     Attempt to align an image to a reference image
 
     :param image: the image to align
     :param image_ref: the reference image to align with
-    :param iterations: the maximum number of attempts to align the image
-    :param kwargs: keyword arguments passed to _transform_rotation or _transform_translation
-    :returns: an image aligned with image_ref
+    :param transform: a GeometricTransform, see skimage.transform._geometric.TRANSFORMS
+    :param robust: peform a second alignment pass, more accurate but much slower
+    :param kwargs: keyword arguments passed to the skimage.feature.ORB feature detector
+    :returns: an aligned image
     """
-    from skimage.transform import SimilarityTransform, warp
+    import warnings
+    from skimage.transform import warp
+    from skimage.transform._geometric import TRANSFORMS
 
-    rotation, translation = SimilarityTransform(rotation = 1), SimilarityTransform(translation = 1)
+    image = image.copy()
+    image_ref = image_ref.copy()
 
-    while (rotation.rotation > 0 or translation.translation.any()) > 0 and iterations > 0:
-        rotation = _transform_rotation(image, image_ref, upsample_factor = 4, **kwargs)
-        translation = _transform_translation(image, image_ref, **kwargs)
+    transform = transform.lower()
+    if transform.lower() not in TRANSFORMS:
+        raise ValueError(f"the transformation type {transform} is not implemented")
+    transform_model = TRANSFORMS[transform]
 
-        # Adjust the image using the calculated transform
-        image = warp(image, (translation + rotation).inverse, mode = "constant", cval = 0, clip = True, preserve_range = True)
+    # Calulcate the transformation
+    transform = image_feature_transform(image, image_ref, transform = transform_model, n_keypoints = 400, **kwargs)
 
-        iterations -= 1
+    if robust:
+        try:
+            # Perform second pass to get a very accurate alignment
+            image_aligned = warp(image.copy(), transform.inverse, order = 1, preserve_range = False)
+            transform += image_feature_transform(
+                image_aligned,
+                image_ref,
+                transform = transform_model,
+                n_keypoints = 400,  **kwargs
+            )
+        except RuntimeError:
+            warnings.warn("Unable to perform second pass image alignment, no keypoints could be found.", RuntimeWarning, )
 
-    return image
+    # Adjust the image using the calculated transform
+    return warp(image, (transform).inverse, order = 3, preserve_range = True)
+
+
+def image_feature_transform(
+    image: ndarray,
+    image_ref: ndarray,
+    transform: GeometricTransform = SimilarityTransform,
+    **kwargs
+) -> GeometricTransform:
+    """
+    Generate a transformation to align an image with a reference image
+
+    :param image: the image to align
+    :param image_ref: the reference image to align with
+    :param transform: a GeometricTransform type to be returned
+    :param kwargs: keyword arguments passed to the skimage.feature.ORB feature detector
+    :returns: a GeometricTransform to align image with image_ref
+    """
+    from numpy import flip
+    from skimage.color import rgb2gray
+    from skimage.feature import ORB, match_descriptors
+    from skimage.measure import ransac
+
+    # ORB can only handle 2D arrays
+    if len(image.shape) > 2:
+        image = rgb2gray(image_as_rgb(image))
+    if len(image_ref.shape) > 2:
+        image_ref = rgb2gray(image_as_rgb(image_ref))
+
+    # Extract and match features from both images
+    descriptor_extractor = ORB(**kwargs)
+    descriptor_extractor.detect_and_extract(image)
+    descriptors, keypoints = descriptor_extractor.descriptors, descriptor_extractor.keypoints
+    descriptor_extractor.detect_and_extract(image_ref)
+    descriptors_ref, keypoints_ref = descriptor_extractor.descriptors, descriptor_extractor.keypoints
+
+    # Used matched features to filter keypoints
+    matches = match_descriptors(descriptors_ref, descriptors, cross_check = True)
+    if not len(matches) > 0:
+        raise RuntimeError("No feature matches could be found between the two images")
+    matches_ref, matches = keypoints_ref[matches[:, 0]], keypoints[matches[:, 1]]
+
+    # Robustly estimate transform model with RANSAC
+    transform_robust, inliers = ransac(
+        (matches_ref, matches),
+        transform,
+        min_samples = 8,
+        residual_threshold = 0.8,
+        max_trials = 1000
+    )
+    if not len(inliers) > 0:
+        raise RuntimeError("No feature matches could be found between the two images")
+
+    # The translation needs to be inverted
+    return transform(rotation = transform_robust.rotation) + transform(translation = -flip(transform_robust.translation))
 
 
 def remove_background_mask(image: ndarray, smoothing: float = 1, sigmoid_cutoff: float = 0.4, **filter_args) -> ndarray:
@@ -323,59 +394,3 @@ def watershed_separation(image: ndarray, smoothing: float = 0.5, **kwargs) -> nd
 
     # Find the borders around the peaks
     return watershed(-distance, label(local_maxi), mask = img)
-
-
-def _transform_rotation(image: ndarray, image_ref: ndarray, center: Iterable = None, **kwargs) -> SimilarityTransform:
-    """
-    Calculate the rotational transformation between two images
-
-    :param image: the image to align
-    :param image_ref: the reference image to align with
-    :param center: The rotation center. Defaults to the image center
-    :param kwargs: keyword arguments passed to skimage.registration.phase_cross_correlation
-    """
-    from math import radians
-    from numpy import array, asarray
-    from skimage.registration import phase_cross_correlation
-    from skimage.transform import SimilarityTransform, warp_polar
-
-    image_rows, image_cols = image.shape[0], image.shape[1]
-    multichannel = len(image.shape) > 3
-
-    # Recover the rotational shift
-    image_polar = warp_polar(image_ref, radius = image_cols // 2, multichannel = multichannel)
-    rotated_polar = warp_polar(image, radius = image_cols // 2, multichannel = multichannel)
-    shifts_angle = phase_cross_correlation(image_polar, rotated_polar, return_error = False, **kwargs)
-
-    # Create a transform around the image center, or the specificed point
-    if center is None:
-        center = array((image_cols, image_rows)) / 2. - 0.5
-    else:
-        center = asarray(center)
-    tform1 = SimilarityTransform(translation = -center)
-    tform2 = SimilarityTransform(rotation = radians(shifts_angle[0]))
-    tform3 = SimilarityTransform(translation = center)
-
-    return tform1 + tform2 + tform3
-
-
-def _transform_translation(image: ndarray, image_ref: ndarray, **kwargs) -> SimilarityTransform:
-    """
-    Calculate the translational transformation between two images
-
-    :param image: the image to align
-    :param image_ref: the reference image to align with
-    :param kwargs: keyword arguments passed to skimage.registration.phase_cross_correlation
-    """
-    from numpy import flip
-    from skimage.registration import phase_cross_correlation
-    from skimage.transform import SimilarityTransform
-
-    # Calculate the translation shift
-    shifts = phase_cross_correlation(image_ref, image, return_error = False, **kwargs)
-
-    # Colour channel must be removed
-    if len(shifts) > 2:
-        shifts = shifts[:-1]
-
-    return SimilarityTransform(translation = flip(shifts))
