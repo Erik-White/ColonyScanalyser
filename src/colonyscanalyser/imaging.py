@@ -307,7 +307,7 @@ def watershed_separation(image: ndarray, smoothing: float = 0.5, **kwargs) -> nd
     from scipy import ndimage
     from skimage.filters import gaussian
     from skimage.measure import label
-    from skimage.morphology import watershed
+    from skimage.segmentation import watershed
     from skimage.feature import peak_local_max
 
     if image.size == 0:
