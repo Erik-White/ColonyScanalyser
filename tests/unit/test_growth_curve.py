@@ -20,7 +20,7 @@ def measurements(request, timestamps):
     from numpy.random import normal
 
     # Generate a sigmoid curve with a very small amount of noise
-    yield sigmoid_model(timestamps) + (0.005 * absolute(normal(timestamps, scale = 1)))
+    yield sigmoid_model(timestamps) + (0.0025 * absolute(normal(timestamps, scale = 1)))
 
 
 def sigmoid_model(x, a = 0, b = 0, c = 0, d = 0):
