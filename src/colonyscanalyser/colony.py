@@ -195,12 +195,11 @@ def timepoints_from_image(
             radius = (rp.equivalent_diameter / 2) - ((rp.equivalent_diameter / 2) * 0.10)
             image_circle = cut_image_circle(image[rp.slice], radius - 1)
             # Filter out fringe alpha values and empty pixels
-            limit = 0
-            if image_circle.shape[2] > 3:
-                limit = 200
+            limit = 200 if image_circle.shape[2] > 3 else 0
             image_circle = image_circle[image_circle[:, :, -1] > limit]
-            # Calculate the average colour values by column over the colony area and remove alpha channel (if present)
-            color_average = tuple(image_circle.mean(axis = 0)[:3])
+            if image_circle.size > 0:
+                # Calculate the average colour values by column over the colony area and remove alpha channel (if present)
+                color_average = tuple(image_circle.mean(axis = 0)[:3])
 
         # Create a new time point object to store colony data
         timepoint_data = Colony.Timepoint(
