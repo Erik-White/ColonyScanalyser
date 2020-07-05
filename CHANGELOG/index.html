@@ -123,6 +123,10 @@
             
             <li class="nav-item" data-level="1"><a href="#changelog" class="nav-link">Changelog</a>
               <ul class="nav flex-column">
+            <li class="nav-item" data-level="2"><a href="#052-2020-07-05" class="nav-link">[0.5.2] - 2020-07-05</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
             <li class="nav-item" data-level="2"><a href="#051-2020-06-07" class="nav-link">[0.5.1] - 2020-06-07</a>
               <ul class="nav flex-column">
               </ul>
@@ -198,6 +202,11 @@
 <p>All notable changes to this project will be documented in this file.</p>
 <p>The format is based on <a href="https://keepachangelog.com/en/1.0.0/">Keep a Changelog</a>,
 and this project adheres to <a href="https://semver.org/spec/v2.0.0.html">Semantic Versioning</a>.</p>
+<h2 id="052-2020-07-05">[0.5.2] - 2020-07-05</h2>
+<h3 id="changed">Changed</h3>
+<ul>
+<li>Removes the temporary fix used when identifying plate centres</li>
+</ul>
 <h2 id="051-2020-06-07">[0.5.1] - 2020-06-07</h2>
 <h3 id="fixed">Fixed</h3>
 <ul>
@@ -211,7 +220,7 @@ and this project adheres to <a href="https://semver.org/spec/v2.0.0.html">Semant
 <li><code>animation</code> command line argument to output</li>
 <li>New class function, from_path, for building an ImageFileCollection</li>
 </ul>
-<h3 id="changed">Changed</h3>
+<h3 id="changed_1">Changed</h3>
 <ul>
 <li>Improved plot labels/legends</li>
 <li><code>plots</code> command line argument replaced with <code>no-plots</code> switch</li>
@@ -237,7 +246,7 @@ and this project adheres to <a href="https://semver.org/spec/v2.0.0.html">Semant
 <li><code>--image_formats</code> command line argument to display supported image formats</li>
 <li>Package configuration and now consolidated and loaded from a settings module</li>
 </ul>
-<h3 id="changed_1">Changed</h3>
+<h3 id="changed_2">Changed</h3>
 <ul>
 <li>Improved the output from the <code>--help</code> command line argument to make it a little clearer</li>
 </ul>
@@ -250,7 +259,7 @@ and this project adheres to <a href="https://semver.org/spec/v2.0.0.html">Semant
 <ul>
 <li>Wrong type reference in colony.colonies_from_timepoints</li>
 </ul>
-<h3 id="changed_2">Changed</h3>
+<h3 id="changed_3">Changed</h3>
 <ul>
 <li><code>image_file._load_image</code> will now retry once if it fails</li>
 </ul>
@@ -273,7 +282,7 @@ and this project adheres to <a href="https://semver.org/spec/v2.0.0.html">Semant
 <li>Output a summary of plate properties to <code>plates_summary.csv</code></li>
 <li>Full type hinting for all modules</li>
 </ul>
-<h3 id="changed_3">Changed</h3>
+<h3 id="changed_4">Changed</h3>
 <ul>
 <li>Extended compatibility to Python 3.8</li>
 <li>Cached data is now not used by default</li>
@@ -306,7 +315,7 @@ and this project adheres to <a href="https://semver.org/spec/v2.0.0.html">Semant
 <li>plate_edge_cut command line argument</li>
 <li>Plate and colony ID map to show how they have been identified</li>
 </ul>
-<h3 id="changed_4">Changed</h3>
+<h3 id="changed_5">Changed</h3>
 <ul>
 <li>Add border exclusion and slightly relax colony circularity filtering in segment_image</li>
 </ul>
@@ -337,7 +346,7 @@ and this project adheres to <a href="https://semver.org/spec/v2.0.0.html">Semant
 <ul>
 <li>Added changelog</li>
 </ul>
-<h3 id="changed_5">Changed</h3>
+<h3 id="changed_6">Changed</h3>
 <ul>
 <li>Update package to use src structure</li>
 <li>Update setup for readme compatability with PyPi</li>
@@ -358,7 +367,7 @@ and this project adheres to <a href="https://semver.org/spec/v2.0.0.html">Semant
 <li>Graceful exit if no colonies are found</li>
 <li>Workaround function to ensure correct plates are found in images</li>
 </ul>
-<h3 id="changed_6">Changed</h3>
+<h3 id="changed_7">Changed</h3>
 <ul>
 <li>Improve Timepoint grouping by using distance comparison instead of rounding</li>
 <li>Updated Scikit-image to v0.16</li>
@@ -375,7 +384,7 @@ and this project adheres to <a href="https://semver.org/spec/v2.0.0.html">Semant
 <li>Now shows a progress bar when processing images</li>
 <li>Snyk security checks for dependencies</li>
 </ul>
-<h3 id="changed_7">Changed</h3>
+<h3 id="changed_8">Changed</h3>
 <ul>
 <li>Per image processing: now processes a single image at a time</li>
 <li>Improve colony filtering, removes virtually all merged colonies</li>
