@@ -194,7 +194,6 @@ class TestGetImageCircles():
         "radius, count, search_radius, expected",
         [
             (80, 1, 10, ((102, 102), 80)),
-            (80, None, 20, ((102, 102), 80)),
             (40, 4, 40, ((50, 46), 10)),
             (80, 1, 20, ((102, 102), 80)),
             (40, 4, 10, ((62, 62), 30))
@@ -206,9 +205,6 @@ class TestGetImageCircles():
             circle_count = count,
             search_radius = search_radius
             )
-
-        if count is None and expected == ((102, 102), 80):
-            count = 1
 
         assert len(result) == count
         assert result[0] == expected

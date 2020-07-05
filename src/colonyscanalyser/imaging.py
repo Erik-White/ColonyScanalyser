@@ -193,12 +193,9 @@ def get_image_circles(
         hough_circles,
         radii,
         min_xdistance = circle_radius,
-        min_ydistance = circle_radius
-        # total_num_peaks = circle_count
+        min_ydistance = circle_radius,
+        total_num_peaks = circle_count
     )
-
-    # Temporary helper function until hough_circle_peaks respects min distances
-    cx, cy, radii = circles_radius_median(cx, cy, radii, circle_count)
 
     # Create a Dict with y values as keys and row numbers as values
     # Allows a quick lookup of the row values for sorting
@@ -214,30 +211,6 @@ def get_image_circles(
     radii = [max(radii, key = radii.tolist().count) for x in radii]
 
     return [*zip(coordinates, radii)]
-
-
-def circles_radius_median(cx, cy, radii, circle_count):
-    """
-    Temp fix to exclude overlapping circles
-    Assumes circle_count circles can be found at radius median
-    hough_circle_peaks currently ignores min_xdistance and min_ydistance
-    See: https://github.com/Erik-White/ColonyScanalyser/issues/10
-    """
-    from numpy import inf
-
-    if circle_count == inf:
-        circle_count = len(radii) + 1
-
-    # hough_circle_peaks are returned sorted by peak intensity
-    # Find the most common radius from the 'best' circles
-    radius_median = max(radii[slice(circle_count)], key = radii.tolist().count)
-
-    # Keep only the circles with the median radius
-    cx = cx[radii == radius_median]
-    cy = cy[radii == radius_median]
-    radii = radii[radii == radius_median]
-
-    return (cx, cy, radii)
 
 
 def image_as_rgb(image: ndarray) -> ndarray:
