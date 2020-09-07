@@ -573,6 +573,7 @@ def _image_file_to_plate_images(
     :returns: a dictionary of plate images with the plate ID numbers as keys
     """
     from PIL import Image
+    from skimage import img_as_ubyte
     from skimage.transform import resize
 
     # Slice the image into individual plate images
@@ -591,7 +592,7 @@ def _image_file_to_plate_images(
             image = resize(image, image_size, preserve_range = True)
 
         # skimage.transform.resize returns an array of type float64, which Image.fromarray can't handle
-        images[plate_id] = Image.fromarray(image.astype("uint8"), mode = "RGBA")
+        images[plate_id] = Image.fromarray(img_as_ubyte(image), mode = "RGB")
 
     return images
 

@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.5.3] - 2020-09-07
 ### Changed
 - Updated and improved IdentifiedCollection, now backed by a Dictionary for easier lookup
+### Fixed
+- Images are now correctly converted when creating image animations, fixing buffer errors
 
 ## [0.5.2] - 2020-07-05
 ### Changed
