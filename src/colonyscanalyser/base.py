@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Type, TypeVar, Optional, Union, Iterable, List
+from typing import Type, Union, Iterable, List
 from collections.abc import Collection
 from datetime import datetime, timedelta
 
@@ -21,17 +21,6 @@ class Identified:
             self._id = val
         else:
             raise ValueError(f"'{val}' is not a valid id. An id must be a non-negative integer'")
-
-    @staticmethod
-    def _id_exists(collection: Collection, id: int) -> bool:
-        """
-        Verifies if an object in a collection matches the specified ID number
-
-        :param collection: a collection of objects (List, Dict etc)
-        :param id: an ID number to locate
-        :returns: True if an object with id exists in the collection
-        """
-        return any(id == existing.id for existing in collection)
 
     @staticmethod
     def _id_is_valid(id: int) -> bool:
@@ -79,10 +68,10 @@ class IdentifiedCollection(Collection):
 
     def add(self, id: int) -> Identified:
         """
-        Create a new instance of T and append it to the collection
+        Create a new Identified instance and append it to the collection
 
         :param id: a valid Identified ID number
-        :returns: a new instance of T
+        :returns: a new Identified instance
         """
         item = Identified(id = id)
 
@@ -148,7 +137,7 @@ class IdentifiedCollection(Collection):
         :param id: a valid Identified ID number
         :returns: an item from the collection, if found
         """
-        if not isinstance(id, int):
+        if not Identified._id_is_valid(id):
             raise TypeError(f"ID must be of type {type(int)}, not {type(id)}")
         if id not in self._items:
             raise KeyError(f"An item with ID {id} could not be found in the collection")
@@ -156,7 +145,7 @@ class IdentifiedCollection(Collection):
         return self._items[id]
 
     def __iter__(self):
-        yield from self._items.values()
+        yield from self.items
 
     def __len__(self) -> int:
         return len(self._items)
