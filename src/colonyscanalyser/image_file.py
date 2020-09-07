@@ -138,7 +138,7 @@ class ImageFileCollection(IdentifiedCollection):
     """
     @IdentifiedCollection.items.getter
     def items(self) -> List[ImageFile]:
-        return sorted(self._items, key = lambda item: item.timestamp)
+        return sorted(self._items.values(), key = lambda item: item.timestamp)
 
     @property
     def file_paths(self) -> List[datetime]:
