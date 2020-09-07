@@ -116,7 +116,7 @@ class TestIdentifiedCollection:
             item_new = collection.add(id = 1)
 
             assert collection.count == len(identified_items) + 1
-            assert item_new in collection.items
+            assert item_new in collection
             assert collection.items[0] == item_new
 
         def test_append_item(self):
@@ -132,17 +132,17 @@ class TestIdentifiedCollection:
         def test_exists(self, identified_items):
             collection = IdentifiedCollection(identified_items)
 
-            assert collection.exists(identified_items[0])
+            assert collection.exists(identified_items[0].id)
 
         def test_id_exists(self, identified_items):
             collection = IdentifiedCollection(identified_items)
 
-            assert collection.id_exists(identified_items[0].id)
+            assert collection.exists(identified_items[0].id)
 
-        def test_get_colony(self, identified_items, item_rand_id):
+        def test_get_item(self, identified_items, item_rand_id):
             collection = IdentifiedCollection(identified_items)
 
-            item = collection.get_item(item_rand_id)
+            item = collection[item_rand_id]
 
             assert item is not None
             assert item.id == item_rand_id
@@ -150,18 +150,17 @@ class TestIdentifiedCollection:
         def test_remove_item(self, identified_items, item_rand_id):
             collection = IdentifiedCollection(identified_items)
 
-            item = collection.get_item(item_rand_id)
+            item = collection[item_rand_id]
             assert item is not None
 
-            collection.remove(item_rand_id)
-            item = collection.get_item(item_rand_id)
-            assert item is None
+            del collection[item_rand_id]
+            assert item not in collection
 
         def test_remove_item_invalid(self, identified_items):
             collection = IdentifiedCollection(identified_items)
 
             with pytest.raises(KeyError):
-                collection.remove(-1)
+                del collection[-1]
 
 
 class TestNamed:

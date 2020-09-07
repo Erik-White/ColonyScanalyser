@@ -90,7 +90,7 @@ def plates_colonies_from_timepoints(
     """
     # Assemble data to a single iterable for starmap
     timepoints_iter = [
-        (plates.get_item(plate_id), timepoints, timepoints_distance, timestamp_diff_std)
+        (plates[plate_id], timepoints, timepoints_distance, timestamp_diff_std)
         for plate_id, timepoints in timepoints.items()
     ]
 
