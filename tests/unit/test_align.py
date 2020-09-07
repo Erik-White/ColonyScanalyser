@@ -1,10 +1,10 @@
 import pytest
 from unittest.mock import patch, MagicMock
-from numpy import array, zeros
+from numpy import array, ndarray, zeros, identity
 from skimage.metrics import normalized_root_mse
 from skimage.transform._geometric import GeometricTransform, EuclideanTransform, SimilarityTransform, AffineTransform
 
-from colonyscanalyser.align import AlignTransform, DescriptorAlignTransform
+from colonyscanalyser.align import AlignTransform, DescriptorAlignTransform, transform_parameters_equal
 
 
 @pytest.fixture(params = [EuclideanTransform, SimilarityTransform, AffineTransform])
@@ -121,3 +121,34 @@ class TestDescriptorAlignTransform:
         assert len(result) == 2
         assert len(result[0]) == 500
         assert len(result[1]) == 500
+
+
+class TestTransformParametersEqual:
+    @pytest.fixture
+    def transform(self, request):
+        yield EuclideanTransform(matrix = identity(3))
+
+    @pytest.mark.parametrize("transform_type", [GeometricTransform, ndarray])
+    def test_input_type(self, transform, transform_type):
+        from copy import copy
+
+        if transform_type == ndarray:
+            transform_compare = transform.params
+        else:
+            transform_compare = copy(transform)
+
+        assert transform_parameters_equal(transform, transform_compare, 0)
+
+    @pytest.mark.parametrize("tolerance", [0, 0.1, 0.5, 1])
+    def test_tolerance(self, transform, tolerance):
+        from copy import deepcopy
+
+        transform_compare = deepcopy(transform)
+        transform_compare.params += tolerance
+        print(transform_compare.params)
+
+        assert transform_parameters_equal(transform, transform_compare, tolerance)
+
+        transform_compare.params += 0.001
+
+        assert not transform_parameters_equal(transform, transform_compare, tolerance)

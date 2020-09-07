@@ -1,4 +1,4 @@
-from typing import Any, Tuple, List
+from typing import Any, Union, Tuple, List
 from abc import ABC, abstractmethod
 from numpy import ndarray
 from skimage.transform._geometric import GeometricTransform, SimilarityTransform
@@ -198,3 +198,34 @@ class DescriptorAlignTransform(AlignTransform):
             self.descriptor_extractor.extract(self.descriptor_extractor.keypoints)
 
         return asarray(self.descriptor_extractor.descriptors), asarray(self.descriptor_extractor.keypoints)
+
+
+def transform_parameters_equal(
+    align_transform: GeometricTransform,
+    align_transform_compare: Union[GeometricTransform, ndarray],
+    tolerance: float = 0.1
+) -> bool:
+    """
+    Verify if GeometricTransform parameters are equal, within a specified relative tolerance.
+
+    :param align_transform: A GeometricTransform
+    :param align_transform_compare: A GeometricTransform or 3x3 transformation matrix
+    :param tolerance: The maximum absolute tolerance allowed
+    :returns: True if the transform parameters are equal within the tolerance value
+    """
+    from numpy import allclose
+
+    # If a transformation matrix has been supplied, use it to create a new
+    # instance of the same type as align_transform
+    if isinstance(align_transform_compare, ndarray) and align_transform_compare.shape == (3, 3):
+        transform_type = type(align_transform)
+        align_transform_compare = transform_type(matrix = align_transform_compare)
+    elif not isinstance(align_transform_compare, GeometricTransform):
+        raise ValueError("The supplied type or transformation matrix is invalid")
+
+    return allclose(
+        align_transform.params,
+        align_transform_compare.params,
+        atol = tolerance,
+        equal_nan = True
+    )
