@@ -185,7 +185,7 @@ class DescriptorAlignTransform(AlignTransform):
         """
         from numpy import asarray
         from skimage.color import rgb2gray
-        from .imaging import image_as_rgb
+        from ..imaging import image_as_rgb
 
         # ORB can only handle 2D arrays
         if len(image.shape) > 2:

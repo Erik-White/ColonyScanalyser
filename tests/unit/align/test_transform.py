@@ -4,7 +4,7 @@ from numpy import array, ndarray, zeros, identity
 from skimage.metrics import normalized_root_mse
 from skimage.transform._geometric import GeometricTransform, EuclideanTransform, SimilarityTransform, AffineTransform
 
-from colonyscanalyser.align import AlignTransform, DescriptorAlignTransform, transform_parameters_equal
+from colonyscanalyser.align.transform import AlignTransform, DescriptorAlignTransform, transform_parameters_equal
 
 
 @pytest.fixture(params = [EuclideanTransform, SimilarityTransform, AffineTransform])
