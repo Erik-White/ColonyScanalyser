@@ -28,6 +28,8 @@ from colonyscanalyser import (
 from .image_file import ImageFile, ImageFileCollection
 from .plate import Plate, PlateCollection
 from .colony import Colony, timepoints_from_image, colonies_filtered, colonies_from_timepoints, timepoints_from_image
+from .align.strategy import AlignStrategy, apply_align_transform, calculate_transformation_strategy
+from .align.transform import AlignTransform
 
 
 def argparse_init(*args, **kwargs) -> argparse.ArgumentParser:
@@ -49,6 +51,8 @@ def argparse_init(*args, **kwargs) -> argparse.ArgumentParser:
                         help = "Output animated plots and videos")
     parser.add_argument("-d", "--dots-per-inch", type = int, default = config.DOTS_PER_INCH, metavar = "N",
                         help = "The image DPI (dots per inch) setting")
+    parser.add_argument("--image-align", nargs = "?", default = AlignStrategy.none.name, const = AlignStrategy.none.name, choices = [strategy.name for strategy in AlignStrategy],
+                        help = "The strategy used for aligning images for analysis")
     parser.add_argument("--image-formats", default = config.SUPPORTED_FORMATS, action = "version", version = str(config.SUPPORTED_FORMATS),
                         help = "The supported image formats")
     parser.add_argument("--no-plots", action = "store_true", help = "Prevent output of plot images to disk")
@@ -224,6 +228,7 @@ def main():
     args = parser.parse_args()
     BASE_PATH = args.path
     ANIMATION = args.animation
+    IMAGE_ALIGN = AlignStrategy[args.image_align]
     IMAGE_FORMATS = args.image_formats
     PLOTS = not args.no_plots
     PLATE_LABELS = {plate_id: label for plate_id, label in enumerate(args.plate_labels, start = 1)}
