@@ -53,6 +53,8 @@ def argparse_init(*args, **kwargs) -> argparse.ArgumentParser:
                         help = "The image DPI (dots per inch) setting")
     parser.add_argument("--image-align", nargs = "?", default = AlignStrategy.none.name, const = AlignStrategy.none.name, choices = [strategy.name for strategy in AlignStrategy],
                         help = "The strategy used for aligning images for analysis")
+    parser.add_argument("--image-align-tolerance", type = float, default = config.ALIGNMENT_TOLERANCE,
+                        help = "The tolerance value allowed when aligning images. 0 means the images must match exactly", metavar = "N")
     parser.add_argument("--image-formats", default = config.SUPPORTED_FORMATS, action = "version", version = str(config.SUPPORTED_FORMATS),
                         help = "The supported image formats")
     parser.add_argument("--no-plots", action = "store_true", help = "Prevent output of plot images to disk")
@@ -228,7 +230,8 @@ def main():
     args = parser.parse_args()
     BASE_PATH = args.path
     ANIMATION = args.animation
-    IMAGE_ALIGN = AlignStrategy[args.image_align]
+    IMAGE_ALIGN_STRATEGY = AlignStrategy[args.image_align]
+    IMAGE_ALIGN_TOLERANCE = args.image_align_tolerance
     IMAGE_FORMATS = args.image_formats
     PLOTS = not args.no_plots
     PLATE_LABELS = {plate_id: label for plate_id, label in enumerate(args.plate_labels, start = 1)}

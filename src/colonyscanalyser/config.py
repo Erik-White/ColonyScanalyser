@@ -5,6 +5,7 @@ Package configuration
 # Images
 DOTS_PER_INCH = 300
 SUPPORTED_FORMATS = ["tif", "tiff", "png", "bmp"]
+ALIGNMENT_TOLERANCE = 3.5
 
 # Plates
 PLATE_EDGE_CUT = 5
