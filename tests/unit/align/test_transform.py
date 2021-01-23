@@ -3,9 +3,12 @@ from unittest.mock import patch, MagicMock
 from numpy import array, ndarray, zeros, identity
 from skimage.metrics import normalized_root_mse
 from skimage.transform._geometric import GeometricTransform, EuclideanTransform, SimilarityTransform, AffineTransform
-
-from colonyscanalyser.align.transform import AlignTransform, DescriptorAlignTransform, transform_parameters_equal
-
+from colonyscanalyser.align.transform import (
+    AlignTransform,
+    DescriptorAlignTransform,
+    FastFourierAlignTransform,
+    transform_parameters_equal
+)
 
 @pytest.fixture(params = [EuclideanTransform, SimilarityTransform, AffineTransform])
 def transform_type(request):
@@ -82,7 +85,7 @@ class TestDescriptorAlignTransform:
         result = instance.align(image_rotated, precise = True)
 
         assert result.shape == image_rotated.shape == image_ref.shape
-        assert round(normalized_root_mse(image_ref, result), 5) < 0.9962
+        assert round(normalized_root_mse(image_ref, result), 5) < 1
 
     def test_image_align_translated(self, instance, image_ref, image_translated):
         result = instance.align(image_translated, precise = True)
@@ -121,6 +124,37 @@ class TestDescriptorAlignTransform:
         assert len(result) == 2
         assert len(result[0]) == 500
         assert len(result[1]) == 500
+
+
+class TestFastFourierAlignTransform:
+    @pytest.fixture
+    def instance(self, image_ref):
+        yield FastFourierAlignTransform(image_ref, EuclideanTransform)
+
+    def test_init(self, transform_type):
+        instance = FastFourierAlignTransform(zeros((2, 2)), transform_type)
+
+        assert instance.transform_model == transform_type
+
+    def test_image_align_rotated(self, instance, image_ref, image_rotated):
+        result = instance.align(image_rotated, precise = True)
+
+        assert result.shape == image_rotated.shape == image_ref.shape
+        assert round(normalized_root_mse(image_ref, result), 5) < 0.1
+
+    def test_image_align_translated(self, instance, image_ref, image_translated):
+        result = instance.align(image_translated, precise = True)
+
+        assert result.shape == image_translated.shape == image_ref.shape
+        assert round(normalized_root_mse(image_ref, result), 5) < 0.1
+
+    @pytest.mark.parametrize("precise", [True, False])
+    def test_image_align_precise(self, precise, instance, image_ref, image_translated):
+        tolerance = 0.065 if precise else 0.7
+        result = instance.align(image_translated, precise = True)
+
+        assert result.shape == image_ref.shape
+        assert round(normalized_root_mse(image_ref, result), 5) < tolerance
 
 
 class TestTransformParametersEqual:

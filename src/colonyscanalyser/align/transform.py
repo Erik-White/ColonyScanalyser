@@ -200,6 +200,66 @@ class DescriptorAlignTransform(AlignTransform):
         return asarray(self.descriptor_extractor.descriptors), asarray(self.descriptor_extractor.keypoints)
 
 
+class FastFourierAlignTransform(AlignTransform):
+    """
+    Image alignment using FFT based image registration
+    """
+    @property
+    def image_ref(self) -> Any:
+        """
+        Store the reference image as its descriptors, or similar
+        """
+        return self._image_ref
+
+    @image_ref.setter
+    def image_ref(self, val: ndarray):
+        """
+        Store the reference image as its descriptors, or similar
+        """
+        self._image_ref = val
+
+    def align(self, image: ndarray, precise: bool = True, **kwargs) -> ndarray:
+        """
+        Align an image with the current reference image
+
+        :param image: an image to align
+        :param precise: peform a second alignment pass, more accurate but much slower
+        :param kwargs: keyword arguments passed to imreg_dft.imreg.similarity
+        :returns: an image aligned with image_ref
+        """
+        iterations = 2 if precise else 1
+
+        image_aligned, _ = self._align_transform(self.image_ref, image, numiter = iterations, **kwargs)
+
+        return image_aligned
+
+    def align_transform(self, image: ndarray, **kwargs) -> GeometricTransform:
+        """
+        Calculate the transformation needed to align the image with the current reference image
+
+        :param image: an image to align
+        :param kwargs: keyword arguments passed to imreg_dft.imreg.similarity
+        :returns: a transformation that will align the image with image_ref
+        """
+
+        _, transform_matrix = self._align_transform(self.image_ref, image, **kwargs)
+
+        return self.transform_model(matrix = transform_matrix)
+
+    @staticmethod
+    def _align_transform(image_ref: ndarray, image: ndarray, **kwargs) -> Tuple[ndarray, ndarray]:
+        from imreg_dft import similarity
+
+        transform_params = similarity(image_ref, image, **kwargs)
+        transform = SimilarityTransform(
+            scale = transform_params["scale"],
+            rotation = transform_params["angle"],
+            translation = transform_params["tvec"]
+        )
+
+        return transform_params["timg"], transform.params
+
+
 def transform_parameters_equal(
     align_transform: GeometricTransform,
     align_transform_compare: Union[GeometricTransform, ndarray],
