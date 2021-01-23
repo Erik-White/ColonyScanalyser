@@ -67,7 +67,6 @@ def calculate_transformation_strategy(
     # Check the final image in the sequence in case alignment is not required
     image_file_final = images[-1]
     image_file_final.alignment_transform = align_model.align_transform(image_file_final.image)
-    print("calculated final image alignment")
 
     # If the first and last images are already aligned then there is nothing to do,
     # unless the strategy requires all images to be checked for alignment
@@ -79,13 +78,9 @@ def calculate_transformation_strategy(
     if strategy == AlignStrategy.quick or AlignStrategy.verify:
         # Try to find the smallest number of images to align
         image_file_shift, shift_index = _locate_alignment_shift(images, align_model, tolerance = tolerance, **kwargs)
-        #image_file_shift.alignment_transform = align_model.align_transform(image_file_shift.image)
-        print(f"{shift_index=}")
 
         # If the transformation at the start of the shift is very similar to the end,
         # apply the same transformation throughout. Otherwise use AlignStrategy.verify
-        print(image_file_shift.alignment_transform.params)
-        print(image_file_final.alignment_transform.params)
         transforms_similar = transform_parameters_equal(
             image_file_shift.alignment_transform,
             image_file_final.alignment_transform,
@@ -149,7 +144,6 @@ def _locate_alignment_shift(
         # Verify the image alignment
         image_file = images[mid]
         image_file.alignment_transform = align_model.align_transform(image_file.image, **kwargs)
-        print(image_file.alignment_transform)
 
         # 3x3 identity matrix, equivalent to a stationary transformation matrix
         if transform_parameters_equal(image_file.alignment_transform, identity(3), tolerance):
