@@ -289,6 +289,38 @@ def main():
         if not SILENT:
             print(f"{image_files.count} images found")
 
+        # Verify image alignment
+        if IMAGE_ALIGN_STRATEGY != AlignStrategy.none:
+            if not SILENT:
+                print(f"Verifying image alignment with '{IMAGE_ALIGN_STRATEGY.name}' strategy")
+            
+            # Initialise the model and determine which images need alignment
+            align_model, image_files_align = calculate_transformation_strategy(
+                image_files.items,
+                IMAGE_ALIGN_STRATEGY,
+                tolerance = IMAGE_ALIGN_TOLERANCE
+            )
+            
+            # Apply image alignment according to selected strategy
+            if len(image_files_align) > 0:
+                if not SILENT:
+                    print(f"{len(image_files_align)} images to align")
+
+                with Pool(processes = POOL_MAX) as pool:
+                    results = list()
+                    job = pool.imap_unordered(
+                        func = partial(apply_align_transform, align_model = align_model),
+                        iterable = image_files_align,
+                        chunksize = 2
+                    )
+                    # Store results and update progress bar
+                    for i, result in enumerate(job, start = 1):
+                        results.append(result)
+                        if not SILENT:
+                            utilities.progress_bar((i / len(image_files_align)) * 100, message = "Correcting image alignment")
+
+                    image_files.update(results)
+
         # Process images to Timepoint data objects
         plate_images_mask = None
         plate_timepoints = defaultdict(list)

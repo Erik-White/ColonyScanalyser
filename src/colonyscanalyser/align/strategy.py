@@ -25,6 +25,78 @@ class AlignStrategy(Enum):
     none = auto()
 
 
+def calculate_transformation_strategy(
+    images: Collection[ImageFile],
+    strategy: AlignStrategy,
+    transform_type: str = "euclidean",
+    tolerance: float = 0.1,
+    **kwargs
+) -> Union[Union[AlignTransform, GeometricTransform], Collection[ImageFile]]:
+    """
+    Determine the AlignTransform and slice that it should be applied to in a
+    collection of images, according the AlignStrategy.
+    The first image in the collection is used as an alignment reference
+
+    :param images: a collection of ImageFile instances to align
+    :param strategy: the method used when processing images
+    :param transform_type: a GeometricTransform, see skimage.transform._geometric.TRANSFORMS
+    :param tolerance: the tolerance allowed in the image transformation matrix when using AlignStrategy.quick
+    :param kwargs: keyword arguments passed to AlignTransform.align_transform
+    :returns: An AlignTransform or precalculated GeometricTransform, depending on the selected AlignStrategy
+    """
+    from numpy import identity
+    from skimage.transform._geometric import TRANSFORMS
+    from .transform import DescriptorAlignTransform, transform_parameters_equal
+
+    # Calculate alignment for all images by default (AlignStrategy.complete)
+    shift_index = 0
+
+    # There must be at least one other image to use as a reference
+    if len(images) <= 1 or strategy == AlignStrategy.none:
+        return images
+
+    transform_type = transform_type.lower()
+    if transform_type not in TRANSFORMS:
+        raise ValueError(f"the transformation type {transform_type} is not implemented")
+    transform_model = TRANSFORMS[transform_type]
+
+    # Create the alignment model using the first image as a reference
+    # The first image is cached in the model as keypoints
+    align_model = DescriptorAlignTransform(images[0].image, transform_model)
+
+    # Check the final image in the sequence in case alignment is not required
+    image_file_final = images[-1]
+    image_file_final.alignment_transform = align_model.align_transform(image_file_final.image)
+    print("calculated final image alignment")
+
+    # If the first and last images are already aligned then there is nothing to do,
+    # unless the strategy requires all images to be checked for alignment
+    if not strategy == AlignStrategy.complete:
+        # 3x3 identity matrix, equivalent to a stationary transformation matrix
+        if transform_parameters_equal(image_file_final.alignment_transform, identity(3), tolerance):
+            return align_model, list()
+
+    if strategy == AlignStrategy.quick or AlignStrategy.verify:
+        # Try to find the smallest number of images to align
+        image_file_shift, shift_index = _locate_alignment_shift(images, align_model, tolerance = tolerance, **kwargs)
+        #image_file_shift.alignment_transform = align_model.align_transform(image_file_shift.image)
+        print(f"{shift_index=}")
+
+        # If the transformation at the start of the shift is very similar to the end,
+        # apply the same transformation throughout. Otherwise use AlignStrategy.verify
+        print(image_file_shift.alignment_transform.params)
+        print(image_file_final.alignment_transform.params)
+        transforms_similar = transform_parameters_equal(
+            image_file_shift.alignment_transform,
+            image_file_final.alignment_transform,
+            tolerance
+        )
+        if (strategy == AlignStrategy.quick and transforms_similar):
+            align_model = image_file_final.alignment_transform
+
+    return align_model, images[shift_index:]
+
+
 def apply_align_transform(
     image_file: ImageFile,
     align_model: Union[AlignTransform, GeometricTransform],
@@ -77,6 +149,7 @@ def _locate_alignment_shift(
         # Verify the image alignment
         image_file = images[mid]
         image_file.alignment_transform = align_model.align_transform(image_file.image, **kwargs)
+        print(image_file.alignment_transform)
 
         # 3x3 identity matrix, equivalent to a stationary transformation matrix
         if transform_parameters_equal(image_file.alignment_transform, identity(3), tolerance):
