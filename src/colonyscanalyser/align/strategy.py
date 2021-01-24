@@ -46,7 +46,7 @@ def calculate_transformation_strategy(
     """
     from numpy import identity
     from skimage.transform._geometric import TRANSFORMS
-    from .transform import DescriptorAlignTransform, transform_parameters_equal
+    from .transform import FastFourierAlignTransform, transform_parameters_equal
 
     # Calculate alignment for all images by default (AlignStrategy.complete)
     shift_index = 0
@@ -62,7 +62,7 @@ def calculate_transformation_strategy(
 
     # Create the alignment model using the first image as a reference
     # The first image is cached in the model as keypoints
-    align_model = DescriptorAlignTransform(images[0].image, transform_model)
+    align_model = FastFourierAlignTransform(images[0].image, transform_model)
 
     # Check the final image in the sequence in case alignment is not required
     image_file_final = images[-1]
@@ -78,7 +78,6 @@ def calculate_transformation_strategy(
     if strategy == AlignStrategy.quick or AlignStrategy.verify:
         # Try to find the smallest number of images to align
         image_file_shift, shift_index = _locate_alignment_shift(images, align_model, tolerance = tolerance, **kwargs)
-
         # If the transformation at the start of the shift is very similar to the end,
         # apply the same transformation throughout. Otherwise use AlignStrategy.verify
         transforms_similar = transform_parameters_equal(
@@ -95,6 +94,7 @@ def calculate_transformation_strategy(
 def apply_align_transform(
     image_file: ImageFile,
     align_model: Union[AlignTransform, GeometricTransform],
+    replace_existing: bool = False,
     **kwargs
 ) -> ImageFile:
     """
@@ -103,12 +103,14 @@ def apply_align_transform(
 
     :param image_file: an ImageFile to apply the transformation to
     :param align_model: a transform to use with image_file
+    :param replace_existing: overwrite any existing image_file.alignment_transform
     :param kwargs: keyword arguments to use with the AlignTransform.align_transform, if supplied
     :return: image_file with the transform applied
     """
-    if isinstance(align_model, AlignTransform):
-        image_file.alignment_transform = align_model.align_transform(image_file.image, **kwargs)
-    else:
+    if image_file.alignment_transform is None or replace_existing:
+        if isinstance(align_model, AlignTransform):
+            align_model = align_model.align_transform(image_file.image, **kwargs)
+
         image_file.alignment_transform = align_model
 
     return image_file
@@ -124,7 +126,7 @@ def _locate_alignment_shift(
     Locate the first image in a collection where the image alignment shifted. The first image
     in the collection is used as the reference point.
 
-    Uses a binary search to recursively check the alignment of images with align_model
+    Uses a binary search to iteratively check the alignment of images with align_model
 
     :param images: a collection of ImageFile instances to check image alignment
     :param align_model: an AlignTransform used to calculate the image transformation matrix
@@ -151,5 +153,6 @@ def _locate_alignment_shift(
             bottom = mid
         else:
             top = mid
+    mid += 1
 
     return images[mid], mid

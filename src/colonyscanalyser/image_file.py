@@ -71,12 +71,22 @@ class ImageFile(Unique, TimeStampElapsed):
 
     @property
     def image(self) -> ndarray:
+        from imreg_dft import transform_img
+
         if self.cache_image and self._image is not None:
             image = self._image.copy()
         else:
             image = ImageFile._load_image(self.file_path)
         if self.align_image and self.alignment_transform is not None:
-            image = self._warp_image(image, self.alignment_transform)
+            scale = self.alignment_transform.scale if hasattr(self.alignment_transform, "scale") else 1
+            image = transform_img(
+                image,
+                scale,
+                self.alignment_transform.rotation,
+                self.alignment_transform.translation,
+                bgval = 0
+            )
+            print("image returned as aligned  ", self.file_path)
 
         return image
 
@@ -150,19 +160,6 @@ class ImageFile(Unique, TimeStampElapsed):
                     plugin = "pil"
                 else:
                     raise
-
-    def _warp_image(self, image: ndarray, transform: GeometricTransform, **kwargs) -> ndarray:
-        """
-        Apply a transformation to an image
-
-        :param image: the image to be transformed
-        :param transform: a transformation to apply to image
-        :param kwargs: keyword arguments to pass to skimage.transform.warp
-        :returns: an image with the applied transformation
-        """
-        from skimage.transform import warp
-
-        return warp(image, transform, order = 3, preserve_range = True, **kwargs)
 
 
 class ImageFileCollection(IdentifiedCollection):

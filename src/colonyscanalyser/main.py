@@ -51,7 +51,7 @@ def argparse_init(*args, **kwargs) -> argparse.ArgumentParser:
                         help = "Output animated plots and videos")
     parser.add_argument("-d", "--dots-per-inch", type = int, default = config.DOTS_PER_INCH, metavar = "N",
                         help = "The image DPI (dots per inch) setting")
-    parser.add_argument("--image-align", nargs = "?", default = AlignStrategy.none.name, const = AlignStrategy.none.name, choices = [strategy.name for strategy in AlignStrategy],
+    parser.add_argument("--image-align", nargs = "?", default = AlignStrategy.quick.name, const = AlignStrategy.quick.name, choices = [strategy.name for strategy in AlignStrategy],
                         help = "The strategy used for aligning images for analysis")
     parser.add_argument("--image-align-tolerance", type = float, default = config.ALIGNMENT_TOLERANCE,
                         help = "The tolerance value allowed when aligning images. 0 means the images must match exactly", metavar = "N")
@@ -292,7 +292,7 @@ def main():
         # Verify image alignment
         if IMAGE_ALIGN_STRATEGY != AlignStrategy.none:
             if not SILENT:
-                print(f"Verifying image alignment with '{IMAGE_ALIGN_STRATEGY.name}' strategy")
+                print(f"Verifying image alignment with '{IMAGE_ALIGN_STRATEGY.name}' strategy. This process will take some time")
             
             # Initialise the model and determine which images need alignment
             align_model, image_files_align = calculate_transformation_strategy(
@@ -304,7 +304,7 @@ def main():
             # Apply image alignment according to selected strategy
             if len(image_files_align) > 0:
                 if not SILENT:
-                    print(f"{len(image_files_align)} images to align")
+                    print(f"{len(image_files_align)} of {image_files.count} images require alignment")
 
                 with Pool(processes = POOL_MAX) as pool:
                     results = list()
