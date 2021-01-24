@@ -110,7 +110,8 @@ class TestImageFile:
 
         @pytest.mark.parametrize("align_image", [True, False])
         def test_image_align(self, image_temp_path, image_array, align_image):
-            from skimage.transform import EuclideanTransform, warp
+            from scipy.ndimage import affine_transform
+            from skimage.transform import EuclideanTransform
 
             transform = EuclideanTransform(rotation = 90)
             imagefile = ImageFile(image_temp_path, cache_image = True, align_image = align_image)
@@ -122,7 +123,8 @@ class TestImageFile:
             # The original image should be returned unless align_image is True
             imagefile.alignment_transform = transform
             if align_image:
-                assert (imagefile.image == warp(image_array, transform, order = 3, preserve_range = True)).all()
+                #assert (imagefile.image == transform_img(image_array, 1, transform.rotation, transform.translation)).all()
+                assert (imagefile.image == affine_transform(image_array, transform.params, order = 3)).all()
             else:
                 assert (imagefile.image == image_array).all()
 

@@ -227,11 +227,12 @@ class FastFourierAlignTransform(AlignTransform):
         :param kwargs: keyword arguments passed to imreg_dft.imreg.similarity
         :returns: an image aligned with image_ref
         """
+        from imreg_dft import transform_img
+
         iterations = 2 if precise else 1
+        _, transform = self._align_transform(self.image_ref, image, numiter = iterations, **kwargs)
 
-        image_aligned, _ = self._align_transform(self.image_ref, image, numiter = iterations, **kwargs)
-
-        return image_aligned
+        return transform_img(image, transform.scale, transform.rotation, transform.translation, bgval = 0)
 
     def align_transform(self, image: ndarray, **kwargs) -> GeometricTransform:
         """
@@ -241,23 +242,36 @@ class FastFourierAlignTransform(AlignTransform):
         :param kwargs: keyword arguments passed to imreg_dft.imreg.similarity
         :returns: a transformation that will align the image with image_ref
         """
+        _, transform = self._align_transform(self.image_ref, image, **kwargs)
 
-        _, transform_matrix = self._align_transform(self.image_ref, image, **kwargs)
-
-        return self.transform_model(matrix = transform_matrix)
+        return self.transform_model(matrix = transform.params)
 
     @staticmethod
-    def _align_transform(image_ref: ndarray, image: ndarray, **kwargs) -> Tuple[ndarray, ndarray]:
-        from imreg_dft import similarity
+    def _align_transform(image_ref: ndarray, image: ndarray, **kwargs) -> Tuple[ndarray, SimilarityTransform]:
+        """
+        Calculate the transformation needed to align the image with the a reference image
 
-        transform_params = similarity(image_ref, image, **kwargs)
+        :param image_ref: a refernce image to align with
+        :param image: an image to align with image_ref
+        :param kwargs: keyword arguments passed to imreg_dft.imreg.similarity
+        :returns: a transformation that will align the image with image_ref, and the aligned greyscale image
+        """
+        from imreg_dft import similarity
+        from skimage.color import rgb2gray
+        from ..imaging import image_as_rgb
+
+        # imreg_dft.similarity can't handle colour images
+        image_ref_gray = rgb2gray(image_as_rgb(image_ref))
+        image_gray = rgb2gray(image_as_rgb(image))
+
+        transform_params = similarity(image_ref_gray, image_gray, **kwargs)
         transform = SimilarityTransform(
             scale = transform_params["scale"],
             rotation = transform_params["angle"],
             translation = transform_params["tvec"]
         )
 
-        return transform_params["timg"], transform.params
+        return transform_params["timg"], transform
 
 
 def transform_parameters_equal(
