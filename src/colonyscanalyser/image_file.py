@@ -86,7 +86,6 @@ class ImageFile(Unique, TimeStampElapsed):
                 self.alignment_transform.translation,
                 bgval = 0
             )
-            print("image returned as aligned  ", self.file_path)
 
         return image
 

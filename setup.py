@@ -22,7 +22,7 @@ long_description = "%s\n%s" % (
 setup(
     python_requires = ">=3.7",
     name = "colonyscanalyser",
-    version = "0.6.0",
+    version = "0.6.1",
     description = "An image analysis tool for measuring microorganism colony growth",
     long_description = long_description,
     long_description_content_type = "text/markdown",
