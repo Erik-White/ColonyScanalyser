@@ -1,5 +1,6 @@
 from typing import Optional, Union, Tuple, List
 from numpy import ndarray
+from skimage.transform._geometric import GeometricTransform, SimilarityTransform
 
 
 def mm_to_pixels(millimeters: float, dots_per_inch: float = 300, pixels_per_mm: Optional[float] = None) -> float:

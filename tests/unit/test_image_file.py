@@ -86,15 +86,19 @@ class TestImageFile:
                 assert imagefile._image is None
 
     class TestProperties:
+        @pytest.fixture
+        def image_temp_path(self, image, timestamp_image, tmp_path):
+            _, image_name = timestamp_image
+
+            return TestImageFile.create_temp_file(tmp_path, image_name, suffix = "png", file_data = image)
+
         @pytest.mark.parametrize("image_path", ["", Path(), "."])
         def test_filepath_missing(self, image_path):
             with pytest.raises(FileNotFoundError):
                 ImageFile(image_path)
 
-        def test_image(self, tmp_path, timestamp_image, image, image_array, cache_image):
-            _, image_name = timestamp_image
-            image_path = TestImageFile.create_temp_file(tmp_path, image_name, suffix = "png", file_data = image)
-            imagefile = ImageFile(image_path, cache_image = cache_image)
+        def test_image(self, image_temp_path, image_array, cache_image):
+            imagefile = ImageFile(image_temp_path, cache_image = cache_image)
 
             assert (imagefile.image == image_array).all()
             assert (imagefile.image_gray == array([[1.]])).all()
@@ -103,6 +107,26 @@ class TestImageFile:
                 assert (imagefile._image == image_array).all()
             else:
                 assert imagefile._image is None
+
+        @pytest.mark.parametrize("align_image", [True, False])
+        def test_image_align(self, image_temp_path, image_array, align_image):
+            from scipy.ndimage import affine_transform
+            from skimage.transform import EuclideanTransform
+
+            transform = EuclideanTransform(rotation = 90)
+            imagefile = ImageFile(image_temp_path, cache_image = True, align_image = align_image)
+
+            # The original image should be returned if no transform is available
+            assert (imagefile.image == image_array).all()
+            assert (imagefile.image_gray == array([[1.]])).all()
+
+            # The original image should be returned unless align_image is True
+            imagefile.alignment_transform = transform
+            if align_image:
+                #assert (imagefile.image == transform_img(image_array, 1, transform.rotation, transform.translation)).all()
+                assert (imagefile.image == affine_transform(image_array, transform.params, order = 3)).all()
+            else:
+                assert (imagefile.image == image_array).all()
 
     class TestMethods:
         def test_timestamp_from_exif(self, tmp_path, timestamp_image):

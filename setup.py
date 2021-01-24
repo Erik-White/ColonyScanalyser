@@ -37,6 +37,7 @@ setup(
         "numpy >= 1.18",
         "matplotlib",
         "scikit-image >= 0.17",
+        "imreg_dft",
         "webcolors",
         # Ensure metadata is available on Python <3.8
         "importlib-metadata ~= 1.0 ; python_version < '3.8'"

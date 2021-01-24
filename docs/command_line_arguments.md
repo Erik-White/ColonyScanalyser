@@ -36,6 +36,35 @@ Displays the currently supported image formats.
 ```
 --image-formats
 ```
+### Image alignment strategy
+The strategy used when verifying image alignment and determining which images need to be checked for alignment. The first image in the series is used as a reference for all subsequent images.
+
+Depending on the strategy used and the proporiton of images that require alignment, this can add a very significant amount of processing time.
+
+Currently supported:
+- `quick`: Attempt to locate the the first image the may have moved and compare to the final image. If both are similar, apply the calculated alignment to all shifted images, otherwise calculate alignment for all subsequent images
+- `verify`: Locate start of image shift and calculate alignment for all subsequent images
+- `complete`: Calculate alignment and perform correetion (if required) for every single image
+- `none`: no image alignment verification or adjustment is performed
+
+
+- input: string
+```
+--image-align
+```
+### Image alignment tolerance
+The value used to determine if an image requires alignment. Higher values allow a higher tolerance for misalignment. This value should be adjusted if too many, or too few, images are identified as requiring alignment.
+
+- input: float
+```
+--image-align-tolerance
+```
+### Image formats
+Displays the currently supported image formats.
+
+```
+--image-formats
+```
 ### Plot images output
 Prevent plot images being output to disk. Summary plots to give a quick overview of the data and individual plots for each plate are output unless this argument is passed.
 

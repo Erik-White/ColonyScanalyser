@@ -341,12 +341,20 @@ def growth_curve(
             alpha = 0.25
         )
 
-    # Plot the median
+    # Plot the windowed median
+    from scipy.signal import savgol_filter
+    median = [median(val) for _, val in sorted(plate.growth_curve.data.items())]
+    window = 15 if len(median) > 15 else len(median)
+    # Window length must be odd and greater than polyorder for Savitzky-Golay filter
+    if window % 2 == 0:
+        window -= 1
+    median_filtered = savgol_filter(median, window, 2) if window >= 3 else median
+
     ax.plot(
         [td.total_seconds() / 3600 for td in sorted(plate.growth_curve.data.keys())],
-        [median(val) for _, val in sorted(plate.growth_curve.data.items())],
+        median_filtered,
         color = line_color,
-        label = "Median" if growth_params else f"Plate {plate.id}",
+        label = "Windowed median" if growth_params else f"Plate {plate.id}",
         linewidth = 2
     )
 

@@ -4,34 +4,31 @@ from pathlib import Path
 from datetime import datetime, timedelta
 from re import search
 from numpy import ndarray
-from skimage.io import imread
-from skimage.color import rgb2gray
+from skimage.transform._geometric import GeometricTransform
 from .base import IdentifiedCollection, Unique, TimeStampElapsed
 from .file_access import file_exists
 
 
 class ImageFile(Unique, TimeStampElapsed):
     """
-    An object to hold information about, and provide access to, a timestamped image file
+    Holds information about, and provides access to, a timestamped image file
     """
     def __init__(
         self,
         file_path: Path,
         timestamp: datetime = None,
         timestamp_initial: datetime = None,
-        cache_image: bool = False
+        cache_image: bool = False,
+        align_image: bool = True
     ):
         super(ImageFile, self).__init__()
+
         self.file_path = file_path
-
-        if timestamp is None:
-            timestamp = self.timestamp_from_string(str(self.file_path.name))
-        if timestamp_initial is None:
-            timestamp_initial = timestamp
-
-        self.timestamp = timestamp
-        self.timestamp_initial = timestamp_initial
+        self.timestamp = timestamp or self.timestamp_from_string(str(self.file_path.name))
+        self.timestamp_initial = timestamp_initial or self.timestamp
         self.cache_image = cache_image
+        self.align_image = align_image
+        self.alignment_transform = None
         self._image = None
         if self.cache_image:
             self._image = ImageFile._load_image(self.file_path)
@@ -49,6 +46,22 @@ class ImageFile(Unique, TimeStampElapsed):
             self._image = None
 
     @property
+    def align_image(self) -> bool:
+        return self._align_image
+
+    @align_image.setter
+    def align_image(self, val: bool):
+        self._align_image = val
+
+    @property
+    def alignment_transform(self) -> Optional[GeometricTransform]:
+        return self._alignment_transform
+
+    @alignment_transform.setter
+    def alignment_transform(self, val: GeometricTransform):
+        self._alignment_transform = val
+
+    @property
     def cache_image(self) -> bool:
         return self._cache_image
 
@@ -58,13 +71,29 @@ class ImageFile(Unique, TimeStampElapsed):
 
     @property
     def image(self) -> ndarray:
+        from imreg_dft import transform_img
+
         if self.cache_image and self._image is not None:
-            return self._image.copy()
+            image = self._image.copy()
         else:
-            return ImageFile._load_image(self.file_path)
+            image = ImageFile._load_image(self.file_path)
+        if self.align_image and self.alignment_transform is not None:
+            scale = self.alignment_transform.scale if hasattr(self.alignment_transform, "scale") else 1
+            image = transform_img(
+                image,
+                scale,
+                self.alignment_transform.rotation,
+                self.alignment_transform.translation,
+                bgval = 0
+            )
+            print("image returned as aligned  ", self.file_path)
+
+        return image
 
     @property
     def image_gray(self) -> ndarray:
+        from skimage.color import rgb2gray
+
         return rgb2gray(self.image)
 
     @property
@@ -118,6 +147,7 @@ class ImageFile(Unique, TimeStampElapsed):
 
     @staticmethod
     def _load_image(file_path: Path, as_gray: bool = False, plugin: str = None, **plugin_args) -> ndarray:
+        from skimage.io import imread
         from .imaging import image_as_rgb
 
         while True:

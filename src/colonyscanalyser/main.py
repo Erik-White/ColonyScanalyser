@@ -28,6 +28,8 @@ from colonyscanalyser import (
 from .image_file import ImageFile, ImageFileCollection
 from .plate import Plate, PlateCollection
 from .colony import Colony, timepoints_from_image, colonies_filtered, colonies_from_timepoints, timepoints_from_image
+from .align.strategy import AlignStrategy, apply_align_transform, calculate_transformation_strategy
+from .align.transform import AlignTransform
 
 
 def argparse_init(*args, **kwargs) -> argparse.ArgumentParser:
@@ -49,6 +51,10 @@ def argparse_init(*args, **kwargs) -> argparse.ArgumentParser:
                         help = "Output animated plots and videos")
     parser.add_argument("-d", "--dots-per-inch", type = int, default = config.DOTS_PER_INCH, metavar = "N",
                         help = "The image DPI (dots per inch) setting")
+    parser.add_argument("--image-align", nargs = "?", default = AlignStrategy.quick.name, const = AlignStrategy.quick.name, choices = [strategy.name for strategy in AlignStrategy],
+                        help = "The strategy used for aligning images for analysis")
+    parser.add_argument("--image-align-tolerance", type = float, default = config.ALIGNMENT_TOLERANCE,
+                        help = "The tolerance value allowed when aligning images. 0 means the images must match exactly", metavar = "N")
     parser.add_argument("--image-formats", default = config.SUPPORTED_FORMATS, action = "version", version = str(config.SUPPORTED_FORMATS),
                         help = "The supported image formats")
     parser.add_argument("--no-plots", action = "store_true", help = "Prevent output of plot images to disk")
@@ -224,6 +230,8 @@ def main():
     args = parser.parse_args()
     BASE_PATH = args.path
     ANIMATION = args.animation
+    IMAGE_ALIGN_STRATEGY = AlignStrategy[args.image_align]
+    IMAGE_ALIGN_TOLERANCE = args.image_align_tolerance
     IMAGE_FORMATS = args.image_formats
     PLOTS = not args.no_plots
     PLATE_LABELS = {plate_id: label for plate_id, label in enumerate(args.plate_labels, start = 1)}
@@ -280,6 +288,38 @@ def main():
         image_files = ImageFileCollection.from_path(BASE_PATH, IMAGE_FORMATS, cache_images = False)
         if not SILENT:
             print(f"{image_files.count} images found")
+
+        # Verify image alignment
+        if IMAGE_ALIGN_STRATEGY != AlignStrategy.none:
+            if not SILENT:
+                print(f"Verifying image alignment with '{IMAGE_ALIGN_STRATEGY.name}' strategy. This process will take some time")
+            
+            # Initialise the model and determine which images need alignment
+            align_model, image_files_align = calculate_transformation_strategy(
+                image_files.items,
+                IMAGE_ALIGN_STRATEGY,
+                tolerance = IMAGE_ALIGN_TOLERANCE
+            )
+            
+            # Apply image alignment according to selected strategy
+            if len(image_files_align) > 0:
+                if not SILENT:
+                    print(f"{len(image_files_align)} of {image_files.count} images require alignment")
+
+                with Pool(processes = POOL_MAX) as pool:
+                    results = list()
+                    job = pool.imap_unordered(
+                        func = partial(apply_align_transform, align_model = align_model),
+                        iterable = image_files_align,
+                        chunksize = 2
+                    )
+                    # Store results and update progress bar
+                    for i, result in enumerate(job, start = 1):
+                        results.append(result)
+                        if not SILENT:
+                            utilities.progress_bar((i / len(image_files_align)) * 100, message = "Correcting image alignment")
+
+                    image_files.update(results)
 
         # Process images to Timepoint data objects
         plate_images_mask = None
