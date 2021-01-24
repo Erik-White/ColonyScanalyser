@@ -1,3 +1,4 @@
+import warnings
 from typing import Any, Union, Optional, Iterable, Dict, List, Tuple
 from abc import ABC, abstractmethod
 from math import e, exp, log, log10, sqrt
@@ -300,9 +301,11 @@ class GrowthCurveModel:
         # Lag time and growth rate
         slopes = list()
         for i in range(0, len(timestamps) - window):
-            # Find the slope at the exponential growth phase over a sliding window
-            slope, intercept, *_ = linregress(timestamps[i: i + window], measurements[i: i + window])
-            slopes.append((slope, intercept))
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", RuntimeWarning)
+                # Find the slope at the exponential growth phase over a sliding window
+                slope, intercept, *_ = linregress(timestamps[i: i + window], measurements[i: i + window])
+                slopes.append((slope, intercept))
 
         if slopes and max(slopes)[0] > 0:
             growth_rate, intercept = max(slopes)
@@ -371,7 +374,6 @@ class GrowthCurveModel:
         :param kwargs: arguments to pass to scipy.optimize.curve_fit
         :returns: a tuple containing optimal result parameters, or None if no fit could be made
         """
-        import warnings
         from scipy.optimize import curve_fit, OptimizeWarning
 
         try:
