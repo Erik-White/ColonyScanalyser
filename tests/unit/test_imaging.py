@@ -8,8 +8,7 @@ from colonyscanalyser.imaging import (
     cut_image_circle,
     get_image_circles,
     image_as_rgb,
-    remove_background_mask,
-    watershed_separation
+    remove_background_mask
 )
 
 image_ref = np.array([
@@ -279,17 +278,3 @@ class TestRemoveBackgroundMask():
     def test_image_empty(self):
         with pytest.raises(ValueError):
             remove_background_mask(np.array([]))
-
-
-class TestWatershedSeparation():
-    def test_watershed(self, image):
-        result = watershed_separation(image)
-
-        assert result.shape == image.shape
-        assert len(np.unique(result)) == 3
-
-    def test_empty(self):
-        result = watershed_separation(np.array([]))
-
-        assert result.size == 0
-        assert len(np.unique(result)) == 0

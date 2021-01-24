@@ -266,33 +266,3 @@ def remove_background_mask(image: ndarray, smoothing: float = 1, sigmoid_cutoff:
 
     # Find background threshold and return only foreground
     return image > threshold_triangle(image, nbins = 10)
-
-
-def watershed_separation(image: ndarray, smoothing: float = 0.5, **kwargs) -> ndarray:
-    """
-    Returns a labelled image where merged objects are separated
-
-    :param image: an image as a numpy array
-    :param smoothing: a sigma value for the gaussian filter
-    :returns: a separated image
-    """
-    from numpy import ones
-    from scipy import ndimage
-    from skimage.filters import gaussian
-    from skimage.measure import label
-    from skimage.morphology import watershed
-    from skimage.feature import peak_local_max
-
-    if image.size == 0:
-        return image
-    img = image.copy()
-
-    # Estimate smoothed distance from peaks to background
-    distance = ndimage.distance_transform_edt(img)
-    distance = gaussian(distance, smoothing)
-
-    # Find image peaks, returned as a boolean array
-    local_maxi = peak_local_max(distance, indices = False, footprint = ones((3, 3)), labels = img, **kwargs)
-
-    # Find the borders around the peaks
-    return watershed(-distance, label(local_maxi), mask = img)
