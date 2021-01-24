@@ -155,25 +155,21 @@
 <p>Once Homebrew is installed, simply open terminal and run the command</p>
 <pre><code>brew install python
 </code></pre>
-
 <h4 id="on-linux">On Linux</h4>
 <p>Python may come bundled with your distribution, otherwise it will be available through your package manager e.g.</p>
 <pre><code>sudo apt-get install python3.8
 </code></pre>
-
 <h4 id="on-windows">On Windows</h4>
 <p>Go to the <a href="https://www.python.org/downloads/windows/">Python downloads site</a> and grab the latest Python installer. Run the installer once it has downloaded and follow the setup instructions.</p>
 <h2 id="colonyscanalyser">ColonyScanalyser</h2>
 <p>Use the Python package manager, Pip, to install the <a href="https://pypi.org/project/colonyscanalyser/">ColonyScanalyser package</a>:</p>
 <pre><code>pip3 install colonyscanalyser
 </code></pre>
-
 <p>A message should hopefully indicate that the ColonyScanalyser package was downloaded and installed successfully.</p>
 <p>Note: We use the command <code>pip3</code> in case both Python 2 &amp; 3 are installed on the system. In which case <code>pip</code> will usually default to installing packages for Python 2</p>
 <p>If you already have ColonyScanalyser installed via Pip and simply need to update it, use:</p>
 <pre><code>pip3 install colonyscanalyser --upgrade
 </code></pre>
-
 <h2 id="virtual-environments">Virtual environments</h2>
 <p>There are a number of benefits to setting up self-contained virtual environments instead of installing system-wide packages:</p>
 <ul>
@@ -183,17 +179,14 @@
 <p>We use Pipenv which is a combined environment and package manager. Install it with Homebrew:</p>
 <pre><code>brew install pipenv
 </code></pre>
-
 <p>Then create a new Python 3 environment in a workspace folder and install the ColonyScanalyser package:</p>
 <pre><code>cd /my/example/workspace
 pipenv --three
 pipenv install colonyscanalyser
 </code></pre>
-
 <p>Then run the ColonyScanalyser package:</p>
 <pre><code>pipenv run scanalyser /path/to/images
 </code></pre>
-
 <p><a href="https://packaging.python.org/tutorials/managing-dependencies/">More detailed instructions</a> can be found on the Python packaging site.</p>
 <h2 id="docker">Docker</h2>
 <p>The image is available on <a href="https://hub.docker.com/r/erikwhite/colonyscanalyser">Docker Hub</a>.</p>
