@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2021-01-24
+### Added
+- An `align` subpackage containing image alignment functionality
+- Image alignment verification and correction before processing images
+- Command line arguments to adjust image alignment strategy and tolerance
+### Changed
+- Growth curves now use a windowed median which should help to smooth the curve
+### Fixed
+- Various warnings emitted when running the tests
+
 ## [0.5.3] - 2020-09-07
 ### Changed
 - Updated and improved IdentifiedCollection, now backed by a Dictionary for easier lookup
