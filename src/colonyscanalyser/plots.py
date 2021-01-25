@@ -326,6 +326,7 @@ def growth_curve(
     :param line_color: a Colormap color for the median
     """
     from statistics import median
+    from .utilities import savgol_filter
 
     if line_color is None:
         line_color = scatter_color
@@ -341,20 +342,13 @@ def growth_curve(
             alpha = 0.25
         )
 
-    # Plot the windowed median
-    from scipy.signal import savgol_filter
+    # Plot the smoothed median
     median = [median(val) for _, val in sorted(plate.growth_curve.data.items())]
-    window = 15 if len(median) > 15 else len(median)
-    # Window length must be odd and greater than polyorder for Savitzky-Golay filter
-    if window % 2 == 0:
-        window -= 1
-    median_filtered = savgol_filter(median, window, 2) if window >= 3 else median
-
     ax.plot(
         [td.total_seconds() / 3600 for td in sorted(plate.growth_curve.data.keys())],
-        median_filtered,
+        savgol_filter(median, 15, 2),
         color = line_color,
-        label = "Windowed median" if growth_params else f"Plate {plate.id}",
+        label = "Smoothed median" if growth_params else f"Plate {plate.id}",
         linewidth = 2
     )
 

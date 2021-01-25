@@ -1,4 +1,4 @@
-﻿from typing import Collection, Tuple, List, Dict
+﻿from typing import Collection, Tuple, List, Dict, Any
 
 
 def round_tuple_floats(tuple_item: Tuple[float], precision: int = 2) -> Tuple[float]:
@@ -13,6 +13,30 @@ def round_tuple_floats(tuple_item: Tuple[float], precision: int = 2) -> Tuple[fl
         raise ValueError(f"The object must be of type 'tuple', not type '{type(tuple_item)}'")
 
     return tuple(map(lambda x: isinstance(x, float) and round(x, precision) or x, tuple_item))
+
+
+def savgol_filter(measurements: Collection[Any], window: int = 15, order: int = 2) -> Collection[Any]:
+    """
+    Smooth a one dimensional set of data with a Savitzky-Golay filter
+
+    If no filtering can be performed the original data is returned unaltered
+
+    :param measurements: a collection of values to filter
+    :param window: the window length used in the filter
+    :param order: the polynomial order used to fit the values
+    :returns: filtered values, if possible
+    """
+    from scipy.signal import savgol_filter
+
+    # Window length must be odd and greater than polyorder for Savitzky-Golay filter
+    if window > len(measurements):
+        window = len(measurements)
+    if window % 2 == 0:
+        window -= 1
+    if window >= 1 and window > order:
+        measurements = savgol_filter(measurements, window, order)
+
+    return measurements
 
 
 def progress_bar(bar_progress: float, bar_length: float = 30, message: str = ""):
