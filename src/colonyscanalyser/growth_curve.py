@@ -197,6 +197,7 @@ class GrowthCurveModel:
         """
         from statistics import median
         from numpy import errstate, iinfo, intc, isinf, isnan, sqrt, diag, std
+        from .utilities import savgol_filter
 
         timestamps = [timestamp.total_seconds() for timestamp in sorted(self.data.keys())]
         measurements = [val for _, val in sorted(self.data.items())]
@@ -211,10 +212,12 @@ class GrowthCurveModel:
 
         # The number of values must be at least the number of parameters
         if len(timestamps) >= 4 and len(measurements) >= 4:
-            # Calculate standard deviation
             if all(isinstance(m, Iterable) for m in measurements):
+                # Calculate standard deviation
                 measurements_std = [std(m, axis = 0) for m in measurements]
+                # Use the filtered median
                 measurements = [median(val) for val in measurements]
+                measurements = savgol_filter(measurements, window = 15, order = 2)
 
             # Try to estimate initial parameters, if unsuccessful pass None
             # None will result in scipy.optimize.curve_fit using its own default parameters

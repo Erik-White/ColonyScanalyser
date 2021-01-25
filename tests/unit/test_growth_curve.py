@@ -141,8 +141,9 @@ class TestGrowthCurve:
             assert host.growth_curve._carrying_capacity_std >= 0
 
         def test_fit_growth_curve_iter(self, host):
-            host.signals = [[0, signal] for signal in host.signals]
-            host.growth_curve.fit_curve()
+            host.signals = [[signal] for signal in host.signals]
+
+            host.growth_curve.fit_curve(initial_params = [0.2, 0.4, 1, 1])
 
             assert host.growth_curve._lag_time
             assert host.growth_curve._lag_time_std.total_seconds() >= 0
