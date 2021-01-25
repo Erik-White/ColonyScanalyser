@@ -3,6 +3,7 @@ import pytest
 from colonyscanalyser.utilities import (
     round_tuple_floats,
     progress_bar,
+    savgol_filter,
     dicts_merge,
     dicts_mean,
     dicts_median
@@ -60,6 +61,28 @@ class TestProgressBar():
         captured = capsys.readouterr()
 
         assert captured.out[slice(-len(message) - 1, -1, 1)] == message
+
+
+class TestSavGolFilter():
+    @pytest.mark.parametrize("window_length", [3, 4, 5, 7, 10])
+    def test_window(self, window_length):
+        measurements = [0] * window_length
+
+        results = savgol_filter(measurements, window_length, 1)
+
+        assert (results == measurements).all()
+
+    @pytest.mark.parametrize("order", [1, 2, 3, 4, 6])
+    def test_order(self, order):
+        measurements = [1] * 10
+        window_length = 3
+
+        results = savgol_filter(measurements, window_length, order)
+
+        if order >= window_length:
+            assert list(results) == measurements
+        else:
+            assert (results != measurements).any()
 
 
 class TestDictsMerge():
